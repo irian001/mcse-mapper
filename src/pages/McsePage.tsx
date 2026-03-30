@@ -13,8 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil, Upload } from "lucide-react";
+import { Plus, Pencil, Upload, Download } from "lucide-react";
 import ImportMcseDialog from "@/components/mcse/ImportMcseDialog";
+import { exportMcseTemplate } from "@/components/mcse/ExportMcseTemplate";
 
 type NaturezaConta = "ativo" | "passivo" | "patrimonio_liquido" | "receita" | "despesa" | "compensacao";
 const naturezaOptions: { value: NaturezaConta; label: string }[] = [
@@ -140,8 +141,12 @@ export default function McsePage() {
 
         <TabsContent value="grupos" className="mt-4">
           <div className="flex justify-end mb-3">
-            <Button size="sm" variant="outline" onClick={() => setImportTarget("grupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
-            <Button size="sm" onClick={openNewGrupo}><Plus size={14} className="mr-1" /> Novo Grupo</Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("grupos", false)}><Download size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("grupos", true)}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportTarget("grupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" onClick={openNewGrupo}><Plus size={14} className="mr-1" /> Novo Grupo</Button>
+            </div>
           </div>
           <div className="rounded border bg-card">
             <Table>
@@ -173,8 +178,12 @@ export default function McsePage() {
                 {grupos.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.codigo_grupo} - {g.descricao_grupo}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={() => setImportTarget("subgrupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
-            <Button size="sm" onClick={openNewSubgrupo}><Plus size={14} className="mr-1" /> Novo Subgrupo</Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("subgrupos", false)}><Download size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("subgrupos", true)}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportTarget("subgrupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" onClick={openNewSubgrupo}><Plus size={14} className="mr-1" /> Novo Subgrupo</Button>
+            </div>
           </div>
           <div className="rounded border bg-card">
             <Table>
@@ -206,8 +215,12 @@ export default function McsePage() {
                 {grupos.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.codigo_grupo} - {g.descricao_grupo}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={() => setImportTarget("contas")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
-            <Button size="sm" onClick={openNewConta}><Plus size={14} className="mr-1" /> Nova Conta</Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("contas", false)}><Download size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("contas", true)}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportTarget("contas")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" onClick={openNewConta}><Plus size={14} className="mr-1" /> Nova Conta</Button>
+            </div>
           </div>
           <div className="rounded border bg-card">
             <Table>
