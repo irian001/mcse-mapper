@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Upload } from "lucide-react";
+import ImportMcseDialog from "@/components/mcse/ImportMcseDialog";
 
 type NaturezaConta = "ativo" | "passivo" | "patrimonio_liquido" | "receita" | "despesa" | "compensacao";
 const naturezaOptions: { value: NaturezaConta; label: string }[] = [
