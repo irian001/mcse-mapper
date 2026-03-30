@@ -6,14 +6,14 @@ export const fetchGrupos = () =>
 
 export const fetchSubgrupos = (grupoId?: string) => {
   let q = supabase.from("mcse_subgrupos").select("*, mcse_grupos(descricao_grupo)").order("ordem");
-  if (grupoId) q = q.eq("grupo_id", grupoId);
+  if (grupoId && grupoId !== "all") q = q.eq("grupo_id", grupoId);
   return q;
 };
 
 export const fetchContas = (grupoId?: string, subgrupoId?: string) => {
   let q = supabase.from("mcse_contas").select("*, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo)").order("codigo_mcse");
-  if (grupoId) q = q.eq("grupo_id", grupoId);
-  if (subgrupoId) q = q.eq("subgrupo_id", subgrupoId);
+  if (grupoId && grupoId !== "all") q = q.eq("grupo_id", grupoId);
+  if (subgrupoId && subgrupoId !== "all") q = q.eq("subgrupo_id", subgrupoId);
   return q;
 };
 
