@@ -178,8 +178,12 @@ export default function McsePage() {
                 {grupos.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.codigo_grupo} - {g.descricao_grupo}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={() => setImportTarget("subgrupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
-            <Button size="sm" onClick={openNewSubgrupo}><Plus size={14} className="mr-1" /> Novo Subgrupo</Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("subgrupos", false)}><Download size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("subgrupos", true)}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportTarget("subgrupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" onClick={openNewSubgrupo}><Plus size={14} className="mr-1" /> Novo Subgrupo</Button>
+            </div>
           </div>
           <div className="rounded border bg-card">
             <Table>
