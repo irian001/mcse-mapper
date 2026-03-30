@@ -141,8 +141,12 @@ export default function McsePage() {
 
         <TabsContent value="grupos" className="mt-4">
           <div className="flex justify-end mb-3">
-            <Button size="sm" variant="outline" onClick={() => setImportTarget("grupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
-            <Button size="sm" onClick={openNewGrupo}><Plus size={14} className="mr-1" /> Novo Grupo</Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("grupos", false)}><Download size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("grupos", true)}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportTarget("grupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" onClick={openNewGrupo}><Plus size={14} className="mr-1" /> Novo Grupo</Button>
+            </div>
           </div>
           <div className="rounded border bg-card">
             <Table>
