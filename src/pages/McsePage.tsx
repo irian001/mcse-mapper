@@ -304,6 +304,15 @@ export default function McsePage() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Import Dialog */}
+      {importTarget && (
+        <ImportMcseDialog
+          open={!!importTarget}
+          onOpenChange={(v) => { if (!v) setImportTarget(null); }}
+          target={importTarget}
+          grupoId={importTarget === "subgrupos" ? filtroGrupo : importTarget === "contas" ? filtroGrupoConta : undefined}
+        />
+      )}
     </div>
   );
 }
