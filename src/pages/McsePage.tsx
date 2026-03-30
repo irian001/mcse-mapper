@@ -29,6 +29,7 @@ const naturezaOptions: { value: NaturezaConta; label: string }[] = [
 export default function McsePage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("grupos");
+  const [importTarget, setImportTarget] = useState<"grupos" | "subgrupos" | "contas" | null>(null);
 
   // Grupos
   const { data: grupos = [] } = useQuery({ queryKey: ["mcse_grupos"], queryFn: async () => { const { data } = await fetchGrupos(); return data || []; } });
