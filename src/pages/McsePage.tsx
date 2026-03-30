@@ -206,6 +206,7 @@ export default function McsePage() {
                 {grupos.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.codigo_grupo} - {g.descricao_grupo}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button size="sm" variant="outline" onClick={() => setImportTarget("contas")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
             <Button size="sm" onClick={openNewConta}><Plus size={14} className="mr-1" /> Nova Conta</Button>
           </div>
           <div className="rounded border bg-card">
