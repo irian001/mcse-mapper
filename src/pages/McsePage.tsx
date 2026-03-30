@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Upload } from "lucide-react";
+import ImportMcseDialog from "@/components/mcse/ImportMcseDialog";
 
 type NaturezaConta = "ativo" | "passivo" | "patrimonio_liquido" | "receita" | "despesa" | "compensacao";
 const naturezaOptions: { value: NaturezaConta; label: string }[] = [
@@ -28,6 +29,7 @@ const naturezaOptions: { value: NaturezaConta; label: string }[] = [
 export default function McsePage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("grupos");
+  const [importTarget, setImportTarget] = useState<"grupos" | "subgrupos" | "contas" | null>(null);
 
   // Grupos
   const { data: grupos = [] } = useQuery({ queryKey: ["mcse_grupos"], queryFn: async () => { const { data } = await fetchGrupos(); return data || []; } });
@@ -138,6 +140,7 @@ export default function McsePage() {
 
         <TabsContent value="grupos" className="mt-4">
           <div className="flex justify-end mb-3">
+            <Button size="sm" variant="outline" onClick={() => setImportTarget("grupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
             <Button size="sm" onClick={openNewGrupo}><Plus size={14} className="mr-1" /> Novo Grupo</Button>
           </div>
           <div className="rounded border bg-card">
@@ -170,6 +173,7 @@ export default function McsePage() {
                 {grupos.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.codigo_grupo} - {g.descricao_grupo}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button size="sm" variant="outline" onClick={() => setImportTarget("subgrupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
             <Button size="sm" onClick={openNewSubgrupo}><Plus size={14} className="mr-1" /> Novo Subgrupo</Button>
           </div>
           <div className="rounded border bg-card">
@@ -202,6 +206,7 @@ export default function McsePage() {
                 {grupos.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.codigo_grupo} - {g.descricao_grupo}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button size="sm" variant="outline" onClick={() => setImportTarget("contas")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
             <Button size="sm" onClick={openNewConta}><Plus size={14} className="mr-1" /> Nova Conta</Button>
           </div>
           <div className="rounded border bg-card">
@@ -299,6 +304,15 @@ export default function McsePage() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Import Dialog */}
+      {importTarget && (
+        <ImportMcseDialog
+          open={!!importTarget}
+          onOpenChange={(v) => { if (!v) setImportTarget(null); }}
+          target={importTarget}
+          grupoId={importTarget === "subgrupos" ? filtroGrupo : importTarget === "contas" ? filtroGrupoConta : undefined}
+        />
+      )}
     </div>
   );
 }
