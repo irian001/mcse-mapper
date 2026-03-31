@@ -32,10 +32,10 @@ export const fetchParametros = (clienteId: string) =>
 
 // Contas Origem
 export const fetchContasOrigem = (clienteId: string) =>
-  supabase.from("cliente_contas_origem").select("*").eq("cliente_id", clienteId).order("codigo_origem");
+  supabase.from("cliente_contas_origem").select("*").eq("cliente_id", clienteId).order("classificacao");
 
 // Mapeamento
 export const fetchMapeamentos = (clienteId: string) =>
   supabase.from("cliente_mapeamento_mcse")
-    .select("*, cliente_contas_origem(codigo_origem, descricao_origem, natureza_origem), mcse_contas(codigo_mcse, descricao_conta, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo))")
+    .select("*, cliente_contas_origem(idconta, nome, classificacao, grau), mcse_contas(codigo_mcse, descricao_conta, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo))")
     .eq("cliente_id", clienteId);

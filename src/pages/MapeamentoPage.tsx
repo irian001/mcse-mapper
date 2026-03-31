@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { CheckCircle2, Search } from "lucide-react";
 
@@ -20,6 +19,7 @@ export default function MapeamentoPage() {
   const [selectedCliente, setSelectedCliente] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"todos" | "nao_mapeados" | "nao_homologados">("todos");
+  const [filterGrupo, setFilterGrupo] = useState("all");
 
   const { data: contasOrigem = [] } = useQuery({
     queryKey: ["contas_origem", selectedCliente],
@@ -33,33 +33,48 @@ export default function MapeamentoPage() {
     enabled: !!selectedCliente,
   });
 
-  // Build a map: conta_origem_id -> mapeamento
   const mapByOrigem = useMemo(() => {
     const m: Record<string, any> = {};
     mapeamentos.forEach((mp: any) => { m[mp.conta_origem_id] = mp; });
     return m;
   }, [mapeamentos]);
 
-  // Filter & search
+  const grupos = useMemo(() => {
+    const set = new Map<string, string>();
+    mcseContas.forEach((c: any) => {
+      if (c.mcse_grupos) set.set(c.grupo_id, c.mcse_grupos.descricao_grupo);
+    });
+    return Array.from(set.entries());
+  }, [mcseContas]);
+
   const filteredContas = useMemo(() => {
     let list = contasOrigem;
     if (search) {
       const s = search.toLowerCase();
-      list = list.filter((c: any) => c.codigo_origem.toLowerCase().includes(s) || c.descricao_origem.toLowerCase().includes(s));
+      list = list.filter((c: any) =>
+        (c.idconta || "").toLowerCase().includes(s) ||
+        (c.nome || "").toLowerCase().includes(s) ||
+        (c.classificacao || "").toLowerCase().includes(s)
+      );
     }
-    if (filter === "nao_mapeados") {
-      list = list.filter((c: any) => !mapByOrigem[c.id]?.conta_mcse_id);
-    }
-    if (filter === "nao_homologados") {
-      list = list.filter((c: any) => mapByOrigem[c.id]?.conta_mcse_id && !mapByOrigem[c.id]?.homologado);
+    if (filter === "nao_mapeados") list = list.filter((c: any) => !mapByOrigem[c.id]?.conta_mcse_id);
+    if (filter === "nao_homologados") list = list.filter((c: any) => mapByOrigem[c.id]?.conta_mcse_id && !mapByOrigem[c.id]?.homologado);
+    if (filterGrupo !== "all") {
+      list = list.filter((c: any) => {
+        const mp = mapByOrigem[c.id];
+        if (!mp?.conta_mcse_id) return false;
+        const mc = mcseContas.find((m: any) => m.id === mp.conta_mcse_id);
+        return mc?.grupo_id === filterGrupo;
+      });
     }
     return list;
-  }, [contasOrigem, search, filter, mapByOrigem]);
+  }, [contasOrigem, search, filter, filterGrupo, mapByOrigem, mcseContas]);
 
   const saveMapeamento = useMutation({
     mutationFn: async ({ contaOrigemId, contaMcseId }: { contaOrigemId: string; contaMcseId: string }) => {
       const existing = mapByOrigem[contaOrigemId];
       if (existing) {
+        // Don't overwrite manual mapping unless user explicitly selects
         await supabase.from("cliente_mapeamento_mcse").update({ conta_mcse_id: contaMcseId, tipo_mapeamento: "manual" as const }).eq("id", existing.id);
       } else {
         await supabase.from("cliente_mapeamento_mcse").insert({
@@ -69,19 +84,26 @@ export default function MapeamentoPage() {
           tipo_mapeamento: "manual" as const,
         });
       }
+      // Update status on contas_origem
+      await supabase.from("cliente_contas_origem").update({ status_mapeamento: "mapeado_manual" as any }).eq("id", contaOrigemId);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mapeamentos"] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mapeamentos"] }); qc.invalidateQueries({ queryKey: ["contas_origem"] }); },
   });
 
   const homologar = useMutation({
-    mutationFn: async (mapeamentoId: string) => {
+    mutationFn: async ({ mapeamentoId, contaOrigemId }: { mapeamentoId: string; contaOrigemId: string }) => {
       await supabase.from("cliente_mapeamento_mcse").update({
         homologado: true,
         data_homologacao: new Date().toISOString(),
         homologado_por: "auditor",
       }).eq("id", mapeamentoId);
+      await supabase.from("cliente_contas_origem").update({ status_mapeamento: "homologado" as any }).eq("id", contaOrigemId);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mapeamentos"] }); toast.success("Homologado!"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mapeamentos"] });
+      qc.invalidateQueries({ queryKey: ["contas_origem"] });
+      toast.success("Homologado!");
+    },
   });
 
   const stats = useMemo(() => {
@@ -95,27 +117,34 @@ export default function MapeamentoPage() {
     <div>
       <PageHeader title="Mapeamento de Contas" description="Mapear contas do cliente para a base MCSE" />
 
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-80">
-          <Select value={selectedCliente} onValueChange={setSelectedCliente}>
-            <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-            <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <Select value={selectedCliente} onValueChange={setSelectedCliente}>
+          <SelectTrigger className="w-72"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+          <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>)}</SelectContent>
+        </Select>
         {selectedCliente && (
           <>
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
               <Input placeholder="Buscar conta..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" />
             </div>
             <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
-              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="nao_mapeados">Não mapeados</SelectItem>
                 <SelectItem value="nao_homologados">Não homologados</SelectItem>
               </SelectContent>
             </Select>
+            {grupos.length > 0 && (
+              <Select value={filterGrupo} onValueChange={setFilterGrupo}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os grupos</SelectItem>
+                  {grupos.map(([id, desc]) => <SelectItem key={id} value={id}>{desc}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
           </>
         )}
       </div>
@@ -123,46 +152,47 @@ export default function MapeamentoPage() {
       {selectedCliente && contasOrigem.length > 0 && (
         <>
           <div className="flex gap-4 mb-4">
-            <div className="bg-card border rounded px-4 py-2 text-center">
-              <div className="text-2xl font-bold text-foreground">{stats.total}</div>
-              <div className="text-xs text-muted-foreground">Total</div>
-            </div>
-            <div className="bg-card border rounded px-4 py-2 text-center">
-              <div className="text-2xl font-bold text-info">{stats.mapeadas}</div>
-              <div className="text-xs text-muted-foreground">Mapeadas</div>
-            </div>
-            <div className="bg-card border rounded px-4 py-2 text-center">
-              <div className="text-2xl font-bold text-success">{stats.homologadas}</div>
-              <div className="text-xs text-muted-foreground">Homologadas</div>
-            </div>
-            <div className="bg-card border rounded px-4 py-2 text-center">
-              <div className="text-2xl font-bold text-warning">{stats.total - stats.mapeadas}</div>
-              <div className="text-xs text-muted-foreground">Pendentes</div>
-            </div>
+            {[
+              { val: stats.total, label: "Total", color: "text-foreground" },
+              { val: stats.mapeadas, label: "Mapeadas", color: "text-info" },
+              { val: stats.homologadas, label: "Homologadas", color: "text-success" },
+              { val: stats.total - stats.mapeadas, label: "Pendentes", color: "text-warning" },
+            ].map(s => (
+              <div key={s.label} className="bg-card border rounded px-4 py-2 text-center">
+                <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
+                <div className="text-xs text-muted-foreground">{s.label}</div>
+              </div>
+            ))}
           </div>
 
-          <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-300px)]">
+          <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-320px)]">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
-                  <TableHead className="w-32">Código Origem</TableHead>
-                  <TableHead className="w-64">Descrição Origem</TableHead>
+                  <TableHead className="w-24">IDCONTA</TableHead>
+                  <TableHead className="w-56">NOME</TableHead>
+                  <TableHead className="w-28">CLASSIFICACAO</TableHead>
+                  <TableHead className="w-14">GRAU</TableHead>
+                  <TableHead className="w-36">Sugestão</TableHead>
                   <TableHead className="w-72">Conta MCSE</TableHead>
-                  <TableHead className="w-36">Grupo</TableHead>
+                  <TableHead className="w-36">Grupo MCSE</TableHead>
                   <TableHead className="w-24">Status</TableHead>
                   <TableHead className="w-24">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredContas.map((conta: any) => {
+                {filteredContas.slice(0, 300).map((conta: any) => {
                   const mp = mapByOrigem[conta.id];
                   const isMapped = !!mp?.conta_mcse_id;
                   const isHomologado = !!mp?.homologado;
 
                   return (
                     <TableRow key={conta.id} className={!isMapped ? "bg-warning/5" : isHomologado ? "" : "bg-info/5"}>
-                      <TableCell className="font-mono text-sm">{conta.codigo_origem}</TableCell>
-                      <TableCell className="text-sm">{conta.descricao_origem}</TableCell>
+                      <TableCell className="font-mono text-sm">{conta.idconta}</TableCell>
+                      <TableCell className="text-sm">{conta.nome}</TableCell>
+                      <TableCell className="font-mono text-xs">{conta.classificacao}</TableCell>
+                      <TableCell>{conta.grau ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{conta.codigo_mcse_sugerido || "—"}</TableCell>
                       <TableCell>
                         <Select
                           value={mp?.conta_mcse_id || ""}
@@ -188,7 +218,7 @@ export default function MapeamentoPage() {
                       </TableCell>
                       <TableCell>
                         {isMapped && !isHomologado && (
-                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => homologar.mutate(mp.id)}>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => homologar.mutate({ mapeamentoId: mp.id, contaOrigemId: conta.id })}>
                             <CheckCircle2 size={14} className="mr-1" /> Homologar
                           </Button>
                         )}
@@ -198,18 +228,19 @@ export default function MapeamentoPage() {
                   );
                 })}
                 {filteredContas.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    {contasOrigem.length === 0 ? "Importe o plano de contas primeiro" : "Nenhuma conta encontrada com os filtros atuais"}
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    {contasOrigem.length === 0 ? "Importe o plano de contas primeiro" : "Nenhuma conta encontrada"}
                   </TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
+            {filteredContas.length > 300 && <p className="text-center text-xs text-muted-foreground py-2">Mostrando 300 de {filteredContas.length}</p>}
           </div>
         </>
       )}
 
       {selectedCliente && contasOrigem.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
           <p>Nenhuma conta importada para este cliente</p>
           <p className="text-sm mt-1">Vá para "Importar Contas" para carregar o plano de contas</p>
         </div>

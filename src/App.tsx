@@ -7,6 +7,7 @@ import AppLayout from "@/components/AppLayout";
 import McsePage from "@/pages/McsePage";
 import ClientesPage from "@/pages/ClientesPage";
 import ImportarPage from "@/pages/ImportarPage";
+import PlanoContasPage from "@/pages/PlanoContasPage";
 import MapeamentoPage from "@/pages/MapeamentoPage";
 import RegrasPage from "@/pages/RegrasPage";
 import NotFound from "@/pages/NotFound";
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/mcse" element={<McsePage />} />
             <Route path="/clientes" element={<ClientesPage />} />
             <Route path="/importar" element={<ImportarPage />} />
+            <Route path="/plano-contas" element={<PlanoContasPage />} />
             <Route path="/mapeamento" element={<MapeamentoPage />} />
             <Route path="/regras" element={<RegrasPage />} />
             <Route path="*" element={<NotFound />} />
