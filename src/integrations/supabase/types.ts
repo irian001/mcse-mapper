@@ -16,39 +16,72 @@ export type Database = {
     Tables: {
       cliente_contas_origem: {
         Row: {
-          aceita_lancamento: boolean
-          ativo: boolean
+          analitica: boolean
+          ativa: boolean
+          clasmasc: string | null
+          classificacao: string | null
           cliente_id: string
-          codigo_origem: string
+          codigo_mcse_sugerido: string | null
+          contabmp: string | null
           created_at: string
-          descricao_origem: string
+          data_inclusao: string | null
+          gerar_lanctos_cso: boolean
+          grau: number | null
           id: string
-          natureza_origem: string | null
-          nivel_origem: number | null
+          idconta: string
+          idempresa: string | null
+          idversao: string | null
+          nivel_classificacao: number | null
+          nome: string
+          observacao_importacao: string | null
+          status_mapeamento: Database["public"]["Enums"]["status_mapeamento"]
+          tipo_contab: string | null
           updated_at: string
         }
         Insert: {
-          aceita_lancamento?: boolean
-          ativo?: boolean
+          analitica?: boolean
+          ativa?: boolean
+          clasmasc?: string | null
+          classificacao?: string | null
           cliente_id: string
-          codigo_origem: string
+          codigo_mcse_sugerido?: string | null
+          contabmp?: string | null
           created_at?: string
-          descricao_origem: string
+          data_inclusao?: string | null
+          gerar_lanctos_cso?: boolean
+          grau?: number | null
           id?: string
-          natureza_origem?: string | null
-          nivel_origem?: number | null
+          idconta?: string
+          idempresa?: string | null
+          idversao?: string | null
+          nivel_classificacao?: number | null
+          nome?: string
+          observacao_importacao?: string | null
+          status_mapeamento?: Database["public"]["Enums"]["status_mapeamento"]
+          tipo_contab?: string | null
           updated_at?: string
         }
         Update: {
-          aceita_lancamento?: boolean
-          ativo?: boolean
+          analitica?: boolean
+          ativa?: boolean
+          clasmasc?: string | null
+          classificacao?: string | null
           cliente_id?: string
-          codigo_origem?: string
+          codigo_mcse_sugerido?: string | null
+          contabmp?: string | null
           created_at?: string
-          descricao_origem?: string
+          data_inclusao?: string | null
+          gerar_lanctos_cso?: boolean
+          grau?: number | null
           id?: string
-          natureza_origem?: string | null
-          nivel_origem?: number | null
+          idconta?: string
+          idempresa?: string | null
+          idversao?: string | null
+          nivel_classificacao?: number | null
+          nome?: string
+          observacao_importacao?: string | null
+          status_mapeamento?: Database["public"]["Enums"]["status_mapeamento"]
+          tipo_contab?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -445,6 +478,11 @@ export type Database = {
       segmento_cliente: "setor_eletrico" | "outro"
       status_cliente: "ativo" | "inativo" | "prospecto"
       status_exercicio: "aberto" | "em_andamento" | "fechado" | "arquivado"
+      status_mapeamento:
+        | "nao_mapeado"
+        | "mapeado_automatico"
+        | "mapeado_manual"
+        | "homologado"
       tipo_mapeamento: "manual" | "automatico"
     }
     CompositeTypes: {
@@ -584,6 +622,12 @@ export const Constants = {
       segmento_cliente: ["setor_eletrico", "outro"],
       status_cliente: ["ativo", "inativo", "prospecto"],
       status_exercicio: ["aberto", "em_andamento", "fechado", "arquivado"],
+      status_mapeamento: [
+        "nao_mapeado",
+        "mapeado_automatico",
+        "mapeado_manual",
+        "homologado",
+      ],
       tipo_mapeamento: ["manual", "automatico"],
     },
   },
