@@ -1,15 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchClientes, fetchContas, fetchContasOrigem, fetchMapeamentos } from "@/lib/supabase-queries";
+import { suggestMcseWithConfidence } from "@/lib/mcse-suggestion";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
+import RiskBadge from "@/components/RiskBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { CheckCircle2, Search } from "lucide-react";
+
+type RiskFilter = "todos" | "alta" | "media" | "baixa" | "sem_sugestao";
+type StatusFilter = "todos" | "nao_mapeados" | "nao_homologados" | "com_sugestao" | "mapeados_auto";
 
 export default function MapeamentoPage() {
   const qc = useQueryClient();
@@ -18,8 +25,11 @@ export default function MapeamentoPage() {
 
   const [selectedCliente, setSelectedCliente] = useState("");
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"todos" | "nao_mapeados" | "nao_homologados">("todos");
+  const [filter, setFilter] = useState<StatusFilter>("todos");
   const [filterGrupo, setFilterGrupo] = useState("all");
+  const [filterRisco, setFilterRisco] = useState<RiskFilter>("todos");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const { data: contasOrigem = [] } = useQuery({
     queryKey: ["contas_origem", selectedCliente],
@@ -38,6 +48,15 @@ export default function MapeamentoPage() {
     mapeamentos.forEach((mp: any) => { m[mp.conta_origem_id] = mp; });
     return m;
   }, [mapeamentos]);
+
+  // Compute risk for each conta
+  const riskByOrigem = useMemo(() => {
+    const m: Record<string, ReturnType<typeof suggestMcseWithConfidence>> = {};
+    contasOrigem.forEach((c: any) => {
+      m[c.id] = suggestMcseWithConfidence(c.classificacao, c.nome);
+    });
+    return m;
+  }, [contasOrigem]);
 
   const grupos = useMemo(() => {
     const set = new Map<string, string>();
@@ -59,6 +78,13 @@ export default function MapeamentoPage() {
     }
     if (filter === "nao_mapeados") list = list.filter((c: any) => !mapByOrigem[c.id]?.conta_mcse_id);
     if (filter === "nao_homologados") list = list.filter((c: any) => mapByOrigem[c.id]?.conta_mcse_id && !mapByOrigem[c.id]?.homologado);
+    if (filter === "com_sugestao") list = list.filter((c: any) => !!c.codigo_mcse_sugerido);
+    if (filter === "mapeados_auto") list = list.filter((c: any) => mapByOrigem[c.id]?.tipo_mapeamento === "automatico");
+
+    if (filterRisco !== "todos") {
+      list = list.filter((c: any) => riskByOrigem[c.id]?.risco_mapeamento === filterRisco);
+    }
+
     if (filterGrupo !== "all") {
       list = list.filter((c: any) => {
         const mp = mapByOrigem[c.id];
@@ -68,13 +94,12 @@ export default function MapeamentoPage() {
       });
     }
     return list;
-  }, [contasOrigem, search, filter, filterGrupo, mapByOrigem, mcseContas]);
+  }, [contasOrigem, search, filter, filterRisco, filterGrupo, mapByOrigem, mcseContas, riskByOrigem]);
 
   const saveMapeamento = useMutation({
     mutationFn: async ({ contaOrigemId, contaMcseId }: { contaOrigemId: string; contaMcseId: string }) => {
       const existing = mapByOrigem[contaOrigemId];
       if (existing) {
-        // Don't overwrite manual mapping unless user explicitly selects
         await supabase.from("cliente_mapeamento_mcse").update({ conta_mcse_id: contaMcseId, tipo_mapeamento: "manual" as const }).eq("id", existing.id);
       } else {
         await supabase.from("cliente_mapeamento_mcse").insert({
@@ -84,7 +109,6 @@ export default function MapeamentoPage() {
           tipo_mapeamento: "manual" as const,
         });
       }
-      // Update status on contas_origem
       await supabase.from("cliente_contas_origem").update({ status_mapeamento: "mapeado_manual" as any }).eq("id", contaOrigemId);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["mapeamentos"] }); qc.invalidateQueries({ queryKey: ["contas_origem"] }); },
@@ -106,6 +130,61 @@ export default function MapeamentoPage() {
     },
   });
 
+  const homologarLote = useMutation({
+    mutationFn: async (ids: string[]) => {
+      let count = 0;
+      for (const contaOrigemId of ids) {
+        const mp = mapByOrigem[contaOrigemId];
+        if (!mp?.conta_mcse_id || mp.homologado) continue;
+        await supabase.from("cliente_mapeamento_mcse").update({
+          homologado: true,
+          data_homologacao: new Date().toISOString(),
+          homologado_por: "auditor",
+        }).eq("id", mp.id);
+        await supabase.from("cliente_contas_origem").update({ status_mapeamento: "homologado" as any }).eq("id", contaOrigemId);
+        count++;
+      }
+      return count;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ["mapeamentos"] });
+      qc.invalidateQueries({ queryKey: ["contas_origem"] });
+      setSelectedIds(new Set());
+      toast.success(`${count} conta(s) homologada(s)!`);
+    },
+  });
+
+  // Selection helpers
+  const eligibleForHomologation = useMemo(() => {
+    return filteredContas.filter((c: any) => {
+      const mp = mapByOrigem[c.id];
+      return mp?.conta_mcse_id && !mp.homologado;
+    });
+  }, [filteredContas, mapByOrigem]);
+
+  const selectedEligible = useMemo(() => {
+    return Array.from(selectedIds).filter(id => {
+      const mp = mapByOrigem[id];
+      return mp?.conta_mcse_id && !mp.homologado;
+    });
+  }, [selectedIds, mapByOrigem]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    if (selectedIds.size === eligibleForHomologation.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(eligibleForHomologation.map((c: any) => c.id)));
+    }
+  }, [eligibleForHomologation, selectedIds]);
+
   const stats = useMemo(() => {
     const total = contasOrigem.length;
     const mapeadas = contasOrigem.filter((c: any) => mapByOrigem[c.id]?.conta_mcse_id).length;
@@ -117,8 +196,9 @@ export default function MapeamentoPage() {
     <div>
       <PageHeader title="Mapeamento de Contas" description="Mapear contas do cliente para a base MCSE" />
 
+      {/* Filters row */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <Select value={selectedCliente} onValueChange={setSelectedCliente}>
+        <Select value={selectedCliente} onValueChange={v => { setSelectedCliente(v); setSelectedIds(new Set()); }}>
           <SelectTrigger className="w-72"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
           <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>)}</SelectContent>
         </Select>
@@ -129,11 +209,23 @@ export default function MapeamentoPage() {
               <Input placeholder="Buscar conta..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" />
             </div>
             <Select value={filter} onValueChange={(v: any) => setFilter(v)}>
-              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="nao_mapeados">Não mapeados</SelectItem>
                 <SelectItem value="nao_homologados">Não homologados</SelectItem>
+                <SelectItem value="com_sugestao">Com sugestão automática</SelectItem>
+                <SelectItem value="mapeados_auto">Mapeados automaticamente</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterRisco} onValueChange={(v: any) => setFilterRisco(v)}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os riscos</SelectItem>
+                <SelectItem value="alta">Alta confiança</SelectItem>
+                <SelectItem value="media">Média</SelectItem>
+                <SelectItem value="baixa">Baixa</SelectItem>
+                <SelectItem value="sem_sugestao">Sem sugestão</SelectItem>
               </SelectContent>
             </Select>
             {grupos.length > 0 && (
@@ -151,28 +243,47 @@ export default function MapeamentoPage() {
 
       {selectedCliente && contasOrigem.length > 0 && (
         <>
-          <div className="flex gap-4 mb-4">
-            {[
-              { val: stats.total, label: "Total", color: "text-foreground" },
-              { val: stats.mapeadas, label: "Mapeadas", color: "text-info" },
-              { val: stats.homologadas, label: "Homologadas", color: "text-success" },
-              { val: stats.total - stats.mapeadas, label: "Pendentes", color: "text-warning" },
-            ].map(s => (
-              <div key={s.label} className="bg-card border rounded px-4 py-2 text-center">
-                <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
-                <div className="text-xs text-muted-foreground">{s.label}</div>
+          {/* Stats + batch actions */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex gap-4">
+              {[
+                { val: stats.total, label: "Total", color: "text-foreground" },
+                { val: stats.mapeadas, label: "Mapeadas", color: "text-info" },
+                { val: stats.homologadas, label: "Homologadas", color: "text-success" },
+                { val: stats.total - stats.mapeadas, label: "Pendentes", color: "text-warning" },
+              ].map(s => (
+                <div key={s.label} className="bg-card border rounded px-4 py-2 text-center">
+                  <div className={`text-2xl font-bold ${s.color}`}>{s.val}</div>
+                  <div className="text-xs text-muted-foreground">{s.label}</div>
+                </div>
+              ))}
+            </div>
+            {selectedEligible.length > 0 && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">{selectedEligible.length} conta(s) selecionada(s)</span>
+                <Button size="sm" onClick={() => setShowConfirmDialog(true)} disabled={homologarLote.isPending}>
+                  <CheckCircle2 size={14} className="mr-1" /> Homologar selecionados
+                </Button>
               </div>
-            ))}
+            )}
           </div>
 
-          <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-320px)]">
+          {/* Table */}
+          <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-360px)]">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={eligibleForHomologation.length > 0 && selectedIds.size === eligibleForHomologation.length}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-24">IDCONTA</TableHead>
                   <TableHead className="w-56">NOME</TableHead>
                   <TableHead className="w-28">CLASSIFICACAO</TableHead>
                   <TableHead className="w-14">GRAU</TableHead>
+                  <TableHead className="w-24">Risco</TableHead>
                   <TableHead className="w-36">Sugestão</TableHead>
                   <TableHead className="w-72">Conta MCSE</TableHead>
                   <TableHead className="w-36">Grupo MCSE</TableHead>
@@ -185,13 +296,29 @@ export default function MapeamentoPage() {
                   const mp = mapByOrigem[conta.id];
                   const isMapped = !!mp?.conta_mcse_id;
                   const isHomologado = !!mp?.homologado;
+                  const risk = riskByOrigem[conta.id];
+                  const isSelected = selectedIds.has(conta.id);
+                  const canSelect = isMapped && !isHomologado;
 
                   return (
-                    <TableRow key={conta.id} className={!isMapped ? "bg-warning/5" : isHomologado ? "" : "bg-info/5"}>
+                    <TableRow
+                      key={conta.id}
+                      className={`${isSelected ? "bg-primary/10" : !isMapped ? "bg-warning/5" : isHomologado ? "" : "bg-info/5"}`}
+                    >
+                      <TableCell>
+                        {canSelect ? (
+                          <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(conta.id)} />
+                        ) : (
+                          <Checkbox disabled checked={isHomologado} />
+                        )}
+                      </TableCell>
                       <TableCell className="font-mono text-sm">{conta.idconta}</TableCell>
                       <TableCell className="text-sm">{conta.nome}</TableCell>
                       <TableCell className="font-mono text-xs">{conta.classificacao}</TableCell>
                       <TableCell>{conta.grau ?? "—"}</TableCell>
+                      <TableCell>
+                        <RiskBadge risk={risk?.risco_mapeamento || "sem_sugestao"} />
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{conta.codigo_mcse_sugerido || "—"}</TableCell>
                       <TableCell>
                         <Select
@@ -228,7 +355,7 @@ export default function MapeamentoPage() {
                   );
                 })}
                 {filteredContas.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                     {contasOrigem.length === 0 ? "Importe o plano de contas primeiro" : "Nenhuma conta encontrada"}
                   </TableCell></TableRow>
                 )}
@@ -245,6 +372,24 @@ export default function MapeamentoPage() {
           <p className="text-sm mt-1">Vá para "Importar Contas" para carregar o plano de contas</p>
         </div>
       )}
+
+      {/* Confirmation dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar homologação em lote</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja homologar <strong>{selectedEligible.length}</strong> conta(s) selecionada(s)? Esta ação registrará a homologação com data e usuário.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { homologarLote.mutate(selectedEligible); setShowConfirmDialog(false); }}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

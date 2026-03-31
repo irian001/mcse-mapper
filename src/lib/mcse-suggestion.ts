@@ -1,17 +1,33 @@
 /**
- * Suggests an MCSE code based on the client account classification and name.
+ * Result of MCSE suggestion with confidence and risk.
  */
-export function suggestMcseCode(classificacao: string | null, nome: string | null): string | null {
-  if (!classificacao) return null;
+export interface McseSuggestionResult {
+  codigo_mcse_sugerido: string | null;
+  confianca_mapeamento: number; // 0 to 1
+  risco_mapeamento: "alta" | "media" | "baixa" | "sem_sugestao";
+}
 
-  const cls = classificacao.replace(/\D/g, "");
+/**
+ * Suggests an MCSE code based on the client account classification and name.
+ * Returns code, confidence score, and risk level.
+ */
+export function suggestMcseWithConfidence(classificacao: string | null, nome: string | null): McseSuggestionResult {
+  if (!classificacao && !nome) {
+    return { codigo_mcse_sugerido: null, confianca_mapeamento: 0, risco_mapeamento: "sem_sugestao" };
+  }
+
+  const cls = (classificacao || "").replace(/\D/g, "");
   const nomeLower = (nome || "").toLowerCase();
+
+  let prefixMatch: string | null = null;
+  let keywordMatch: string | null = null;
 
   // Direct prefix mapping
   const prefixMap: [string, string][] = [
     ["1101", "1.1.01"],
     ["1102", "1.1.02"],
     ["1103", "1.1.03"],
+    ["1104", "1.1.04"],
     ["1201", "1.2.01"],
     ["1202", "1.2.02"],
     ["2101", "2.1.01"],
@@ -36,17 +52,52 @@ export function suggestMcseCode(classificacao: string | null, nome: string | nul
     [["patrimonio", "patrimônio", "capital"], "3 — Patrimônio Líquido"],
   ];
 
-  // Try keyword match first
-  for (const [keywords, suggestion] of keywordMap) {
-    if (keywords.some(k => nomeLower.includes(k))) return suggestion;
-  }
-
   // Try prefix match
   for (const [prefix, code] of prefixMap) {
-    if (cls.startsWith(prefix)) return code;
+    if (cls && cls.startsWith(prefix)) { prefixMatch = code; break; }
   }
 
-  return null;
+  // Try keyword match
+  for (const [keywords, suggestion] of keywordMap) {
+    if (keywords.some(k => nomeLower.includes(k))) { keywordMatch = suggestion; break; }
+  }
+
+  // Determine confidence and risk
+  if (prefixMatch && keywordMatch) {
+    // Both match — high confidence
+    return {
+      codigo_mcse_sugerido: keywordMatch,
+      confianca_mapeamento: 0.95,
+      risco_mapeamento: "alta",
+    };
+  }
+
+  if (prefixMatch && !keywordMatch) {
+    // Only classification matches — medium confidence
+    return {
+      codigo_mcse_sugerido: prefixMatch,
+      confianca_mapeamento: 0.6,
+      risco_mapeamento: "media",
+    };
+  }
+
+  if (!prefixMatch && keywordMatch) {
+    // Only keyword matches — low confidence
+    return {
+      codigo_mcse_sugerido: keywordMatch,
+      confianca_mapeamento: 0.35,
+      risco_mapeamento: "baixa",
+    };
+  }
+
+  return { codigo_mcse_sugerido: null, confianca_mapeamento: 0, risco_mapeamento: "sem_sugestao" };
+}
+
+/**
+ * Legacy wrapper — returns just the code string.
+ */
+export function suggestMcseCode(classificacao: string | null, nome: string | null): string | null {
+  return suggestMcseWithConfidence(classificacao, nome).codigo_mcse_sugerido;
 }
 
 /**
