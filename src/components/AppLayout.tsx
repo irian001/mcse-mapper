@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase } from "lucide-react";
+import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { to: "/mcse", label: "Base MCSE", icon: Database },
@@ -40,8 +42,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="p-3 border-t border-sidebar-border text-xs text-sidebar-foreground/40">
-          v1.0 — Fase 1
+        <div className="p-3 border-t border-sidebar-border flex items-center justify-between">
+          <span className="text-xs text-sidebar-foreground/40">v1.0 — Fase 1</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => supabase.auth.signOut()}>
+            <LogOut size={14} />
+          </Button>
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
