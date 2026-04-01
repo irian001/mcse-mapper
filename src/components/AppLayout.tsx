@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List } from "lucide-react";
+import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase } from "lucide-react";
 
 const navItems = [
   { to: "/mcse", label: "Base MCSE", icon: Database },
@@ -8,6 +8,8 @@ const navItems = [
   { to: "/plano-contas", label: "Plano de Contas", icon: List },
   { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
   { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
+  { to: "/auditores", label: "Auditores", icon: UserCheck },
+  { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
