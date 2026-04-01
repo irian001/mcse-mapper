@@ -96,9 +96,9 @@ export default function ImportarPage() {
     reader.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target!.result as ArrayBuffer);
-        const wb = XLSX.read(data, { type: "array" });
+        const wb = XLSX.read(data, { type: "array", cellDates: false, cellText: true, raw: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }) as string[][];
+        const json = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" }) as any[][];
 
         if (json.length < 2) { toast.error("Arquivo vazio ou sem dados"); return; }
 
