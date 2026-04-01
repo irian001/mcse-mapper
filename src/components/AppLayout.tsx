@@ -12,6 +12,7 @@ const navItems = [
   { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
   { to: "/auditores", label: "Auditores", icon: UserCheck },
   { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
+  { to: "/balancetes", label: "Balancetes", icon: BookOpen },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
