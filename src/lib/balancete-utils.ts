@@ -59,7 +59,7 @@ export function localizarConta(
 export function resolverMcse(
   contaOrigem: ContaOrigem | undefined,
   mapeamentos: Array<{ conta_origem_id: string; conta_mcse_id: string | null; mcse_contas: any }>,
-  contasMcse: Map<string, { codigo_mcse: string; descricao_conta: string; grupo: string; subgrupo: string }>
+  _contasMcse: Map<string, { codigo_mcse: string; descricao_conta: string; grupo: string; subgrupo: string }>
 ): { conta_mcse_id: string | null; codigo_mcse: string | null; descricao_mcse: string | null; grupo_mcse: string | null; subgrupo_mcse: string | null; status_mapeamento: StatusMapeamento } {
   if (!contaOrigem) {
     return { conta_mcse_id: null, codigo_mcse: null, descricao_mcse: null, grupo_mcse: null, subgrupo_mcse: null, status_mapeamento: "conta_nao_localizada" };
