@@ -1,13 +1,17 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchClientes, fetchContasOrigem } from "@/lib/supabase-queries";
 import PageHeader from "@/components/PageHeader";
-import StatusBadge from "@/components/StatusBadge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { Search, Trash2 } from "lucide-react";
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   nao_mapeado: { label: "Não Mapeado", className: "bg-warning/15 text-warning-foreground border-warning/30" },
@@ -17,12 +21,16 @@ const statusLabels: Record<string, { label: string; className: string }> = {
 };
 
 export default function PlanoContasPage() {
+  const qc = useQueryClient();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: async () => { const { data } = await fetchClientes(); return data || []; } });
   const [selectedCliente, setSelectedCliente] = useState("");
   const [search, setSearch] = useState("");
   const [filterAnalitica, setFilterAnalitica] = useState<"all" | "S" | "N">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "nao_mapeado">("all");
   const [filterGrau, setFilterGrau] = useState<"all" | string>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteSelected, setShowDeleteSelected] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
 
   const { data: contas = [] } = useQuery({
     queryKey: ["contas_origem", selectedCliente],
@@ -52,12 +60,64 @@ export default function PlanoContasPage() {
     return list;
   }, [contas, search, filterAnalitica, filterStatus, filterGrau]);
 
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((c: any) => c.id)));
+    }
+  }, [filtered, selectedIds]);
+
+  const deleteSelected = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (let i = 0; i < ids.length; i += 100) {
+        const batch = ids.slice(i, i + 100);
+        const { error } = await supabase.from("cliente_contas_origem").delete().in("id", batch);
+        if (error) throw error;
+        // Also clean up mappings
+        await supabase.from("cliente_mapeamento_mcse").delete().in("conta_origem_id", batch);
+      }
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ["contas_origem"] });
+      qc.invalidateQueries({ queryKey: ["mapeamentos"] });
+      setSelectedIds(new Set());
+      toast.success(`${count} conta(s) excluída(s)`);
+    },
+    onError: (err: any) => toast.error("Erro: " + err.message),
+  });
+
+  const deleteAll = useMutation({
+    mutationFn: async () => {
+      const { error: errMap } = await supabase.from("cliente_mapeamento_mcse").delete().eq("cliente_id", selectedCliente);
+      if (errMap) throw errMap;
+      const { error } = await supabase.from("cliente_contas_origem").delete().eq("cliente_id", selectedCliente);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contas_origem"] });
+      qc.invalidateQueries({ queryKey: ["mapeamentos"] });
+      setSelectedIds(new Set());
+      toast.success("Plano de contas excluído com sucesso");
+    },
+    onError: (err: any) => toast.error("Erro: " + err.message),
+  });
+
   return (
     <div>
       <PageHeader title="Plano de Contas do Cliente" description="Visualizar o plano de contas importado" />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <Select value={selectedCliente} onValueChange={setSelectedCliente}>
+        <Select value={selectedCliente} onValueChange={v => { setSelectedCliente(v); setSelectedIds(new Set()); }}>
           <SelectTrigger className="w-72"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
           <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>)}</SelectContent>
         </Select>
@@ -95,11 +155,36 @@ export default function PlanoContasPage() {
         )}
       </div>
 
+      {/* Actions bar */}
+      {selectedCliente && contas.length > 0 && (
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            {selectedIds.size > 0 && (
+              <>
+                <span className="text-sm text-muted-foreground">{selectedIds.size} conta(s) selecionada(s)</span>
+                <Button variant="destructive" size="sm" onClick={() => setShowDeleteSelected(true)} disabled={deleteSelected.isPending}>
+                  <Trash2 size={14} className="mr-1" /> Excluir selecionadas
+                </Button>
+              </>
+            )}
+          </div>
+          <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowDeleteAll(true)} disabled={deleteAll.isPending}>
+            <Trash2 size={14} className="mr-1" /> Excluir todo o plano de contas
+          </Button>
+        </div>
+      )}
+
       {selectedCliente && filtered.length > 0 && (
-        <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-240px)]">
+        <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-280px)]">
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10">
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    onCheckedChange={toggleAll}
+                  />
+                </TableHead>
                 <TableHead>IDCONTA</TableHead>
                 <TableHead>NOME</TableHead>
                 <TableHead>CLASSIFICACAO</TableHead>
@@ -113,26 +198,32 @@ export default function PlanoContasPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.slice(0, 500).map((c: any) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-mono text-sm">{c.idconta}</TableCell>
-                  <TableCell className="text-sm">{c.nome}</TableCell>
-                  <TableCell className="font-mono text-sm">{c.classificacao}</TableCell>
-                  <TableCell>{c.grau ?? "—"}</TableCell>
-                  <TableCell>{c.ativa ? "S" : "N"}</TableCell>
-                  <TableCell>{c.analitica ? "S" : "N"}</TableCell>
-                  <TableCell className="text-xs">{c.tipo_contab || "—"}</TableCell>
-                  <TableCell>{c.nivel_classificacao}</TableCell>
-                  <TableCell className="text-xs">{c.codigo_mcse_sugerido || "—"}</TableCell>
-                  <TableCell>
-                    {statusLabels[c.status_mapeamento] ? (
-                      <Badge variant="outline" className={`text-xs ${statusLabels[c.status_mapeamento].className}`}>
-                        {statusLabels[c.status_mapeamento].label}
-                      </Badge>
-                    ) : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.slice(0, 500).map((c: any) => {
+                const isSelected = selectedIds.has(c.id);
+                return (
+                  <TableRow key={c.id} className={isSelected ? "bg-primary/10" : ""}>
+                    <TableCell>
+                      <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(c.id)} />
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{c.idconta}</TableCell>
+                    <TableCell className="text-sm">{c.nome}</TableCell>
+                    <TableCell className="font-mono text-sm">{c.classificacao}</TableCell>
+                    <TableCell>{c.grau ?? "—"}</TableCell>
+                    <TableCell>{c.ativa ? "S" : "N"}</TableCell>
+                    <TableCell>{c.analitica ? "S" : "N"}</TableCell>
+                    <TableCell className="text-xs">{c.tipo_contab || "—"}</TableCell>
+                    <TableCell>{c.nivel_classificacao}</TableCell>
+                    <TableCell className="text-xs">{c.codigo_mcse_sugerido || "—"}</TableCell>
+                    <TableCell>
+                      {statusLabels[c.status_mapeamento] ? (
+                        <Badge variant="outline" className={`text-xs ${statusLabels[c.status_mapeamento].className}`}>
+                          {statusLabels[c.status_mapeamento].label}
+                        </Badge>
+                      ) : "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           {filtered.length > 500 && <p className="text-center text-xs text-muted-foreground py-2">Mostrando 500 de {filtered.length}</p>}
@@ -145,6 +236,42 @@ export default function PlanoContasPage() {
           <p className="text-sm mt-1">Vá para "Importar Contas" para carregar o plano de contas</p>
         </div>
       )}
+
+      {/* Confirm delete selected */}
+      <AlertDialog open={showDeleteSelected} onOpenChange={setShowDeleteSelected}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contas selecionadas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja excluir <strong>{selectedIds.size}</strong> conta(s) selecionada(s)? Os mapeamentos vinculados também serão removidos. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { deleteSelected.mutate(Array.from(selectedIds)); setShowDeleteSelected(false); }}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm delete all */}
+      <AlertDialog open={showDeleteAll} onOpenChange={setShowDeleteAll}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir todo o plano de contas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja excluir <strong>todas as {contas.length} contas</strong> deste cliente? Todos os mapeamentos vinculados também serão removidos. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { deleteAll.mutate(); setShowDeleteAll(false); }}>
+              Excluir tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
