@@ -148,8 +148,11 @@ export default function TrabalhosPage() {
   });
 
   const updateEquipeMutation = useMutation({
-    mutationFn: async ({ id, ...rest }: { id: string; papel_no_trabalho?: string; responsavel_principal?: boolean }) => {
-      const { error } = await supabase.from("trabalho_auditores").update(rest).eq("id", id);
+    mutationFn: async ({ id, papel_no_trabalho, responsavel_principal }: { id: string; papel_no_trabalho?: typeof PAPEIS[number]; responsavel_principal?: boolean }) => {
+      const update: any = {};
+      if (papel_no_trabalho !== undefined) update.papel_no_trabalho = papel_no_trabalho;
+      if (responsavel_principal !== undefined) update.responsavel_principal = responsavel_principal;
+      const { error } = await supabase.from("trabalho_auditores").update(update).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { refetchEquipe(); qc.invalidateQueries({ queryKey: ["trabalhos"] }); },
