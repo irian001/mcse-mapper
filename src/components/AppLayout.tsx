@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut } from "lucide-react";
+import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
   { to: "/auditores", label: "Auditores", icon: UserCheck },
   { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
+  { to: "/balancetes", label: "Balancetes", icon: BookOpen },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

@@ -50,6 +50,212 @@ export type Database = {
         }
         Relationships: []
       }
+      balancete_linhas: {
+        Row: {
+          balancete_id: string
+          classificacao_origem: string | null
+          cliente_id: string
+          codigo_conta_balancete: string
+          codigo_mcse: string | null
+          conta_mcse_id: string | null
+          conta_origem_id: string | null
+          created_at: string
+          creditos: number | null
+          debitos: number | null
+          descricao_conta_balancete: string
+          descricao_mcse: string | null
+          exercicio_id: string
+          grupo_mcse: string | null
+          id: string
+          observacao_importacao: string | null
+          saldo_anterior: number | null
+          saldo_atual: number | null
+          status_localizacao_conta: Database["public"]["Enums"]["status_localizacao_conta"]
+          status_mapeamento_mcse: Database["public"]["Enums"]["status_mapeamento_mcse"]
+          status_validacao: Database["public"]["Enums"]["status_validacao_linha"]
+          subgrupo_mcse: string | null
+          trabalho_auditoria_id: string
+          updated_at: string
+          variacao_absoluta: number | null
+          variacao_percentual: number | null
+        }
+        Insert: {
+          balancete_id: string
+          classificacao_origem?: string | null
+          cliente_id: string
+          codigo_conta_balancete: string
+          codigo_mcse?: string | null
+          conta_mcse_id?: string | null
+          conta_origem_id?: string | null
+          created_at?: string
+          creditos?: number | null
+          debitos?: number | null
+          descricao_conta_balancete?: string
+          descricao_mcse?: string | null
+          exercicio_id: string
+          grupo_mcse?: string | null
+          id?: string
+          observacao_importacao?: string | null
+          saldo_anterior?: number | null
+          saldo_atual?: number | null
+          status_localizacao_conta?: Database["public"]["Enums"]["status_localizacao_conta"]
+          status_mapeamento_mcse?: Database["public"]["Enums"]["status_mapeamento_mcse"]
+          status_validacao?: Database["public"]["Enums"]["status_validacao_linha"]
+          subgrupo_mcse?: string | null
+          trabalho_auditoria_id: string
+          updated_at?: string
+          variacao_absoluta?: number | null
+          variacao_percentual?: number | null
+        }
+        Update: {
+          balancete_id?: string
+          classificacao_origem?: string | null
+          cliente_id?: string
+          codigo_conta_balancete?: string
+          codigo_mcse?: string | null
+          conta_mcse_id?: string | null
+          conta_origem_id?: string | null
+          created_at?: string
+          creditos?: number | null
+          debitos?: number | null
+          descricao_conta_balancete?: string
+          descricao_mcse?: string | null
+          exercicio_id?: string
+          grupo_mcse?: string | null
+          id?: string
+          observacao_importacao?: string | null
+          saldo_anterior?: number | null
+          saldo_atual?: number | null
+          status_localizacao_conta?: Database["public"]["Enums"]["status_localizacao_conta"]
+          status_mapeamento_mcse?: Database["public"]["Enums"]["status_mapeamento_mcse"]
+          status_validacao?: Database["public"]["Enums"]["status_validacao_linha"]
+          subgrupo_mcse?: string | null
+          trabalho_auditoria_id?: string
+          updated_at?: string
+          variacao_absoluta?: number | null
+          variacao_percentual?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balancete_linhas_balancete_id_fkey"
+            columns: ["balancete_id"]
+            isOneToOne: false
+            referencedRelation: "balancetes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linhas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linhas_conta_mcse_id_fkey"
+            columns: ["conta_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linhas_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_contas_origem"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linhas_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "exercicios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linhas_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      balancetes: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_importacao: string
+          exercicio_id: string
+          id: string
+          nome_arquivo: string
+          observacao: string | null
+          status_importacao: Database["public"]["Enums"]["status_importacao_balancete"]
+          tipo_balancete: Database["public"]["Enums"]["tipo_balancete"]
+          total_linhas: number
+          total_linhas_com_mapeamento: number
+          total_linhas_sem_mapeamento: number
+          trabalho_auditoria_id: string
+          updated_at: string
+          usuario_importacao: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_importacao?: string
+          exercicio_id: string
+          id?: string
+          nome_arquivo: string
+          observacao?: string | null
+          status_importacao?: Database["public"]["Enums"]["status_importacao_balancete"]
+          tipo_balancete?: Database["public"]["Enums"]["tipo_balancete"]
+          total_linhas?: number
+          total_linhas_com_mapeamento?: number
+          total_linhas_sem_mapeamento?: number
+          trabalho_auditoria_id: string
+          updated_at?: string
+          usuario_importacao?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_importacao?: string
+          exercicio_id?: string
+          id?: string
+          nome_arquivo?: string
+          observacao?: string | null
+          status_importacao?: Database["public"]["Enums"]["status_importacao_balancete"]
+          tipo_balancete?: Database["public"]["Enums"]["tipo_balancete"]
+          total_linhas?: number
+          total_linhas_com_mapeamento?: number
+          total_linhas_sem_mapeamento?: number
+          trabalho_auditoria_id?: string
+          updated_at?: string
+          usuario_importacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balancetes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancetes_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "exercicios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancetes_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_contas_origem: {
         Row: {
           analitica: boolean
@@ -632,11 +838,26 @@ export type Database = {
       segmento_cliente: "setor_eletrico" | "outro"
       status_cliente: "ativo" | "inativo" | "prospecto"
       status_exercicio: "aberto" | "em_andamento" | "fechado" | "arquivado"
+      status_importacao_balancete:
+        | "importado"
+        | "processando"
+        | "erro"
+        | "finalizado"
+      status_localizacao_conta:
+        | "localizada"
+        | "nao_localizada"
+        | "localizada_por_classificacao"
+        | "localizada_por_codigo"
+        | "localizada_por_descricao"
       status_mapeamento:
         | "nao_mapeado"
         | "mapeado_automatico"
         | "mapeado_manual"
         | "homologado"
+      status_mapeamento_mcse:
+        | "mapeado"
+        | "sem_mapeamento"
+        | "conta_nao_localizada"
       status_trabalho:
         | "planejado"
         | "iniciado"
@@ -645,6 +866,11 @@ export type Database = {
         | "revisao_2"
         | "finalizado_para_parecer"
         | "encerrado"
+      status_validacao_linha:
+        | "pendente"
+        | "pronto_para_analise"
+        | "revisar_mapeamento"
+      tipo_balancete: "mensal" | "trimestral" | "semestral" | "anual" | "outro"
       tipo_mapeamento: "manual" | "automatico"
     }
     CompositeTypes: {
@@ -792,11 +1018,29 @@ export const Constants = {
       segmento_cliente: ["setor_eletrico", "outro"],
       status_cliente: ["ativo", "inativo", "prospecto"],
       status_exercicio: ["aberto", "em_andamento", "fechado", "arquivado"],
+      status_importacao_balancete: [
+        "importado",
+        "processando",
+        "erro",
+        "finalizado",
+      ],
+      status_localizacao_conta: [
+        "localizada",
+        "nao_localizada",
+        "localizada_por_classificacao",
+        "localizada_por_codigo",
+        "localizada_por_descricao",
+      ],
       status_mapeamento: [
         "nao_mapeado",
         "mapeado_automatico",
         "mapeado_manual",
         "homologado",
+      ],
+      status_mapeamento_mcse: [
+        "mapeado",
+        "sem_mapeamento",
+        "conta_nao_localizada",
       ],
       status_trabalho: [
         "planejado",
@@ -807,6 +1051,12 @@ export const Constants = {
         "finalizado_para_parecer",
         "encerrado",
       ],
+      status_validacao_linha: [
+        "pendente",
+        "pronto_para_analise",
+        "revisar_mapeamento",
+      ],
+      tipo_balancete: ["mensal", "trimestral", "semestral", "anual", "outro"],
       tipo_mapeamento: ["manual", "automatico"],
     },
   },
