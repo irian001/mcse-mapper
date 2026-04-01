@@ -381,7 +381,7 @@ export default function TrabalhosPage() {
             ) : equipeAtual.map((m: any) => (
               <div key={m.id} className="flex items-center gap-2 border rounded px-3 py-2">
                 <span className="flex-1 text-sm font-medium">{m.auditores?.nome}</span>
-                <Select value={m.papel_no_trabalho} onValueChange={(v) => updateEquipeMutation.mutate({ id: m.id, papel_no_trabalho: v })}>
+                <Select value={m.papel_no_trabalho} onValueChange={(v) => updateEquipeMutation.mutate({ id: m.id, papel_no_trabalho: v as typeof PAPEIS[number] })}>
                   <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>{PAPEIS.map((p) => <SelectItem key={p} value={p}>{papelLabel[p]}</SelectItem>)}</SelectContent>
                 </Select>
