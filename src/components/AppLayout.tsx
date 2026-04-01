@@ -1,18 +1,32 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen } from "lucide-react";
+import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState } from "react";
 
-const navItems = [
-  { to: "/mcse", label: "Base MCSE", icon: Database },
-  { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/importar", label: "Importar Contas", icon: FileSpreadsheet },
-  { to: "/plano-contas", label: "Plano de Contas", icon: List },
-  { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
-  { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
-  { to: "/auditores", label: "Auditores", icon: UserCheck },
-  { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
-  { to: "/balancetes", label: "Balancetes", icon: BookOpen },
+const menuGroups = [
+  {
+    label: "Início",
+    defaultOpen: true,
+    items: [
+      { to: "/mcse", label: "Base MCSE", icon: Database },
+      { to: "/clientes", label: "Clientes", icon: Users },
+      { to: "/plano-contas", label: "Plano de Contas", icon: List },
+      { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
+      { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
+      { to: "/auditores", label: "Auditores", icon: UserCheck },
+      { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
+    ],
+  },
+  {
+    label: "Auditoria",
+    defaultOpen: true,
+    items: [
+      { to: "/importar", label: "Importar Contas", icon: FileSpreadsheet },
+      { to: "/balancetes", label: "Balancetes", icon: BookOpen },
+    ],
+  },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -25,22 +39,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <h1 className="text-lg font-bold tracking-tight text-sidebar-primary">AuditEletric</h1>
           <p className="text-xs text-sidebar-accent-foreground/60 mt-0.5">Auditoria Contábil</p>
         </div>
-        <nav className="flex-1 py-2 space-y-0.5 px-2">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                }`
-              }
-            >
-              <item.icon size={16} />
-              {item.label}
-            </NavLink>
+        <nav className="flex-1 py-2 px-2 space-y-1 overflow-auto">
+          {menuGroups.map((group) => (
+            <MenuGroup key={group.label} group={group} currentPath={location.pathname} />
           ))}
         </nav>
         <div className="p-3 border-t border-sidebar-border flex items-center justify-between">
@@ -54,5 +55,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-6">{children}</div>
       </main>
     </div>
+  );
+}
+
+function MenuGroup({ group, currentPath }: { group: typeof menuGroups[number]; currentPath: string }) {
+  const isActiveGroup = group.items.some((item) => currentPath.startsWith(item.to));
+  const [open, setOpen] = useState(group.defaultOpen || isActiveGroup);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors">
+        {group.label}
+        <ChevronDown size={14} className={`transition-transform duration-200 ${open ? "" : "-rotate-90"}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-0.5 mt-0.5">
+        {group.items.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-sidebar-accent text-sidebar-primary"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              }`
+            }
+          >
+            <item.icon size={16} />
+            {item.label}
+          </NavLink>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
