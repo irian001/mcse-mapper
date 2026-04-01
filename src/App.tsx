@@ -10,6 +10,8 @@ import ImportarPage from "@/pages/ImportarPage";
 import PlanoContasPage from "@/pages/PlanoContasPage";
 import MapeamentoPage from "@/pages/MapeamentoPage";
 import RegrasPage from "@/pages/RegrasPage";
+import AuditoresPage from "@/pages/AuditoresPage";
+import TrabalhosPage from "@/pages/TrabalhosPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
             <Route path="/plano-contas" element={<PlanoContasPage />} />
             <Route path="/mapeamento" element={<MapeamentoPage />} />
             <Route path="/regras" element={<RegrasPage />} />
+            <Route path="/auditores" element={<AuditoresPage />} />
+            <Route path="/trabalhos" element={<TrabalhosPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

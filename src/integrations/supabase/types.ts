@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      auditores: {
+        Row: {
+          ativo: boolean
+          cargo: Database["public"]["Enums"]["cargo_auditor"]
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          perfil: Database["public"]["Enums"]["cargo_auditor"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: Database["public"]["Enums"]["cargo_auditor"]
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          perfil?: Database["public"]["Enums"]["cargo_auditor"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: Database["public"]["Enums"]["cargo_auditor"]
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          perfil?: Database["public"]["Enums"]["cargo_auditor"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cliente_contas_origem: {
         Row: {
           analitica: boolean
@@ -460,6 +496,117 @@ export type Database = {
           },
         ]
       }
+      trabalho_auditores: {
+        Row: {
+          ativo: boolean
+          auditor_id: string
+          created_at: string
+          id: string
+          papel_no_trabalho: Database["public"]["Enums"]["papel_trabalho"]
+          responsavel_principal: boolean
+          trabalho_auditoria_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          auditor_id: string
+          created_at?: string
+          id?: string
+          papel_no_trabalho?: Database["public"]["Enums"]["papel_trabalho"]
+          responsavel_principal?: boolean
+          trabalho_auditoria_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          auditor_id?: string
+          created_at?: string
+          id?: string
+          papel_no_trabalho?: Database["public"]["Enums"]["papel_trabalho"]
+          responsavel_principal?: boolean
+          trabalho_auditoria_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trabalho_auditores_auditor_id_fkey"
+            columns: ["auditor_id"]
+            isOneToOne: false
+            referencedRelation: "auditores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trabalho_auditores_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trabalhos_auditoria: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_fim_programada: string | null
+          data_fim_real: string | null
+          data_inicio_programada: string | null
+          data_inicio_real: string | null
+          descricao: string | null
+          exercicio_id: string
+          id: string
+          nome_trabalho: string
+          observacoes: string | null
+          status_trabalho: Database["public"]["Enums"]["status_trabalho"]
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_fim_programada?: string | null
+          data_fim_real?: string | null
+          data_inicio_programada?: string | null
+          data_inicio_real?: string | null
+          descricao?: string | null
+          exercicio_id: string
+          id?: string
+          nome_trabalho: string
+          observacoes?: string | null
+          status_trabalho?: Database["public"]["Enums"]["status_trabalho"]
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_fim_programada?: string | null
+          data_fim_real?: string | null
+          data_inicio_programada?: string | null
+          data_inicio_real?: string | null
+          descricao?: string | null
+          exercicio_id?: string
+          id?: string
+          nome_trabalho?: string
+          observacoes?: string | null
+          status_trabalho?: Database["public"]["Enums"]["status_trabalho"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trabalhos_auditoria_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trabalhos_auditoria_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "exercicios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -468,6 +615,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      cargo_auditor: "assistente" | "senior" | "gerente" | "socio" | "revisor"
       natureza_conta:
         | "ativo"
         | "passivo"
@@ -475,6 +623,12 @@ export type Database = {
         | "receita"
         | "despesa"
         | "compensacao"
+      papel_trabalho:
+        | "elaborador"
+        | "revisor_1"
+        | "revisor_2"
+        | "gerente"
+        | "socio"
       segmento_cliente: "setor_eletrico" | "outro"
       status_cliente: "ativo" | "inativo" | "prospecto"
       status_exercicio: "aberto" | "em_andamento" | "fechado" | "arquivado"
@@ -483,6 +637,14 @@ export type Database = {
         | "mapeado_automatico"
         | "mapeado_manual"
         | "homologado"
+      status_trabalho:
+        | "planejado"
+        | "iniciado"
+        | "em_execucao"
+        | "revisao_1"
+        | "revisao_2"
+        | "finalizado_para_parecer"
+        | "encerrado"
       tipo_mapeamento: "manual" | "automatico"
     }
     CompositeTypes: {
@@ -611,6 +773,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cargo_auditor: ["assistente", "senior", "gerente", "socio", "revisor"],
       natureza_conta: [
         "ativo",
         "passivo",
@@ -618,6 +781,13 @@ export const Constants = {
         "receita",
         "despesa",
         "compensacao",
+      ],
+      papel_trabalho: [
+        "elaborador",
+        "revisor_1",
+        "revisor_2",
+        "gerente",
+        "socio",
       ],
       segmento_cliente: ["setor_eletrico", "outro"],
       status_cliente: ["ativo", "inativo", "prospecto"],
@@ -627,6 +797,15 @@ export const Constants = {
         "mapeado_automatico",
         "mapeado_manual",
         "homologado",
+      ],
+      status_trabalho: [
+        "planejado",
+        "iniciado",
+        "em_execucao",
+        "revisao_1",
+        "revisao_2",
+        "finalizado_para_parecer",
+        "encerrado",
       ],
       tipo_mapeamento: ["manual", "automatico"],
     },
