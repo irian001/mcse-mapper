@@ -18,6 +18,7 @@ import { CheckCircle2, Search, Layers } from "lucide-react";
 
 type RiskFilter = "todos" | "alta" | "media" | "baixa" | "sem_sugestao";
 type StatusFilter = "todos" | "nao_mapeados" | "nao_homologados" | "com_sugestao" | "mapeados_auto";
+type TipoContaFilter = "analitica" | "sintetica" | "todas";
 
 export default function MapeamentoPage() {
   const qc = useQueryClient();
@@ -28,6 +29,7 @@ export default function MapeamentoPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StatusFilter>("todos");
   const [filterGrupo, setFilterGrupo] = useState("all");
+  const [filterTipoConta, setFilterTipoConta] = useState<TipoContaFilter>("analitica");
   const [filterRisco, setFilterRisco] = useState<RiskFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -70,7 +72,11 @@ export default function MapeamentoPage() {
   }, [mcseContas]);
 
   const filteredContas = useMemo(() => {
-    let list = contasOrigem.filter((c: any) => c.analitica);
+    let list = contasOrigem.filter((c: any) => {
+      if (filterTipoConta === "analitica") return c.analitica;
+      if (filterTipoConta === "sintetica") return !c.analitica;
+      return true;
+    });
     if (search) {
       const s = search.toLowerCase();
       list = list.filter((c: any) =>
@@ -97,7 +103,7 @@ export default function MapeamentoPage() {
       });
     }
     return list;
-  }, [contasOrigem, search, filter, filterRisco, filterGrupo, mapByOrigem, mcseContas, riskByOrigem]);
+  }, [contasOrigem, search, filter, filterRisco, filterTipoConta, filterGrupo, mapByOrigem, mcseContas, riskByOrigem]);
 
   // --- Single mapping ---
   const saveMapeamento = useMutation({
@@ -259,6 +265,14 @@ export default function MapeamentoPage() {
                 <SelectItem value="nao_homologados">Não homologados</SelectItem>
                 <SelectItem value="com_sugestao">Com sugestão automática</SelectItem>
                 <SelectItem value="mapeados_auto">Mapeados automaticamente</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterTipoConta} onValueChange={(v: any) => setFilterTipoConta(v)}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="analitica">Analíticas</SelectItem>
+                <SelectItem value="sintetica">Sintéticas</SelectItem>
+                <SelectItem value="todas">Todas</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterRisco} onValueChange={(v: any) => setFilterRisco(v)}>
