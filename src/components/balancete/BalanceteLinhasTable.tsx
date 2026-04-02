@@ -137,7 +137,7 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
       {/* Table */}
       <div className="rounded border bg-card max-h-[520px] overflow-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow>
               <TableHead>Código</TableHead>
               <TableHead>Descrição</TableHead>

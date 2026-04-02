@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/PageHeader";
 import ImportBalanceteFlow from "@/components/balancete/ImportBalanceteFlow";
@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Plus, FileSpreadsheet } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Plus, FileSpreadsheet, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function BalancetesPage() {
   const [mode, setMode] = useState<"list" | "import">("list");
@@ -32,6 +34,31 @@ export default function BalancetesPage() {
     queryFn: async () => {
       const { data } = await supabase.from("trabalhos_auditoria").select("id, nome_trabalho").order("nome_trabalho");
       return data || [];
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const deleteBalanceteMutation = useMutation({
+    mutationFn: async (balanceteId: string) => {
+      const { error: linhasError } = await supabase
+        .from("balancete_linhas")
+        .delete()
+        .eq("balancete_id", balanceteId);
+      if (linhasError) throw linhasError;
+      const { error } = await supabase
+        .from("balancetes")
+        .delete()
+        .eq("id", balanceteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Balancete apagado com sucesso");
+      setSelectedBalancete(null);
+      queryClient.invalidateQueries({ queryKey: ["balancetes"] });
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao apagar balancete: " + err.message);
     },
   });
 
@@ -61,6 +88,30 @@ export default function BalancetesPage() {
             <Badge variant="outline">{bal?.total_linhas} linhas</Badge>
             <Badge variant="outline" className="text-green-700 bg-green-50">{bal?.total_linhas_com_mapeamento} com MCSE</Badge>
             <Badge variant="outline" className="text-orange-700 bg-orange-50">{bal?.total_linhas_sem_mapeamento} sem MCSE</Badge>
+          </div>
+          <div className="ml-auto">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={deleteBalanceteMutation.isPending}>
+                  <Trash2 size={14} className="mr-1" />
+                  {deleteBalanceteMutation.isPending ? "Apagando..." : "Apagar Balancete"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Apagar balancete?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação irá apagar o balancete "{bal?.nome_arquivo}" e todas as suas {bal?.total_linhas} linhas. Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => deleteBalanceteMutation.mutate(selectedBalancete)}>
+                    Apagar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
         <BalanceteLinhasTable balanceteId={selectedBalancete} />
@@ -97,7 +148,7 @@ export default function BalancetesPage() {
       ) : (
         <div className="rounded border bg-card overflow-auto">
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="border-b bg-muted/50">
                 <th className="text-left px-4 py-3 font-medium">Arquivo</th>
                 <th className="text-left px-4 py-3 font-medium">Trabalho</th>
