@@ -6,6 +6,7 @@ import { suggestMcseWithConfidence } from "@/lib/mcse-suggestion";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import RiskBadge from "@/components/RiskBadge";
+import SelectMcseModal from "@/components/mapeamento/SelectMcseModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { CheckCircle2, Search } from "lucide-react";
+import { CheckCircle2, Search, Layers } from "lucide-react";
 
 type RiskFilter = "todos" | "alta" | "media" | "baixa" | "sem_sugestao";
 type StatusFilter = "todos" | "nao_mapeados" | "nao_homologados" | "com_sugestao" | "mapeados_auto";
@@ -30,6 +31,9 @@ export default function MapeamentoPage() {
   const [filterRisco, setFilterRisco] = useState<RiskFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showMcseModal, setShowMcseModal] = useState(false);
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
+  const [pendingMcse, setPendingMcse] = useState<any>(null);
 
   const { data: contasOrigem = [] } = useQuery({
     queryKey: ["contas_origem", selectedCliente],
@@ -49,7 +53,6 @@ export default function MapeamentoPage() {
     return m;
   }, [mapeamentos]);
 
-  // Compute risk for each conta
   const riskByOrigem = useMemo(() => {
     const m: Record<string, ReturnType<typeof suggestMcseWithConfidence>> = {};
     contasOrigem.forEach((c: any) => {
@@ -96,6 +99,7 @@ export default function MapeamentoPage() {
     return list;
   }, [contasOrigem, search, filter, filterRisco, filterGrupo, mapByOrigem, mcseContas, riskByOrigem]);
 
+  // --- Single mapping ---
   const saveMapeamento = useMutation({
     mutationFn: async ({ contaOrigemId, contaMcseId }: { contaOrigemId: string; contaMcseId: string }) => {
       const existing = mapByOrigem[contaOrigemId];
@@ -103,10 +107,7 @@ export default function MapeamentoPage() {
         await supabase.from("cliente_mapeamento_mcse").update({ conta_mcse_id: contaMcseId, tipo_mapeamento: "manual" as const }).eq("id", existing.id);
       } else {
         await supabase.from("cliente_mapeamento_mcse").insert({
-          cliente_id: selectedCliente,
-          conta_origem_id: contaOrigemId,
-          conta_mcse_id: contaMcseId,
-          tipo_mapeamento: "manual" as const,
+          cliente_id: selectedCliente, conta_origem_id: contaOrigemId, conta_mcse_id: contaMcseId, tipo_mapeamento: "manual" as const,
         });
       }
       await supabase.from("cliente_contas_origem").update({ status_mapeamento: "mapeado_manual" as any }).eq("id", contaOrigemId);
@@ -114,20 +115,13 @@ export default function MapeamentoPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["mapeamentos"] }); qc.invalidateQueries({ queryKey: ["contas_origem"] }); },
   });
 
+  // --- Homologation ---
   const homologar = useMutation({
     mutationFn: async ({ mapeamentoId, contaOrigemId }: { mapeamentoId: string; contaOrigemId: string }) => {
-      await supabase.from("cliente_mapeamento_mcse").update({
-        homologado: true,
-        data_homologacao: new Date().toISOString(),
-        homologado_por: "auditor",
-      }).eq("id", mapeamentoId);
+      await supabase.from("cliente_mapeamento_mcse").update({ homologado: true, data_homologacao: new Date().toISOString(), homologado_por: "auditor" }).eq("id", mapeamentoId);
       await supabase.from("cliente_contas_origem").update({ status_mapeamento: "homologado" as any }).eq("id", contaOrigemId);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["mapeamentos"] });
-      qc.invalidateQueries({ queryKey: ["contas_origem"] });
-      toast.success("Homologado!");
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mapeamentos"] }); qc.invalidateQueries({ queryKey: ["contas_origem"] }); toast.success("Homologado!"); },
   });
 
   const homologarLote = useMutation({
@@ -136,33 +130,81 @@ export default function MapeamentoPage() {
       for (const contaOrigemId of ids) {
         const mp = mapByOrigem[contaOrigemId];
         if (!mp?.conta_mcse_id || mp.homologado) continue;
-        await supabase.from("cliente_mapeamento_mcse").update({
-          homologado: true,
-          data_homologacao: new Date().toISOString(),
-          homologado_por: "auditor",
-        }).eq("id", mp.id);
+        await supabase.from("cliente_mapeamento_mcse").update({ homologado: true, data_homologacao: new Date().toISOString(), homologado_por: "auditor" }).eq("id", mp.id);
         await supabase.from("cliente_contas_origem").update({ status_mapeamento: "homologado" as any }).eq("id", contaOrigemId);
         count++;
       }
       return count;
     },
     onSuccess: (count) => {
-      qc.invalidateQueries({ queryKey: ["mapeamentos"] });
-      qc.invalidateQueries({ queryKey: ["contas_origem"] });
+      qc.invalidateQueries({ queryKey: ["mapeamentos"] }); qc.invalidateQueries({ queryKey: ["contas_origem"] });
       setSelectedIds(new Set());
       toast.success(`${count} conta(s) homologada(s)!`);
     },
   });
 
-  // Selection helpers
-  const eligibleForHomologation = useMemo(() => {
-    return filteredContas.filter((c: any) => {
-      const mp = mapByOrigem[c.id];
-      return mp?.conta_mcse_id && !mp.homologado;
-    });
-  }, [filteredContas, mapByOrigem]);
+  // --- Batch mapping ---
+  const mapearLote = useMutation({
+    mutationFn: async ({ ids, contaMcse }: { ids: string[]; contaMcse: any }) => {
+      let count = 0;
+      for (const contaOrigemId of ids) {
+        const existing = mapByOrigem[contaOrigemId];
+        if (existing) {
+          await supabase.from("cliente_mapeamento_mcse").update({
+            conta_mcse_id: contaMcse.id,
+            tipo_mapeamento: "manual" as const,
+            confianca_mapeamento: 1.0,
+            observacao: "mapeamento em lote",
+          }).eq("id", existing.id);
+        } else {
+          await supabase.from("cliente_mapeamento_mcse").insert({
+            cliente_id: selectedCliente,
+            conta_origem_id: contaOrigemId,
+            conta_mcse_id: contaMcse.id,
+            tipo_mapeamento: "manual" as const,
+            confianca_mapeamento: 1.0,
+            observacao: "mapeamento em lote",
+          });
+        }
+        await supabase.from("cliente_contas_origem").update({
+          status_mapeamento: "mapeado_manual" as any,
+          codigo_mcse_sugerido: contaMcse.codigo_mcse,
+        }).eq("id", contaOrigemId);
+        count++;
+      }
+      return { count, codigo: contaMcse.codigo_mcse, descricao: contaMcse.descricao_conta };
+    },
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["mapeamentos"] });
+      qc.invalidateQueries({ queryKey: ["contas_origem"] });
+      setSelectedIds(new Set());
+      toast.success(`${result.count} conta(s) mapeada(s) para ${result.codigo} — ${result.descricao}`);
+    },
+  });
 
-  const selectedEligible = useMemo(() => {
+  const handleMcseSelected = useCallback((contaMcse: any) => {
+    const ids = Array.from(selectedIds);
+    const hasExisting = ids.some(id => !!mapByOrigem[id]?.conta_mcse_id);
+    if (hasExisting) {
+      setPendingMcse(contaMcse);
+      setShowMcseModal(false);
+      setShowOverwriteConfirm(true);
+    } else {
+      mapearLote.mutate({ ids, contaMcse });
+      setShowMcseModal(false);
+    }
+  }, [selectedIds, mapByOrigem, mapearLote]);
+
+  const confirmOverwrite = useCallback(() => {
+    if (pendingMcse) {
+      mapearLote.mutate({ ids: Array.from(selectedIds), contaMcse: pendingMcse });
+    }
+    setShowOverwriteConfirm(false);
+    setPendingMcse(null);
+  }, [pendingMcse, selectedIds, mapearLote]);
+
+  // --- Selection helpers ---
+  const selectedForHomologation = useMemo(() => {
     return Array.from(selectedIds).filter(id => {
       const mp = mapByOrigem[id];
       return mp?.conta_mcse_id && !mp.homologado;
@@ -178,12 +220,13 @@ export default function MapeamentoPage() {
   }, []);
 
   const toggleAll = useCallback(() => {
-    if (selectedIds.size === eligibleForHomologation.length) {
+    const visibleIds = filteredContas.filter((c: any) => !mapByOrigem[c.id]?.homologado).map((c: any) => c.id);
+    if (selectedIds.size === visibleIds.length && visibleIds.every(id => selectedIds.has(id))) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(eligibleForHomologation.map((c: any) => c.id)));
+      setSelectedIds(new Set(visibleIds));
     }
-  }, [eligibleForHomologation, selectedIds]);
+  }, [filteredContas, selectedIds, mapByOrigem]);
 
   const stats = useMemo(() => {
     const total = contasOrigem.length;
@@ -196,7 +239,7 @@ export default function MapeamentoPage() {
     <div>
       <PageHeader title="Mapeamento de Contas" description="Mapear contas do cliente para a base MCSE" />
 
-      {/* Filters row */}
+      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <Select value={selectedCliente} onValueChange={v => { setSelectedCliente(v); setSelectedIds(new Set()); }}>
           <SelectTrigger className="w-72"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
@@ -244,7 +287,7 @@ export default function MapeamentoPage() {
       {selectedCliente && contasOrigem.length > 0 && (
         <>
           {/* Stats + batch actions */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div className="flex gap-4">
               {[
                 { val: stats.total, label: "Total", color: "text-foreground" },
@@ -258,12 +301,17 @@ export default function MapeamentoPage() {
                 </div>
               ))}
             </div>
-            {selectedEligible.length > 0 && (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">{selectedEligible.length} conta(s) selecionada(s)</span>
-                <Button size="sm" onClick={() => setShowConfirmDialog(true)} disabled={homologarLote.isPending}>
-                  <CheckCircle2 size={14} className="mr-1" /> Homologar selecionados
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm text-muted-foreground">{selectedIds.size} conta(s) selecionada(s)</span>
+                <Button size="sm" variant="outline" onClick={() => setShowMcseModal(true)} disabled={mapearLote.isPending}>
+                  <Layers size={14} className="mr-1" /> Mapear selecionadas para MCSE
                 </Button>
+                {selectedForHomologation.length > 0 && (
+                  <Button size="sm" onClick={() => setShowConfirmDialog(true)} disabled={homologarLote.isPending}>
+                    <CheckCircle2 size={14} className="mr-1" /> Homologar selecionados ({selectedForHomologation.length})
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -275,7 +323,7 @@ export default function MapeamentoPage() {
                 <TableRow>
                   <TableHead className="w-10">
                     <Checkbox
-                      checked={eligibleForHomologation.length > 0 && selectedIds.size === eligibleForHomologation.length}
+                      checked={filteredContas.length > 0 && selectedIds.size > 0 && filteredContas.filter((c: any) => !mapByOrigem[c.id]?.homologado).every((c: any) => selectedIds.has(c.id))}
                       onCheckedChange={toggleAll}
                     />
                   </TableHead>
@@ -298,7 +346,6 @@ export default function MapeamentoPage() {
                   const isHomologado = !!mp?.homologado;
                   const risk = riskByOrigem[conta.id];
                   const isSelected = selectedIds.has(conta.id);
-                  const canSelect = isMapped && !isHomologado;
 
                   return (
                     <TableRow
@@ -306,10 +353,10 @@ export default function MapeamentoPage() {
                       className={`${isSelected ? "bg-primary/10" : !isMapped ? "bg-warning/5" : isHomologado ? "" : "bg-info/5"}`}
                     >
                       <TableCell>
-                        {canSelect ? (
-                          <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(conta.id)} />
+                        {isHomologado ? (
+                          <Checkbox disabled checked />
                         ) : (
-                          <Checkbox disabled checked={isHomologado} />
+                          <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(conta.id)} />
                         )}
                       </TableCell>
                       <TableCell className="font-mono text-sm">{conta.idconta}</TableCell>
@@ -373,18 +420,42 @@ export default function MapeamentoPage() {
         </div>
       )}
 
-      {/* Confirmation dialog */}
+      {/* MCSE batch mapping modal */}
+      <SelectMcseModal
+        open={showMcseModal}
+        onOpenChange={setShowMcseModal}
+        selectedCount={selectedIds.size}
+        onConfirm={handleMcseSelected}
+      />
+
+      {/* Overwrite confirmation */}
+      <AlertDialog open={showOverwriteConfirm} onOpenChange={setShowOverwriteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sobrescrever mapeamentos existentes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Algumas das contas selecionadas já possuem mapeamento MCSE. Deseja sobrescrever com <strong>{pendingMcse?.codigo_mcse}</strong> — {pendingMcse?.descricao_conta}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingMcse(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmOverwrite}>Sobrescrever</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Homologation confirmation */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar homologação em lote</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja homologar <strong>{selectedEligible.length}</strong> conta(s) selecionada(s)? Esta ação registrará a homologação com data e usuário.
+              Deseja homologar <strong>{selectedForHomologation.length}</strong> conta(s) selecionada(s)? Esta ação registrará a homologação com data e usuário.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { homologarLote.mutate(selectedEligible); setShowConfirmDialog(false); }}>
+            <AlertDialogAction onClick={() => { homologarLote.mutate(selectedForHomologation); setShowConfirmDialog(false); }}>
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
