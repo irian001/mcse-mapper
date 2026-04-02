@@ -18,6 +18,7 @@ import { CheckCircle2, Search, Layers } from "lucide-react";
 
 type RiskFilter = "todos" | "alta" | "media" | "baixa" | "sem_sugestao";
 type StatusFilter = "todos" | "nao_mapeados" | "nao_homologados" | "com_sugestao" | "mapeados_auto";
+type TipoContaFilter = "analitica" | "sintetica" | "todas";
 
 export default function MapeamentoPage() {
   const qc = useQueryClient();
