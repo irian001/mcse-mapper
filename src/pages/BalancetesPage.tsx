@@ -37,6 +37,31 @@ export default function BalancetesPage() {
     },
   });
 
+  const queryClient = useQueryClient();
+
+  const deleteBalanceteMutation = useMutation({
+    mutationFn: async (balanceteId: string) => {
+      const { error: linhasError } = await supabase
+        .from("balancete_linhas")
+        .delete()
+        .eq("balancete_id", balanceteId);
+      if (linhasError) throw linhasError;
+      const { error } = await supabase
+        .from("balancetes")
+        .delete()
+        .eq("id", balanceteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Balancete apagado com sucesso");
+      setSelectedBalancete(null);
+      queryClient.invalidateQueries({ queryKey: ["balancetes"] });
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao apagar balancete: " + err.message);
+    },
+  });
+
   const filtered = filterTrabalho === "all" ? balancetes : balancetes.filter((b: any) => b.trabalho_auditoria_id === filterTrabalho);
 
   if (mode === "import") {
