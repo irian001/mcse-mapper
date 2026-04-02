@@ -30,9 +30,29 @@ export const fetchExercicios = (clienteId: string) =>
 export const fetchParametros = (clienteId: string) =>
   supabase.from("cliente_parametros").select("*").eq("cliente_id", clienteId).maybeSingle();
 
-// Contas Origem
-export const fetchContasOrigem = (clienteId: string) =>
-  supabase.from("cliente_contas_origem").select("*").eq("cliente_id", clienteId).order("classificacao");
+// Contas Origem - fetch all rows (bypasses default 1000-row limit)
+export const fetchContasOrigem = async (clienteId: string) => {
+  const allData: any[] = [];
+  const pageSize = 1000;
+  let from = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from("cliente_contas_origem")
+      .select("*")
+      .eq("cliente_id", clienteId)
+      .order("classificacao")
+      .range(from, from + pageSize - 1);
+
+    if (error) return { data: null, error };
+    if (data) allData.push(...data);
+    hasMore = data?.length === pageSize;
+    from += pageSize;
+  }
+
+  return { data: allData, error: null };
+};
 
 // Mapeamento
 export const fetchMapeamentos = (clienteId: string) =>
