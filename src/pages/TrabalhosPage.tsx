@@ -106,6 +106,30 @@ export default function TrabalhosPage() {
     return exercicios.filter((e: any) => e.cliente_id === form.cliente_id);
   }, [exercicios, form.cliente_id]);
 
+  const criarExerciciosMutation = useMutation({
+    mutationFn: async (clienteId: string) => {
+      const anoAtual = new Date().getFullYear();
+      const anos = [anoAtual - 1, anoAtual];
+      const existentes = exercicios.filter((e: any) => e.cliente_id === clienteId).map((e: any) => e.ano_exercicio);
+      const novos = anos.filter((a) => !existentes.includes(a));
+      if (novos.length === 0) return;
+      const rows = novos.map((ano) => ({
+        cliente_id: clienteId,
+        ano_exercicio: ano,
+        data_inicio: `${ano}-01-01`,
+        data_fim: `${ano}-12-31`,
+        status: "aberto" as const,
+      }));
+      const { error } = await supabase.from("exercicios").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["exercicios-all"] });
+      toast.success("Exercícios criados com sucesso");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Mutations
   const saveMutation = useMutation({
     mutationFn: async (values: TrabalhoForm & { id?: string }) => {
@@ -286,7 +310,25 @@ export default function TrabalhosPage() {
                 <Label>Exercício *</Label>
                 <Select value={form.exercicio_id} onValueChange={(v) => setForm({ ...form, exercicio_id: v })} disabled={!form.cliente_id}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{exerciciosFiltrados.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.ano_exercicio}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {exerciciosFiltrados.length === 0 && form.cliente_id ? (
+                      <div className="px-2 py-3 text-center">
+                        <p className="text-xs text-muted-foreground mb-2">Nenhum exercício cadastrado</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs"
+                          disabled={criarExerciciosMutation.isPending}
+                          onClick={(e) => { e.stopPropagation(); criarExerciciosMutation.mutate(form.cliente_id); }}
+                        >
+                          <Plus size={12} className="mr-1" />
+                          {criarExerciciosMutation.isPending ? "Criando..." : `Criar ${new Date().getFullYear() - 1} e ${new Date().getFullYear()}`}
+                        </Button>
+                      </div>
+                    ) : (
+                      exerciciosFiltrados.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.ano_exercicio}</SelectItem>)
+                    )}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
