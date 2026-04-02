@@ -103,7 +103,7 @@ export default function MapeamentoPage() {
       });
     }
     return list;
-  }, [contasOrigem, search, filter, filterRisco, filterGrupo, mapByOrigem, mcseContas, riskByOrigem]);
+  }, [contasOrigem, search, filter, filterRisco, filterTipoConta, filterGrupo, mapByOrigem, mcseContas, riskByOrigem]);
 
   // --- Single mapping ---
   const saveMapeamento = useMutation({
