@@ -310,7 +310,25 @@ export default function TrabalhosPage() {
                 <Label>Exercício *</Label>
                 <Select value={form.exercicio_id} onValueChange={(v) => setForm({ ...form, exercicio_id: v })} disabled={!form.cliente_id}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{exerciciosFiltrados.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.ano_exercicio}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {exerciciosFiltrados.length === 0 && form.cliente_id ? (
+                      <div className="px-2 py-3 text-center">
+                        <p className="text-xs text-muted-foreground mb-2">Nenhum exercício cadastrado</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs"
+                          disabled={criarExerciciosMutation.isPending}
+                          onClick={(e) => { e.stopPropagation(); criarExerciciosMutation.mutate(form.cliente_id); }}
+                        >
+                          <Plus size={12} className="mr-1" />
+                          {criarExerciciosMutation.isPending ? "Criando..." : `Criar ${new Date().getFullYear() - 1} e ${new Date().getFullYear()}`}
+                        </Button>
+                      </div>
+                    ) : (
+                      exerciciosFiltrados.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.ano_exercicio}</SelectItem>)
+                    )}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
