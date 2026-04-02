@@ -267,6 +267,14 @@ export default function MapeamentoPage() {
                 <SelectItem value="mapeados_auto">Mapeados automaticamente</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterTipoConta} onValueChange={(v: any) => setFilterTipoConta(v)}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="analitica">Analíticas</SelectItem>
+                <SelectItem value="sintetica">Sintéticas</SelectItem>
+                <SelectItem value="todas">Todas</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={filterRisco} onValueChange={(v: any) => setFilterRisco(v)}>
               <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
               <SelectContent>
