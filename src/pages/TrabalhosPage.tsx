@@ -106,6 +106,30 @@ export default function TrabalhosPage() {
     return exercicios.filter((e: any) => e.cliente_id === form.cliente_id);
   }, [exercicios, form.cliente_id]);
 
+  const criarExerciciosMutation = useMutation({
+    mutationFn: async (clienteId: string) => {
+      const anoAtual = new Date().getFullYear();
+      const anos = [anoAtual - 1, anoAtual];
+      const existentes = exercicios.filter((e: any) => e.cliente_id === clienteId).map((e: any) => e.ano_exercicio);
+      const novos = anos.filter((a) => !existentes.includes(a));
+      if (novos.length === 0) return;
+      const rows = novos.map((ano) => ({
+        cliente_id: clienteId,
+        ano_exercicio: ano,
+        data_inicio: `${ano}-01-01`,
+        data_fim: `${ano}-12-31`,
+        status: "aberto" as const,
+      }));
+      const { error } = await supabase.from("exercicios").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["exercicios-all"] });
+      toast.success("Exercícios criados com sucesso");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   // Mutations
   const saveMutation = useMutation({
     mutationFn: async (values: TrabalhoForm & { id?: string }) => {
