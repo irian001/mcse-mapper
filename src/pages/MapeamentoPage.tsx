@@ -72,7 +72,11 @@ export default function MapeamentoPage() {
   }, [mcseContas]);
 
   const filteredContas = useMemo(() => {
-    let list = contasOrigem.filter((c: any) => c.analitica);
+    let list = contasOrigem.filter((c: any) => {
+      if (filterTipoConta === "analitica") return c.analitica;
+      if (filterTipoConta === "sintetica") return !c.analitica;
+      return true;
+    });
     if (search) {
       const s = search.toLowerCase();
       list = list.filter((c: any) =>
