@@ -89,6 +89,30 @@ export default function BalancetesPage() {
             <Badge variant="outline" className="text-green-700 bg-green-50">{bal?.total_linhas_com_mapeamento} com MCSE</Badge>
             <Badge variant="outline" className="text-orange-700 bg-orange-50">{bal?.total_linhas_sem_mapeamento} sem MCSE</Badge>
           </div>
+          <div className="ml-auto">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={deleteBalanceteMutation.isPending}>
+                  <Trash2 size={14} className="mr-1" />
+                  {deleteBalanceteMutation.isPending ? "Apagando..." : "Apagar Balancete"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Apagar balancete?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação irá apagar o balancete "{bal?.nome_arquivo}" e todas as suas {bal?.total_linhas} linhas. Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => deleteBalanceteMutation.mutate(selectedBalancete)}>
+                    Apagar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
         <BalanceteLinhasTable balanceteId={selectedBalancete} />
       </div>
