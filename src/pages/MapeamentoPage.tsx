@@ -217,6 +217,29 @@ export default function MapeamentoPage() {
     });
   }, [selectedIds, mapByOrigem]);
 
+  const selectedMappingInfo = useMemo(() => {
+    const ids = Array.from(selectedIds);
+    const mapped = ids.filter(id => mapByOrigem[id]?.conta_mcse_id);
+    if (mapped.length === 0) return { allSameMcse: false, hasDifferentMappings: false, mappedCount: 0 };
+
+    const mcseIds = new Set(mapped.map(id => mapByOrigem[id].conta_mcse_id));
+    if (mcseIds.size === 1 && mapped.length === ids.length) {
+      const mp = mapByOrigem[mapped[0]];
+      return {
+        allSameMcse: true,
+        commonMcseCode: mp.mcse_contas?.codigo_mcse,
+        commonMcseDesc: mp.mcse_contas?.descricao_conta,
+        hasDifferentMappings: false,
+        mappedCount: mapped.length,
+      };
+    }
+    return {
+      allSameMcse: false,
+      hasDifferentMappings: mcseIds.size > 1,
+      mappedCount: mapped.length,
+    };
+  }, [selectedIds, mapByOrigem]);
+
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
