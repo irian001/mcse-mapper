@@ -135,12 +135,6 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
         .eq("ativo", true);
 
       // Update snapshots
-      for (const ptaLinha of ptaLinhas) {
-        const bl = linhas.find((_, i) => linhaIds[i] === ptaLinha.balancete_linha_id);
-        // We need matching — let's refetch individually
-      }
-
-      // Bulk update snapshots
       const { data: fullLinhas } = await supabase
         .from("balancete_linhas")
         .select("id, saldo_atual, valor_validado, diferenca_validacao, status_linha")
