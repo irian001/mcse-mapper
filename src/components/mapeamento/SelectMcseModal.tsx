@@ -24,7 +24,7 @@ interface SelectMcseModalProps {
   mappingInfo?: MappingInfo;
 }
 
-export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm }: SelectMcseModalProps) {
+export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm, mappingInfo }: SelectMcseModalProps) {
   const [search, setSearch] = useState("");
   const [selectedMcse, setSelectedMcse] = useState<any>(null);
 
