@@ -17,6 +17,7 @@ export type Database = {
       auditores: {
         Row: {
           ativo: boolean
+          auth_user_id: string | null
           cargo: Database["public"]["Enums"]["cargo_auditor"]
           created_at: string
           email: string | null
@@ -24,10 +25,12 @@ export type Database = {
           nome: string
           observacoes: string | null
           perfil: Database["public"]["Enums"]["cargo_auditor"]
+          perfil_acesso: Database["public"]["Enums"]["perfil_acesso"]
           updated_at: string
         }
         Insert: {
           ativo?: boolean
+          auth_user_id?: string | null
           cargo?: Database["public"]["Enums"]["cargo_auditor"]
           created_at?: string
           email?: string | null
@@ -35,10 +38,12 @@ export type Database = {
           nome: string
           observacoes?: string | null
           perfil?: Database["public"]["Enums"]["cargo_auditor"]
+          perfil_acesso?: Database["public"]["Enums"]["perfil_acesso"]
           updated_at?: string
         }
         Update: {
           ativo?: boolean
+          auth_user_id?: string | null
           cargo?: Database["public"]["Enums"]["cargo_auditor"]
           created_at?: string
           email?: string | null
@@ -46,6 +51,7 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           perfil?: Database["public"]["Enums"]["cargo_auditor"]
+          perfil_acesso?: Database["public"]["Enums"]["perfil_acesso"]
           updated_at?: string
         }
         Relationships: []
@@ -1142,7 +1148,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_access_storage_doc: {
+        Args: { p_object_name: string }
+        Returns: boolean
+      }
+      get_accessible_cliente_ids: { Args: never; Returns: string[] }
+      get_accessible_trabalho_ids: { Args: never; Returns: string[] }
+      get_my_auditor_id: { Args: never; Returns: string }
+      has_any_admin: { Args: never; Returns: boolean }
+      is_admin: { Args: never; Returns: boolean }
+      link_auditor_account: {
+        Args: { p_auditor_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       cargo_auditor: "assistente" | "senior" | "gerente" | "socio" | "revisor"
@@ -1159,6 +1177,7 @@ export type Database = {
         | "revisor_2"
         | "gerente"
         | "socio"
+      perfil_acesso: "assistente" | "senior" | "gerente" | "socio" | "admin"
       segmento_cliente: "setor_eletrico" | "outro"
       severidade_pendencia: "baixa" | "media" | "alta" | "critica"
       status_cliente: "ativo" | "inativo" | "prospecto"
@@ -1353,6 +1372,7 @@ export const Constants = {
         "gerente",
         "socio",
       ],
+      perfil_acesso: ["assistente", "senior", "gerente", "socio", "admin"],
       segmento_cliente: ["setor_eletrico", "outro"],
       severidade_pendencia: ["baixa", "media", "alta", "critica"],
       status_cliente: ["ativo", "inativo", "prospecto"],
