@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Save, ClipboardList, Trash2, RefreshCw } from "lucide-react";
+import { Save, ClipboardList, Trash2, RefreshCw, Plus } from "lucide-react";
 import PtaVincularLinhasDialog from "./PtaVincularLinhasDialog";
 
 function fmt(v: number | null | undefined) {
