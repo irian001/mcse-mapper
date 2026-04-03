@@ -463,6 +463,7 @@ export default function MapeamentoPage() {
         onOpenChange={setShowMcseModal}
         selectedCount={selectedIds.size}
         onConfirm={handleMcseSelected}
+        mappingInfo={selectedMappingInfo}
       />
 
       {/* Overwrite confirmation */}
