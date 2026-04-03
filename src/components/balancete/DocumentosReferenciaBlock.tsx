@@ -92,7 +92,8 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
       queryClient.invalidateQueries({ queryKey: ["documentos_referencia", linha.id] });
     },
     onError: (err: any) => {
-      toast.error("Erro: " + err.message);
+      console.error("Erro ao remover documento:", err);
+      toast.error("Erro ao remover documento. Tente novamente.");
     },
   });
 
