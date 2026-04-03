@@ -5,17 +5,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search } from "lucide-react";
+import { Search, Info, AlertTriangle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface MappingInfo {
+  allSameMcse: boolean;
+  commonMcseCode?: string;
+  commonMcseDesc?: string;
+  hasDifferentMappings: boolean;
+  mappedCount: number;
+}
 
 interface SelectMcseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedCount: number;
   onConfirm: (contaMcse: any) => void;
+  mappingInfo?: MappingInfo;
 }
 
-export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm }: SelectMcseModalProps) {
+export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm, mappingInfo }: SelectMcseModalProps) {
   const [search, setSearch] = useState("");
   const [selectedMcse, setSelectedMcse] = useState<any>(null);
 
@@ -63,6 +73,26 @@ export default function SelectMcseModal({ open, onOpenChange, selectedCount, onC
             Pesquise e selecione uma conta da Base MCSE para aplicar a todas as contas selecionadas.
           </DialogDescription>
         </DialogHeader>
+
+        {mappingInfo && mappingInfo.mappedCount > 0 && (
+          mappingInfo.allSameMcse ? (
+            <Alert className="border-info/30 bg-info/5">
+              <Info size={14} className="text-info" />
+              <AlertDescription className="text-sm">
+                Todas as {selectedCount} conta(s) selecionadas já estão mapeadas para:{" "}
+                <span className="font-mono font-medium">{mappingInfo.commonMcseCode}</span>
+                {" — "}{mappingInfo.commonMcseDesc}
+              </AlertDescription>
+            </Alert>
+          ) : mappingInfo.hasDifferentMappings ? (
+            <Alert className="border-warning/30 bg-warning/5">
+              <AlertTriangle size={14} className="text-warning" />
+              <AlertDescription className="text-sm">
+                As contas selecionadas possuem mapeamentos diferentes. A nova ação irá sobrescrever os mapeamentos existentes.
+              </AlertDescription>
+            </Alert>
+          ) : null
+        )}
 
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
