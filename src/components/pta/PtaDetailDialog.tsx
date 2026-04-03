@@ -451,6 +451,3 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
     </>
   );
 }
-
-// Need Plus icon
-import { Plus } from "lucide-react";

@@ -70,6 +70,7 @@ const App = () => (
               <Route path="/auditores" element={<AuditoresPage />} />
               <Route path="/trabalhos" element={<TrabalhosPage />} />
               <Route path="/balancetes" element={<BalancetesPage />} />
+              <Route path="/papeis-trabalho" element={<PapeisTrabalhoPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

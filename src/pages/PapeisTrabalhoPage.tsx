@@ -4,13 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, FileText, ClipboardList } from "lucide-react";
-import { toast } from "sonner";
+import { Search, Plus, ClipboardList } from "lucide-react";
 import PtaDetailDialog from "@/components/pta/PtaDetailDialog";
 import GerarPtaDialog from "@/components/pta/GerarPtaDialog";
 
