@@ -834,6 +834,198 @@ export type Database = {
           },
         ]
       }
+      papeis_trabalho: {
+        Row: {
+          atualizado_por: string | null
+          cliente_id: string
+          codigo_mcse: string | null
+          comentario_auditor: string | null
+          comentario_revisor: string | null
+          conclusao_final: string | null
+          conclusao_preliminar: string | null
+          conta_mcse_id: string | null
+          created_at: string
+          criado_por: string | null
+          descricao_mcse: string | null
+          diferenca_total: number | null
+          exercicio_id: string
+          grupo_mcse: string | null
+          id: string
+          limite_materialidade: number | null
+          limite_variacao: number | null
+          materialidade_aplicavel: boolean | null
+          objetivo_procedimento: string | null
+          saldo_anterior_total: number | null
+          saldo_atual_total: number | null
+          status_pta: Database["public"]["Enums"]["status_pta"]
+          subgrupo_mcse: string | null
+          titulo_pta: string
+          total_documentos_referencia: number | null
+          total_linhas_com_pendencia: number | null
+          total_linhas_vinculadas: number | null
+          trabalho_auditoria_id: string
+          updated_at: string
+          valor_validado_total: number | null
+          variacao_absoluta_total: number | null
+          variacao_percentual_total: number | null
+        }
+        Insert: {
+          atualizado_por?: string | null
+          cliente_id: string
+          codigo_mcse?: string | null
+          comentario_auditor?: string | null
+          comentario_revisor?: string | null
+          conclusao_final?: string | null
+          conclusao_preliminar?: string | null
+          conta_mcse_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao_mcse?: string | null
+          diferenca_total?: number | null
+          exercicio_id: string
+          grupo_mcse?: string | null
+          id?: string
+          limite_materialidade?: number | null
+          limite_variacao?: number | null
+          materialidade_aplicavel?: boolean | null
+          objetivo_procedimento?: string | null
+          saldo_anterior_total?: number | null
+          saldo_atual_total?: number | null
+          status_pta?: Database["public"]["Enums"]["status_pta"]
+          subgrupo_mcse?: string | null
+          titulo_pta?: string
+          total_documentos_referencia?: number | null
+          total_linhas_com_pendencia?: number | null
+          total_linhas_vinculadas?: number | null
+          trabalho_auditoria_id: string
+          updated_at?: string
+          valor_validado_total?: number | null
+          variacao_absoluta_total?: number | null
+          variacao_percentual_total?: number | null
+        }
+        Update: {
+          atualizado_por?: string | null
+          cliente_id?: string
+          codigo_mcse?: string | null
+          comentario_auditor?: string | null
+          comentario_revisor?: string | null
+          conclusao_final?: string | null
+          conclusao_preliminar?: string | null
+          conta_mcse_id?: string | null
+          created_at?: string
+          criado_por?: string | null
+          descricao_mcse?: string | null
+          diferenca_total?: number | null
+          exercicio_id?: string
+          grupo_mcse?: string | null
+          id?: string
+          limite_materialidade?: number | null
+          limite_variacao?: number | null
+          materialidade_aplicavel?: boolean | null
+          objetivo_procedimento?: string | null
+          saldo_anterior_total?: number | null
+          saldo_atual_total?: number | null
+          status_pta?: Database["public"]["Enums"]["status_pta"]
+          subgrupo_mcse?: string | null
+          titulo_pta?: string
+          total_documentos_referencia?: number | null
+          total_linhas_com_pendencia?: number | null
+          total_linhas_vinculadas?: number | null
+          trabalho_auditoria_id?: string
+          updated_at?: string
+          valor_validado_total?: number | null
+          variacao_absoluta_total?: number | null
+          variacao_percentual_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "papeis_trabalho_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "papeis_trabalho_conta_mcse_id_fkey"
+            columns: ["conta_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "papeis_trabalho_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "exercicios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "papeis_trabalho_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      papel_trabalho_linhas: {
+        Row: {
+          balancete_linha_id: string
+          created_at: string
+          diferenca_linha: number | null
+          id: string
+          papel_trabalho_id: string
+          saldo_atual_linha: number | null
+          status_linha_snapshot: string | null
+          trabalho_auditoria_id: string
+          valor_validado_linha: number | null
+        }
+        Insert: {
+          balancete_linha_id: string
+          created_at?: string
+          diferenca_linha?: number | null
+          id?: string
+          papel_trabalho_id: string
+          saldo_atual_linha?: number | null
+          status_linha_snapshot?: string | null
+          trabalho_auditoria_id: string
+          valor_validado_linha?: number | null
+        }
+        Update: {
+          balancete_linha_id?: string
+          created_at?: string
+          diferenca_linha?: number | null
+          id?: string
+          papel_trabalho_id?: string
+          saldo_atual_linha?: number | null
+          status_linha_snapshot?: string | null
+          trabalho_auditoria_id?: string
+          valor_validado_linha?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "papel_trabalho_linhas_balancete_linha_id_fkey"
+            columns: ["balancete_linha_id"]
+            isOneToOne: false
+            referencedRelation: "balancete_linhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "papel_trabalho_linhas_papel_trabalho_id_fkey"
+            columns: ["papel_trabalho_id"]
+            isOneToOne: false
+            referencedRelation: "papeis_trabalho"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "papel_trabalho_linhas_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trabalho_auditores: {
         Row: {
           ativo: boolean
@@ -998,6 +1190,12 @@ export type Database = {
         | "mapeado"
         | "sem_mapeamento"
         | "conta_nao_localizada"
+      status_pta:
+        | "pendente"
+        | "em_analise"
+        | "em_revisao"
+        | "concluido"
+        | "finalizado"
       status_trabalho:
         | "planejado"
         | "iniciado"
@@ -1190,6 +1388,13 @@ export const Constants = {
         "mapeado",
         "sem_mapeamento",
         "conta_nao_localizada",
+      ],
+      status_pta: [
+        "pendente",
+        "em_analise",
+        "em_revisao",
+        "concluido",
+        "finalizado",
       ],
       status_trabalho: [
         "planejado",
