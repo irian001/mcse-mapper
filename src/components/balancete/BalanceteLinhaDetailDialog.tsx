@@ -11,8 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Save, FileText, Upload, Trash2, AlertTriangle, CheckCircle2, Clock, Eye, XCircle } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Save, FileText, CheckCircle2, Clock, Eye, XCircle } from "lucide-react";
 import DocumentosReferenciaBlock from "./DocumentosReferenciaBlock";
 
 function fmt(v: number | null) {
