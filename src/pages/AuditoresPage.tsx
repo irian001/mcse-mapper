@@ -96,8 +96,12 @@ export default function AuditoresPage() {
         const { error } = await supabase.from("auditores").update(rest as any).eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("auditores").insert(rest as any);
+        const { data, error } = await supabase.from("auditores").insert(rest as any).select().single();
         if (error) throw error;
+        // Bootstrap: if no auditor is linked yet, auto-link the newly created one
+        if (!currentUserAlreadyLinked && data?.id) {
+          await supabase.rpc("link_auditor_account", { p_auditor_id: data.id } as any).throwOnError();
+        }
       }
     },
     onSuccess: () => {
@@ -106,7 +110,7 @@ export default function AuditoresPage() {
       setDialogOpen(false);
       toast.success(editingId ? "Auditor atualizado" : "Auditor cadastrado");
     },
-    onError: () => toast.error("Erro ao salvar auditor"),
+    onError: (err: any) => toast.error(err?.message || "Erro ao salvar auditor"),
   });
 
   const toggleAtivo = useMutation({
