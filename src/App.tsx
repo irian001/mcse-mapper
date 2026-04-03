@@ -17,6 +17,7 @@ import RegrasPage from "@/pages/RegrasPage";
 import AuditoresPage from "@/pages/AuditoresPage";
 import TrabalhosPage from "@/pages/TrabalhosPage";
 import BalancetesPage from "@/pages/BalancetesPage";
+import PapeisTrabalhoPage from "@/pages/PapeisTrabalhoPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
