@@ -53,10 +53,6 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("documentos-balancete")
-        .getPublicUrl(filePath);
-
       const { error: insertError } = await supabase
         .from("documentos_referencia_balancete")
         .insert({
@@ -66,7 +62,7 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
           exercicio_id: linha.exercicio_id,
           nome_arquivo: file.name,
           tipo_arquivo: "application/pdf",
-          caminho_arquivo_ou_url: urlData.publicUrl,
+          caminho_arquivo_ou_url: filePath,
           observacao_documento: observacao.trim() || null,
         });
 
@@ -76,7 +72,8 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
       setObservacao("");
       queryClient.invalidateQueries({ queryKey: ["documentos_referencia", linha.id] });
     } catch (err: any) {
-      toast.error("Erro ao enviar documento: " + err.message);
+      console.error("Erro ao enviar documento:", err);
+      toast.error("Erro ao enviar documento. Tente novamente.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -96,7 +93,8 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
       queryClient.invalidateQueries({ queryKey: ["documentos_referencia", linha.id] });
     },
     onError: (err: any) => {
-      toast.error("Erro: " + err.message);
+      console.error("Erro ao remover documento:", err);
+      toast.error("Erro ao remover documento. Tente novamente.");
     },
   });
 
@@ -154,17 +152,25 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
                   {doc.observacao_documento && ` — ${doc.observacao_documento}`}
                 </p>
               </div>
-              <a
-                href={doc.caminho_arquivo_ou_url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 className="shrink-0"
-                onClick={e => e.stopPropagation()}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const path = doc.caminho_arquivo_ou_url;
+                  const { data } = await supabase.storage
+                    .from("documentos-balancete")
+                    .createSignedUrl(path, 300);
+                  if (data?.signedUrl) {
+                    window.open(data.signedUrl, "_blank");
+                  } else {
+                    toast.error("Erro ao gerar link do documento.");
+                  }
+                }}
               >
                 <Button variant="ghost" size="icon" className="h-7 w-7">
                   <ExternalLink size={12} />
                 </Button>
-              </a>
+              </button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
