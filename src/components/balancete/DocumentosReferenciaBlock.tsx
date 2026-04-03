@@ -72,7 +72,8 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
       setObservacao("");
       queryClient.invalidateQueries({ queryKey: ["documentos_referencia", linha.id] });
     } catch (err: any) {
-      toast.error("Erro ao enviar documento: " + err.message);
+      console.error("Erro ao enviar documento:", err);
+      toast.error("Erro ao enviar documento. Tente novamente.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
