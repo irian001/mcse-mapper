@@ -203,6 +203,20 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
             </div>
           </div>
 
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-green-300 text-green-700 hover:bg-green-50"
+            onClick={() => {
+              setValorValidado(String(linha.saldo_atual ?? 0));
+              setStatusLinha("validado");
+            }}
+          >
+            <CheckCircle2 size={14} className="mr-1" />
+            Validar Saldo
+          </Button>
+
           <div className="space-y-1.5">
             <Label className="text-xs">Status da Linha</Label>
             <Select value={statusLinha} onValueChange={setStatusLinha}>
