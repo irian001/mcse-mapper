@@ -57,13 +57,18 @@ export type Database = {
           cliente_id: string
           codigo_conta_balancete: string
           codigo_mcse: string | null
+          comentario_auditor: string | null
+          comentario_revisor: string | null
           conta_mcse_id: string | null
           conta_origem_id: string | null
           created_at: string
           creditos: number | null
+          data_revisao: string | null
+          data_validacao: string | null
           debitos: number | null
           descricao_conta_balancete: string
           descricao_mcse: string | null
+          descricao_pendencia: string | null
           diferenca_aceita: boolean | null
           diferenca_validacao: number | null
           exercicio_id: string
@@ -71,14 +76,21 @@ export type Database = {
           id: string
           justificativa_diferenca: string | null
           observacao_importacao: string | null
+          possui_pendencia: boolean | null
           saldo_anterior: number | null
           saldo_atual: number | null
+          severidade: Database["public"]["Enums"]["severidade_pendencia"] | null
+          status_linha:
+            | Database["public"]["Enums"]["status_linha_balancete"]
+            | null
           status_localizacao_conta: Database["public"]["Enums"]["status_localizacao_conta"]
           status_mapeamento_mcse: Database["public"]["Enums"]["status_mapeamento_mcse"]
           status_validacao: Database["public"]["Enums"]["status_validacao_linha"]
           subgrupo_mcse: string | null
           trabalho_auditoria_id: string
           updated_at: string
+          usuario_revisao: string | null
+          usuario_validacao: string | null
           valor_validado: number | null
           variacao_absoluta: number | null
           variacao_percentual: number | null
@@ -89,13 +101,18 @@ export type Database = {
           cliente_id: string
           codigo_conta_balancete: string
           codigo_mcse?: string | null
+          comentario_auditor?: string | null
+          comentario_revisor?: string | null
           conta_mcse_id?: string | null
           conta_origem_id?: string | null
           created_at?: string
           creditos?: number | null
+          data_revisao?: string | null
+          data_validacao?: string | null
           debitos?: number | null
           descricao_conta_balancete?: string
           descricao_mcse?: string | null
+          descricao_pendencia?: string | null
           diferenca_aceita?: boolean | null
           diferenca_validacao?: number | null
           exercicio_id: string
@@ -103,14 +120,23 @@ export type Database = {
           id?: string
           justificativa_diferenca?: string | null
           observacao_importacao?: string | null
+          possui_pendencia?: boolean | null
           saldo_anterior?: number | null
           saldo_atual?: number | null
+          severidade?:
+            | Database["public"]["Enums"]["severidade_pendencia"]
+            | null
+          status_linha?:
+            | Database["public"]["Enums"]["status_linha_balancete"]
+            | null
           status_localizacao_conta?: Database["public"]["Enums"]["status_localizacao_conta"]
           status_mapeamento_mcse?: Database["public"]["Enums"]["status_mapeamento_mcse"]
           status_validacao?: Database["public"]["Enums"]["status_validacao_linha"]
           subgrupo_mcse?: string | null
           trabalho_auditoria_id: string
           updated_at?: string
+          usuario_revisao?: string | null
+          usuario_validacao?: string | null
           valor_validado?: number | null
           variacao_absoluta?: number | null
           variacao_percentual?: number | null
@@ -121,13 +147,18 @@ export type Database = {
           cliente_id?: string
           codigo_conta_balancete?: string
           codigo_mcse?: string | null
+          comentario_auditor?: string | null
+          comentario_revisor?: string | null
           conta_mcse_id?: string | null
           conta_origem_id?: string | null
           created_at?: string
           creditos?: number | null
+          data_revisao?: string | null
+          data_validacao?: string | null
           debitos?: number | null
           descricao_conta_balancete?: string
           descricao_mcse?: string | null
+          descricao_pendencia?: string | null
           diferenca_aceita?: boolean | null
           diferenca_validacao?: number | null
           exercicio_id?: string
@@ -135,14 +166,23 @@ export type Database = {
           id?: string
           justificativa_diferenca?: string | null
           observacao_importacao?: string | null
+          possui_pendencia?: boolean | null
           saldo_anterior?: number | null
           saldo_atual?: number | null
+          severidade?:
+            | Database["public"]["Enums"]["severidade_pendencia"]
+            | null
+          status_linha?:
+            | Database["public"]["Enums"]["status_linha_balancete"]
+            | null
           status_localizacao_conta?: Database["public"]["Enums"]["status_localizacao_conta"]
           status_mapeamento_mcse?: Database["public"]["Enums"]["status_mapeamento_mcse"]
           status_validacao?: Database["public"]["Enums"]["status_validacao_linha"]
           subgrupo_mcse?: string | null
           trabalho_auditoria_id?: string
           updated_at?: string
+          usuario_revisao?: string | null
+          usuario_validacao?: string | null
           valor_validado?: number | null
           variacao_absoluta?: number | null
           variacao_percentual?: number | null
@@ -488,6 +528,86 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      documentos_referencia_balancete: {
+        Row: {
+          ativo: boolean
+          balancete_linha_id: string
+          caminho_arquivo_ou_url: string
+          cliente_id: string
+          created_at: string
+          exercicio_id: string
+          id: string
+          nome_arquivo: string
+          observacao_documento: string | null
+          tipo_arquivo: string
+          trabalho_auditoria_id: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          balancete_linha_id: string
+          caminho_arquivo_ou_url: string
+          cliente_id: string
+          created_at?: string
+          exercicio_id: string
+          id?: string
+          nome_arquivo: string
+          observacao_documento?: string | null
+          tipo_arquivo?: string
+          trabalho_auditoria_id: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          balancete_linha_id?: string
+          caminho_arquivo_ou_url?: string
+          cliente_id?: string
+          created_at?: string
+          exercicio_id?: string
+          id?: string
+          nome_arquivo?: string
+          observacao_documento?: string | null
+          tipo_arquivo?: string
+          trabalho_auditoria_id?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_referencia_balancete_balancete_linha_id_fkey"
+            columns: ["balancete_linha_id"]
+            isOneToOne: false
+            referencedRelation: "balancete_linhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_referencia_balancete_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_referencia_balancete_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "exercicios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_referencia_balancete_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exercicios: {
         Row: {
@@ -848,6 +968,7 @@ export type Database = {
         | "gerente"
         | "socio"
       segmento_cliente: "setor_eletrico" | "outro"
+      severidade_pendencia: "baixa" | "media" | "alta" | "critica"
       status_cliente: "ativo" | "inativo" | "prospecto"
       status_exercicio: "aberto" | "em_andamento" | "fechado" | "arquivado"
       status_importacao_balancete:
@@ -855,6 +976,13 @@ export type Database = {
         | "processando"
         | "erro"
         | "finalizado"
+      status_linha_balancete:
+        | "pendente"
+        | "em_analise"
+        | "validado"
+        | "divergente"
+        | "revisado"
+        | "concluido"
       status_localizacao_conta:
         | "localizada"
         | "nao_localizada"
@@ -1028,6 +1156,7 @@ export const Constants = {
         "socio",
       ],
       segmento_cliente: ["setor_eletrico", "outro"],
+      severidade_pendencia: ["baixa", "media", "alta", "critica"],
       status_cliente: ["ativo", "inativo", "prospecto"],
       status_exercicio: ["aberto", "em_andamento", "fechado", "arquivado"],
       status_importacao_balancete: [
@@ -1035,6 +1164,14 @@ export const Constants = {
         "processando",
         "erro",
         "finalizado",
+      ],
+      status_linha_balancete: [
+        "pendente",
+        "em_analise",
+        "validado",
+        "divergente",
+        "revisado",
+        "concluido",
       ],
       status_localizacao_conta: [
         "localizada",
