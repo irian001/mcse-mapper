@@ -53,10 +53,6 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from("documentos-balancete")
-        .getPublicUrl(filePath);
-
       const { error: insertError } = await supabase
         .from("documentos_referencia_balancete")
         .insert({
@@ -66,7 +62,7 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
           exercicio_id: linha.exercicio_id,
           nome_arquivo: file.name,
           tipo_arquivo: "application/pdf",
-          caminho_arquivo_ou_url: urlData.publicUrl,
+          caminho_arquivo_ou_url: filePath,
           observacao_documento: observacao.trim() || null,
         });
 
