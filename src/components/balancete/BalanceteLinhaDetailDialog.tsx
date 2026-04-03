@@ -148,7 +148,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
             <span className="text-muted-foreground">Código:</span>
             <span className="font-mono">{linha.codigo_conta_balancete}</span>
             <span className="text-muted-foreground">Descrição:</span>
-            <span>{linha.descricao_conta_balancete}</span>
+            <span className="font-semibold text-base">{linha.descricao_conta_balancete}</span>
             <span className="text-muted-foreground">Classificação:</span>
             <span className="font-mono">{linha.classificacao_origem || "—"}</span>
             <span className="text-muted-foreground">MCSE:</span>
