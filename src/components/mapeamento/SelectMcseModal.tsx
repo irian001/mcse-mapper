@@ -74,6 +74,26 @@ export default function SelectMcseModal({ open, onOpenChange, selectedCount, onC
           </DialogDescription>
         </DialogHeader>
 
+        {mappingInfo && mappingInfo.mappedCount > 0 && (
+          mappingInfo.allSameMcse ? (
+            <Alert className="border-info/30 bg-info/5">
+              <Info size={14} className="text-info" />
+              <AlertDescription className="text-sm">
+                Todas as {selectedCount} conta(s) selecionadas já estão mapeadas para:{" "}
+                <span className="font-mono font-medium">{mappingInfo.commonMcseCode}</span>
+                {" — "}{mappingInfo.commonMcseDesc}
+              </AlertDescription>
+            </Alert>
+          ) : mappingInfo.hasDifferentMappings ? (
+            <Alert className="border-warning/30 bg-warning/5">
+              <AlertTriangle size={14} className="text-warning" />
+              <AlertDescription className="text-sm">
+                As contas selecionadas possuem mapeamentos diferentes. A nova ação irá sobrescrever os mapeamentos existentes.
+              </AlertDescription>
+            </Alert>
+          ) : null
+        )}
+
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
           <Input
