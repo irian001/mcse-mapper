@@ -170,7 +170,7 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
                 <Button variant="ghost" size="icon" className="h-7 w-7">
                   <ExternalLink size={12} />
                 </Button>
-              </a>
+              </button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
