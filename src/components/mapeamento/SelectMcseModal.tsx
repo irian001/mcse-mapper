@@ -8,11 +8,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+interface MappingInfo {
+  allSameMcse: boolean;
+  commonMcseCode?: string;
+  commonMcseDesc?: string;
+  hasDifferentMappings: boolean;
+  mappedCount: number;
+}
+
 interface SelectMcseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedCount: number;
   onConfirm: (contaMcse: any) => void;
+  mappingInfo?: MappingInfo;
 }
 
 export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm }: SelectMcseModalProps) {
