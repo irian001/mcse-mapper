@@ -64,9 +64,12 @@ export type Database = {
           debitos: number | null
           descricao_conta_balancete: string
           descricao_mcse: string | null
+          diferenca_aceita: boolean | null
+          diferenca_validacao: number | null
           exercicio_id: string
           grupo_mcse: string | null
           id: string
+          justificativa_diferenca: string | null
           observacao_importacao: string | null
           saldo_anterior: number | null
           saldo_atual: number | null
@@ -76,6 +79,7 @@ export type Database = {
           subgrupo_mcse: string | null
           trabalho_auditoria_id: string
           updated_at: string
+          valor_validado: number | null
           variacao_absoluta: number | null
           variacao_percentual: number | null
         }
@@ -92,9 +96,12 @@ export type Database = {
           debitos?: number | null
           descricao_conta_balancete?: string
           descricao_mcse?: string | null
+          diferenca_aceita?: boolean | null
+          diferenca_validacao?: number | null
           exercicio_id: string
           grupo_mcse?: string | null
           id?: string
+          justificativa_diferenca?: string | null
           observacao_importacao?: string | null
           saldo_anterior?: number | null
           saldo_atual?: number | null
@@ -104,6 +111,7 @@ export type Database = {
           subgrupo_mcse?: string | null
           trabalho_auditoria_id: string
           updated_at?: string
+          valor_validado?: number | null
           variacao_absoluta?: number | null
           variacao_percentual?: number | null
         }
@@ -120,9 +128,12 @@ export type Database = {
           debitos?: number | null
           descricao_conta_balancete?: string
           descricao_mcse?: string | null
+          diferenca_aceita?: boolean | null
+          diferenca_validacao?: number | null
           exercicio_id?: string
           grupo_mcse?: string | null
           id?: string
+          justificativa_diferenca?: string | null
           observacao_importacao?: string | null
           saldo_anterior?: number | null
           saldo_atual?: number | null
@@ -132,6 +143,7 @@ export type Database = {
           subgrupo_mcse?: string | null
           trabalho_auditoria_id?: string
           updated_at?: string
+          valor_validado?: number | null
           variacao_absoluta?: number | null
           variacao_percentual?: number | null
         }
