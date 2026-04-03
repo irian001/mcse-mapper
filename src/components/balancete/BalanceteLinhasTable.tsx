@@ -5,8 +5,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search } from "lucide-react";
+import { Search, CheckCircle2, XCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import BalanceteLinhaDetailDialog from "./BalanceteLinhaDetailDialog";
 
 function statusLocBadge(s: string) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -50,6 +51,41 @@ function fmtPct(v: number | null) {
   return v.toFixed(1) + "%";
 }
 
+function DiferencaAceitaIcon({ linha }: { linha: any }) {
+  if (linha.diferenca_aceita === true) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <CheckCircle2 size={16} className="text-green-600" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[250px]">
+            <p className="text-xs font-medium">Diferença aceita</p>
+            {linha.justificativa_diferenca && (
+              <p className="text-xs mt-1">{linha.justificativa_diferenca}</p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  if (linha.diferenca_aceita === false) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <XCircle size={16} className="text-destructive" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Diferença não aceita</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  return <span className="text-muted-foreground">—</span>;
+}
+
 interface Props {
   balanceteId: string;
 }
@@ -60,6 +96,8 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
   const [filterMap, setFilterMap] = useState("all");
   const [filterVal, setFilterVal] = useState("all");
   const [filterVariacao, setFilterVariacao] = useState(false);
+  const [filterDifAceita, setFilterDifAceita] = useState("all");
+  const [filterDifNaoZero, setFilterDifNaoZero] = useState(false);
   const [selectedLinha, setSelectedLinha] = useState<any>(null);
 
   const { data: linhas = [], isLoading } = useQuery({
@@ -86,6 +124,14 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
     if (filterMap !== "all" && l.status_mapeamento_mcse !== filterMap) return false;
     if (filterVal !== "all" && l.status_validacao !== filterVal) return false;
     if (filterVariacao && Math.abs(l.variacao_percentual || 0) < 10) return false;
+
+    // New filters
+    if (filterDifAceita === "aceita" && l.diferenca_aceita !== true) return false;
+    if (filterDifAceita === "nao_aceita" && l.diferenca_aceita !== false) return false;
+    if (filterDifAceita === "com_justificativa" && !l.justificativa_diferenca) return false;
+    if (filterDifAceita === "sem_justificativa" && (l.justificativa_diferenca || l.diferenca_validacao == null || l.diferenca_validacao === 0)) return false;
+    if (filterDifNaoZero && (l.diferenca_validacao == null || l.diferenca_validacao === 0)) return false;
+
     return true;
   });
 
@@ -127,9 +173,23 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
             <SelectItem value="pendente">Pendente</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={filterDifAceita} onValueChange={setFilterDifAceita}>
+          <SelectTrigger className="h-9 w-44 text-xs"><SelectValue placeholder="Diferença" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas diferenças</SelectItem>
+            <SelectItem value="aceita">Diferença aceita</SelectItem>
+            <SelectItem value="nao_aceita">Diferença não aceita</SelectItem>
+            <SelectItem value="com_justificativa">Com justificativa</SelectItem>
+            <SelectItem value="sem_justificativa">Sem justificativa</SelectItem>
+          </SelectContent>
+        </Select>
         <label className="flex items-center gap-1.5 text-xs cursor-pointer">
           <input type="checkbox" checked={filterVariacao} onChange={e => setFilterVariacao(e.target.checked)} className="rounded" />
-          Variação &gt; 10%
+          Var. &gt; 10%
+        </label>
+        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+          <input type="checkbox" checked={filterDifNaoZero} onChange={e => setFilterDifNaoZero(e.target.checked)} className="rounded" />
+          Dif. ≠ 0
         </label>
         <span className="text-xs text-muted-foreground ml-auto">{filtered.length} de {linhas.length} linhas</span>
       </div>
@@ -142,9 +202,10 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
               <TableHead>Código</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead>MCSE</TableHead>
-              <TableHead>Grupo</TableHead>
-              <TableHead className="text-right">Saldo Ant.</TableHead>
               <TableHead className="text-right">Saldo Atual</TableHead>
+              <TableHead className="text-right">Val. Validado</TableHead>
+              <TableHead className="text-right">Dif. Valid.</TableHead>
+              <TableHead className="text-center">Aceita</TableHead>
               <TableHead className="text-right">Var. %</TableHead>
               <TableHead>Localiz.</TableHead>
               <TableHead>MCSE</TableHead>
@@ -154,6 +215,7 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
           <TableBody>
             {filtered.slice(0, 300).map((l: any) => {
               const highVar = l.variacao_percentual != null && Math.abs(l.variacao_percentual) > 10;
+              const hasDif = l.diferenca_validacao != null && l.diferenca_validacao !== 0;
               return (
                 <TableRow
                   key={l.id}
@@ -161,11 +223,16 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
                   onClick={() => setSelectedLinha(l)}
                 >
                   <TableCell className="font-mono text-xs">{l.codigo_conta_balancete}</TableCell>
-                  <TableCell className="text-xs max-w-[200px] truncate">{l.descricao_conta_balancete}</TableCell>
+                  <TableCell className="text-xs max-w-[180px] truncate">{l.descricao_conta_balancete}</TableCell>
                   <TableCell className="font-mono text-xs">{l.codigo_mcse || "—"}</TableCell>
-                  <TableCell className="text-xs">{l.grupo_mcse || "—"}</TableCell>
-                  <TableCell className="text-right font-mono text-xs">{fmt(l.saldo_anterior)}</TableCell>
                   <TableCell className="text-right font-mono text-xs">{fmt(l.saldo_atual)}</TableCell>
+                  <TableCell className="text-right font-mono text-xs">{fmt(l.valor_validado)}</TableCell>
+                  <TableCell className={`text-right font-mono text-xs ${hasDif ? "text-amber-600 font-semibold" : ""}`}>
+                    {fmt(l.diferenca_validacao)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <DiferencaAceitaIcon linha={l} />
+                  </TableCell>
                   <TableCell className={`text-right font-mono text-xs ${highVar ? "text-amber-600 font-semibold" : ""}`}>{fmtPct(l.variacao_percentual)}</TableCell>
                   <TableCell>{statusLocBadge(l.status_localizacao_conta)}</TableCell>
                   <TableCell>{statusMapBadge(l.status_mapeamento_mcse)}</TableCell>
@@ -179,56 +246,11 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
       </div>
 
       {/* Detail dialog */}
-      <Dialog open={!!selectedLinha} onOpenChange={() => setSelectedLinha(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle className="text-base">Detalhe da Linha</DialogTitle></DialogHeader>
-          {selectedLinha && (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <span className="text-muted-foreground">Código:</span>
-              <span className="font-mono">{selectedLinha.codigo_conta_balancete}</span>
-              <span className="text-muted-foreground">Descrição:</span>
-              <span>{selectedLinha.descricao_conta_balancete}</span>
-              <span className="text-muted-foreground">Classificação:</span>
-              <span className="font-mono">{selectedLinha.classificacao_origem || "—"}</span>
-              <span className="text-muted-foreground col-span-2 font-medium pt-2 border-t">Conta MCSE</span>
-              <span className="text-muted-foreground">Código MCSE:</span>
-              <span className="font-mono">{selectedLinha.codigo_mcse || "—"}</span>
-              <span className="text-muted-foreground">Descrição MCSE:</span>
-              <span>{selectedLinha.descricao_mcse || "—"}</span>
-              <span className="text-muted-foreground">Grupo:</span>
-              <span>{selectedLinha.grupo_mcse || "—"}</span>
-              <span className="text-muted-foreground">Subgrupo:</span>
-              <span>{selectedLinha.subgrupo_mcse || "—"}</span>
-              <span className="text-muted-foreground col-span-2 font-medium pt-2 border-t">Valores</span>
-              <span className="text-muted-foreground">Saldo Anterior:</span>
-              <span className="font-mono">{fmt(selectedLinha.saldo_anterior)}</span>
-              <span className="text-muted-foreground">Débitos:</span>
-              <span className="font-mono">{fmt(selectedLinha.debitos)}</span>
-              <span className="text-muted-foreground">Créditos:</span>
-              <span className="font-mono">{fmt(selectedLinha.creditos)}</span>
-              <span className="text-muted-foreground">Saldo Atual:</span>
-              <span className="font-mono">{fmt(selectedLinha.saldo_atual)}</span>
-              <span className="text-muted-foreground">Variação Abs.:</span>
-              <span className="font-mono">{fmt(selectedLinha.variacao_absoluta)}</span>
-              <span className="text-muted-foreground">Variação %:</span>
-              <span className="font-mono">{fmtPct(selectedLinha.variacao_percentual)}</span>
-              <span className="text-muted-foreground col-span-2 font-medium pt-2 border-t">Status</span>
-              <span className="text-muted-foreground">Localização:</span>
-              {statusLocBadge(selectedLinha.status_localizacao_conta)}
-              <span className="text-muted-foreground">MCSE:</span>
-              {statusMapBadge(selectedLinha.status_mapeamento_mcse)}
-              <span className="text-muted-foreground">Validação:</span>
-              {statusValBadge(selectedLinha.status_validacao)}
-              {selectedLinha.observacao_importacao && (
-                <>
-                  <span className="text-muted-foreground">Observação:</span>
-                  <span>{selectedLinha.observacao_importacao}</span>
-                </>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <BalanceteLinhaDetailDialog
+        linha={selectedLinha}
+        balanceteId={balanceteId}
+        onClose={() => setSelectedLinha(null)}
+      />
     </div>
   );
 }
