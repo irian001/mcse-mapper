@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, FileText, Upload, Trash2, AlertTriangle, CheckCircle2, Clock, Eye, XCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import DocumentosReferenciaBlock from "./DocumentosReferenciaBlock";
 
 function fmt(v: number | null) {
   if (v == null) return "—";
@@ -21,37 +25,21 @@ function fmtPct(v: number | null) {
   return v.toFixed(1) + "%";
 }
 
-function statusLocBadge(s: string) {
-  const map: Record<string, { label: string; cls: string }> = {
-    localizada: { label: "Localizada", cls: "bg-green-100 text-green-800 border-green-200" },
-    localizada_por_codigo: { label: "Por Código", cls: "bg-green-50 text-green-700 border-green-200" },
-    localizada_por_classificacao: { label: "Por Classif.", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-    localizada_por_descricao: { label: "Por Desc.", cls: "bg-cyan-50 text-cyan-700 border-cyan-200" },
-    nao_localizada: { label: "Não Localizada", cls: "bg-red-100 text-red-800 border-red-200" },
-  };
-  const m = map[s] || { label: s, cls: "" };
-  return <Badge variant="outline" className={`text-xs ${m.cls}`}>{m.label}</Badge>;
-}
+const STATUS_OPTIONS = [
+  { value: "pendente", label: "Pendente", icon: Clock, cls: "text-yellow-700" },
+  { value: "em_analise", label: "Em Análise", icon: Eye, cls: "text-blue-700" },
+  { value: "validado", label: "Validado", icon: CheckCircle2, cls: "text-green-700" },
+  { value: "divergente", label: "Divergente", icon: XCircle, cls: "text-destructive" },
+  { value: "revisado", label: "Revisado", icon: CheckCircle2, cls: "text-purple-700" },
+  { value: "concluido", label: "Concluído", icon: CheckCircle2, cls: "text-green-800" },
+];
 
-function statusMapBadge(s: string) {
-  const map: Record<string, { label: string; cls: string }> = {
-    mapeado: { label: "Mapeado", cls: "bg-green-100 text-green-800 border-green-200" },
-    sem_mapeamento: { label: "Sem MCSE", cls: "bg-orange-100 text-orange-800 border-orange-200" },
-    conta_nao_localizada: { label: "Conta N/L", cls: "bg-red-100 text-red-800 border-red-200" },
-  };
-  const m = map[s] || { label: s, cls: "" };
-  return <Badge variant="outline" className={`text-xs ${m.cls}`}>{m.label}</Badge>;
-}
-
-function statusValBadge(s: string) {
-  const map: Record<string, { label: string; cls: string }> = {
-    pronto_para_analise: { label: "Pronto", cls: "bg-green-100 text-green-800 border-green-200" },
-    revisar_mapeamento: { label: "Revisar", cls: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-    pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
-  };
-  const m = map[s] || { label: s, cls: "" };
-  return <Badge variant="outline" className={`text-xs ${m.cls}`}>{m.label}</Badge>;
-}
+const SEVERIDADE_OPTIONS = [
+  { value: "baixa", label: "Baixa", cls: "bg-green-100 text-green-800 border-green-200" },
+  { value: "media", label: "Média", cls: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  { value: "alta", label: "Alta", cls: "bg-orange-100 text-orange-800 border-orange-200" },
+  { value: "critica", label: "Crítica", cls: "bg-red-100 text-red-800 border-red-200" },
+];
 
 interface Props {
   linha: any;
@@ -62,54 +50,83 @@ interface Props {
 export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose }: Props) {
   const queryClient = useQueryClient();
 
-  const [valorValidado, setValorValidado] = useState<string>("");
+  // Form state
+  const [valorValidado, setValorValidado] = useState("");
+  const [statusLinha, setStatusLinha] = useState("pendente");
+  const [comentarioAuditor, setComentarioAuditor] = useState("");
+  const [comentarioRevisor, setComentarioRevisor] = useState("");
+  const [possuiPendencia, setPossuiPendencia] = useState(false);
+  const [descricaoPendencia, setDescricaoPendencia] = useState("");
+  const [severidade, setSeveridade] = useState<string>("");
   const [diferencaAceita, setDiferencaAceita] = useState<boolean | null>(null);
   const [justificativa, setJustificativa] = useState("");
-  const [error, setError] = useState("");
 
   useEffect(() => {
     if (linha) {
       setValorValidado(linha.valor_validado != null ? String(linha.valor_validado) : "");
+      setStatusLinha(linha.status_linha || "pendente");
+      setComentarioAuditor(linha.comentario_auditor || "");
+      setComentarioRevisor(linha.comentario_revisor || "");
+      setPossuiPendencia(linha.possui_pendencia || false);
+      setDescricaoPendencia(linha.descricao_pendencia || "");
+      setSeveridade(linha.severidade || "");
       setDiferencaAceita(linha.diferenca_aceita ?? null);
-      setJustificativa(linha.justificativa_diferenca ?? "");
-      setError("");
+      setJustificativa(linha.justificativa_diferenca || "");
     }
   }, [linha]);
 
-  const diferencaValidacao = valorValidado !== ""
+  const diferencaCalc = valorValidado !== ""
     ? (linha?.saldo_atual ?? 0) - parseFloat(valorValidado || "0")
-    : linha?.diferenca_validacao ?? null;
+    : null;
 
-  const hasDiferenca = diferencaValidacao != null && diferencaValidacao !== 0;
+  const hasDiferenca = diferencaCalc != null && diferencaCalc !== 0;
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (diferencaAceita === true && !justificativa.trim()) {
         throw new Error("Justificativa é obrigatória quando a diferença é aceita.");
       }
+      if (possuiPendencia && severidade && !descricaoPendencia.trim()) {
+        throw new Error("Descrição da pendência é obrigatória quando severidade é informada.");
+      }
 
       const valValidado = valorValidado !== "" ? parseFloat(valorValidado) : null;
       const difVal = valValidado != null ? (linha.saldo_atual ?? 0) - valValidado : null;
 
+      const updateData: any = {
+        valor_validado: valValidado,
+        diferenca_validacao: difVal,
+        status_linha: statusLinha,
+        comentario_auditor: comentarioAuditor.trim() || null,
+        comentario_revisor: comentarioRevisor.trim() || null,
+        possui_pendencia: possuiPendencia,
+        descricao_pendencia: descricaoPendencia.trim() || null,
+        severidade: severidade || null,
+        diferenca_aceita: hasDiferenca ? diferencaAceita : null,
+        justificativa_diferenca: justificativa.trim() || null,
+      };
+
+      if (statusLinha === "validado" || statusLinha === "divergente" || statusLinha === "concluido") {
+        updateData.data_validacao = new Date().toISOString();
+      }
+      if (statusLinha === "revisado") {
+        updateData.data_revisao = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from("balancete_linhas")
-        .update({
-          valor_validado: valValidado,
-          diferenca_validacao: difVal,
-          diferenca_aceita: hasDiferenca || difVal != null && difVal !== 0 ? diferencaAceita : null,
-          justificativa_diferenca: justificativa.trim() || null,
-        })
+        .update(updateData)
         .eq("id", linha.id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Validação salva com sucesso");
+      toast.success("Linha atualizada com sucesso");
       queryClient.invalidateQueries({ queryKey: ["balancete_linhas", balanceteId] });
       onClose();
     },
     onError: (err: any) => {
-      setError(err.message);
+      toast.error(err.message);
     },
   });
 
@@ -117,127 +134,196 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
 
   return (
     <Dialog open={!!linha} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle className="text-base">Detalhe da Linha</DialogTitle></DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-base flex items-center gap-2">
+            <FileText size={18} />
+            Detalhe da Linha — {linha.codigo_conta_balancete}
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <span className="text-muted-foreground">Código:</span>
-          <span className="font-mono">{linha.codigo_conta_balancete}</span>
-          <span className="text-muted-foreground">Descrição:</span>
-          <span>{linha.descricao_conta_balancete}</span>
-          <span className="text-muted-foreground">Classificação:</span>
-          <span className="font-mono">{linha.classificacao_origem || "—"}</span>
-
-          <span className="text-muted-foreground col-span-2 font-medium pt-2 border-t">Conta MCSE</span>
-          <span className="text-muted-foreground">Código MCSE:</span>
-          <span className="font-mono">{linha.codigo_mcse || "—"}</span>
-          <span className="text-muted-foreground">Descrição MCSE:</span>
-          <span>{linha.descricao_mcse || "—"}</span>
-          <span className="text-muted-foreground">Grupo:</span>
-          <span>{linha.grupo_mcse || "—"}</span>
-          <span className="text-muted-foreground">Subgrupo:</span>
-          <span>{linha.subgrupo_mcse || "—"}</span>
-
-          <span className="text-muted-foreground col-span-2 font-medium pt-2 border-t">Valores</span>
-          <span className="text-muted-foreground">Saldo Anterior:</span>
-          <span className="font-mono">{fmt(linha.saldo_anterior)}</span>
-          <span className="text-muted-foreground">Débitos:</span>
-          <span className="font-mono">{fmt(linha.debitos)}</span>
-          <span className="text-muted-foreground">Créditos:</span>
-          <span className="font-mono">{fmt(linha.creditos)}</span>
-          <span className="text-muted-foreground">Saldo Atual:</span>
-          <span className="font-mono">{fmt(linha.saldo_atual)}</span>
-          <span className="text-muted-foreground">Variação Abs.:</span>
-          <span className="font-mono">{fmt(linha.variacao_absoluta)}</span>
-          <span className="text-muted-foreground">Variação %:</span>
-          <span className="font-mono">{fmtPct(linha.variacao_percentual)}</span>
-
-          <span className="text-muted-foreground col-span-2 font-medium pt-2 border-t">Status</span>
-          <span className="text-muted-foreground">Localização:</span>
-          {statusLocBadge(linha.status_localizacao_conta)}
-          <span className="text-muted-foreground">MCSE:</span>
-          {statusMapBadge(linha.status_mapeamento_mcse)}
-          <span className="text-muted-foreground">Validação:</span>
-          {statusValBadge(linha.status_validacao)}
-          {linha.observacao_importacao && (
-            <>
-              <span className="text-muted-foreground">Observação:</span>
-              <span>{linha.observacao_importacao}</span>
-            </>
-          )}
+        {/* Block 1 — Account Data */}
+        <div className="space-y-1">
+          <h4 className="font-medium text-sm text-muted-foreground">Dados da Conta</h4>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm bg-muted/30 rounded-md p-3">
+            <span className="text-muted-foreground">Código:</span>
+            <span className="font-mono">{linha.codigo_conta_balancete}</span>
+            <span className="text-muted-foreground">Descrição:</span>
+            <span>{linha.descricao_conta_balancete}</span>
+            <span className="text-muted-foreground">Classificação:</span>
+            <span className="font-mono">{linha.classificacao_origem || "—"}</span>
+            <span className="text-muted-foreground">MCSE:</span>
+            <span className="font-mono">{linha.codigo_mcse || "—"} {linha.descricao_mcse ? `— ${linha.descricao_mcse}` : ""}</span>
+            <span className="text-muted-foreground">Grupo / Subgrupo:</span>
+            <span>{linha.grupo_mcse || "—"} / {linha.subgrupo_mcse || "—"}</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-xs bg-muted/30 rounded-md p-3">
+            <div className="text-center">
+              <span className="text-muted-foreground block">Saldo Ant.</span>
+              <span className="font-mono font-medium">{fmt(linha.saldo_anterior)}</span>
+            </div>
+            <div className="text-center">
+              <span className="text-muted-foreground block">Débitos</span>
+              <span className="font-mono font-medium">{fmt(linha.debitos)}</span>
+            </div>
+            <div className="text-center">
+              <span className="text-muted-foreground block">Créditos</span>
+              <span className="font-mono font-medium">{fmt(linha.creditos)}</span>
+            </div>
+            <div className="text-center">
+              <span className="text-muted-foreground block">Saldo Atual</span>
+              <span className="font-mono font-semibold">{fmt(linha.saldo_atual)}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Validation section */}
-        <div className="border-t pt-4 mt-2 space-y-4">
-          <h4 className="font-medium text-sm">Validação e Diferença</h4>
+        <Separator />
 
-          <div className="space-y-2">
-            <Label htmlFor="valor_validado" className="text-xs">Valor Validado</Label>
-            <Input
-              id="valor_validado"
-              type="number"
-              step="0.01"
-              placeholder="Informe o valor validado"
-              value={valorValidado}
-              onChange={e => setValorValidado(e.target.value)}
-              className="h-9"
-            />
+        {/* Block 2 — Validation */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-muted-foreground">Validação</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Valor Validado</Label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Informe o valor validado"
+                value={valorValidado}
+                onChange={e => setValorValidado(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Diferença (saldo − validado)</Label>
+              <div className={`h-9 flex items-center px-3 rounded-md border text-sm font-mono ${
+                diferencaCalc != null && diferencaCalc !== 0 ? "bg-amber-50 border-amber-200 text-amber-700 font-semibold" : "bg-muted/50"
+              }`}>
+                {diferencaCalc != null ? fmt(diferencaCalc) : "—"}
+              </div>
+            </div>
           </div>
 
-          {diferencaValidacao != null && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Diferença:</span>
-              <span className={`font-mono text-sm font-semibold ${diferencaValidacao === 0 ? "text-green-700" : "text-amber-600"}`}>
-                {fmt(diferencaValidacao)}
-              </span>
-            </div>
-          )}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Status da Linha</Label>
+            <Select value={statusLinha} onValueChange={setStatusLinha}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map(s => (
+                  <SelectItem key={s.value} value={s.value}>
+                    <span className={s.cls}>{s.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {hasDiferenca && (
-            <>
+            <div className="space-y-2 p-3 rounded-md border border-amber-200 bg-amber-50/50">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="diferenca_aceita"
+                  id="dif_aceita"
                   checked={diferencaAceita === true}
-                  onCheckedChange={(checked) => {
-                    setDiferencaAceita(checked === true ? true : checked === false ? false : null);
-                    if (checked !== true) setError("");
-                  }}
+                  onCheckedChange={(checked) => setDiferencaAceita(checked === true ? true : false)}
                 />
-                <Label htmlFor="diferenca_aceita" className="text-xs cursor-pointer">
-                  Diferença aceita pelo auditor
-                </Label>
+                <Label htmlFor="dif_aceita" className="text-xs cursor-pointer">Diferença aceita pelo auditor</Label>
               </div>
-
               <div className="space-y-1">
-                <Label htmlFor="justificativa" className="text-xs">
+                <Label className="text-xs">
                   Justificativa da diferença
                   {diferencaAceita === true && <span className="text-destructive ml-1">*</span>}
                 </Label>
                 <Textarea
-                  id="justificativa"
-                  placeholder={diferencaAceita === true ? "Obrigatório — informe a justificativa técnica" : "Opcional — informe a justificativa se necessário"}
+                  placeholder={diferencaAceita === true ? "Obrigatório — justificativa técnica" : "Opcional"}
                   value={justificativa}
-                  onChange={e => { setJustificativa(e.target.value); setError(""); }}
-                  className="min-h-[60px]"
-                  disabled={!hasDiferenca}
+                  onChange={e => setJustificativa(e.target.value)}
+                  className="min-h-[50px]"
                 />
               </div>
-            </>
+            </div>
           )}
-
-          {error && <p className="text-xs text-destructive">{error}</p>}
-
-          <Button
-            size="sm"
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="w-full"
-          >
-            <Save size={14} className="mr-1" />
-            {saveMutation.isPending ? "Salvando..." : "Salvar Validação"}
-          </Button>
         </div>
+
+        <Separator />
+
+        {/* Block 3 — Comments */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-muted-foreground">Comentários</h4>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Comentário do Auditor</Label>
+            <Textarea
+              placeholder="Registre observações da análise..."
+              value={comentarioAuditor}
+              onChange={e => setComentarioAuditor(e.target.value)}
+              className="min-h-[60px]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Comentário do Revisor</Label>
+            <Textarea
+              placeholder="Registre observações da revisão..."
+              value={comentarioRevisor}
+              onChange={e => setComentarioRevisor(e.target.value)}
+              className="min-h-[60px]"
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Block 4 — Pendencies */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm text-muted-foreground">Pendências</h4>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="pendencia"
+              checked={possuiPendencia}
+              onCheckedChange={(checked) => setPossuiPendencia(checked === true)}
+            />
+            <Label htmlFor="pendencia" className="text-xs cursor-pointer">Possui pendência</Label>
+          </div>
+          {possuiPendencia && (
+            <div className="space-y-2 p-3 rounded-md border border-yellow-200 bg-yellow-50/50">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Severidade</Label>
+                <Select value={severidade} onValueChange={setSeveridade}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    {SEVERIDADE_OPTIONS.map(s => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Descrição da Pendência</Label>
+                <Textarea
+                  placeholder="Descreva a pendência..."
+                  value={descricaoPendencia}
+                  onChange={e => setDescricaoPendencia(e.target.value)}
+                  className="min-h-[50px]"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Block 5 — Documents */}
+        <DocumentosReferenciaBlock linha={linha} />
+
+        <Separator />
+
+        {/* Save */}
+        <Button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="w-full"
+        >
+          <Save size={14} className="mr-1" />
+          {saveMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+        </Button>
       </DialogContent>
     </Dialog>
   );
