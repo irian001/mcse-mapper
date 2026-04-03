@@ -152,12 +152,20 @@ export default function DocumentosReferenciaBlock({ linha }: Props) {
                   {doc.observacao_documento && ` — ${doc.observacao_documento}`}
                 </p>
               </div>
-              <a
-                href={doc.caminho_arquivo_ou_url}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 className="shrink-0"
-                onClick={e => e.stopPropagation()}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const path = doc.caminho_arquivo_ou_url;
+                  const { data } = await supabase.storage
+                    .from("documentos-balancete")
+                    .createSignedUrl(path, 300);
+                  if (data?.signedUrl) {
+                    window.open(data.signedUrl, "_blank");
+                  } else {
+                    toast.error("Erro ao gerar link do documento.");
+                  }
+                }}
               >
                 <Button variant="ghost" size="icon" className="h-7 w-7">
                   <ExternalLink size={12} />
