@@ -275,6 +275,11 @@ export default function AuditoresPage() {
                         <Unlink size={14} className="text-destructive" />
                       </Button>
                     )}
+                    {isAdmin && a.auth_user_id !== currentUserId && (
+                      <Button variant="ghost" size="icon" title="Excluir auditor" onClick={() => setDeleteTarget({ id: a.id, nome: a.nome })}>
+                        <Trash2 size={14} className="text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
