@@ -13,10 +13,37 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Pencil, Building2, Calendar, Settings } from "lucide-react";
+import { Plus, Pencil, Building2, Calendar, Settings, Search, MapPin, User } from "lucide-react";
 
 type StatusCliente = "ativo" | "inativo" | "prospecto";
 type StatusExercicio = "aberto" | "em_andamento" | "fechado" | "arquivado";
+
+interface ClienteForm {
+  razao_social: string;
+  nome_fantasia: string;
+  cnpj: string;
+  status: StatusCliente;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  nome_contador: string;
+  email_contato: string;
+}
+
+const emptyClienteForm: ClienteForm = {
+  razao_social: "", nome_fantasia: "", cnpj: "", status: "ativo",
+  cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "",
+  nome_contador: "", email_contato: "",
+};
+
+const UF_LIST = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA",
+  "PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
+];
 
 export default function ClientesPage() {
   const qc = useQueryClient();
@@ -24,7 +51,8 @@ export default function ClientesPage() {
 
   const [clienteDialog, setClienteDialog] = useState(false);
   const [editCliente, setEditCliente] = useState<any>(null);
-  const [clienteForm, setClienteForm] = useState({ razao_social: "", nome_fantasia: "", cnpj: "", status: "ativo" as StatusCliente });
+  const [clienteForm, setClienteForm] = useState<ClienteForm>(emptyClienteForm);
+  const [buscandoCep, setBuscandoCep] = useState(false);
 
   const [selectedCliente, setSelectedCliente] = useState<any>(null);
 
@@ -46,15 +74,48 @@ export default function ClientesPage() {
   const [paramDialog, setParamDialog] = useState(false);
   const [paramForm, setParamForm] = useState({ materialidade_global: "", limite_variacao_padrao: "", erp_principal: "", observacoes: "" });
 
+  const buscarCep = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+    setBuscandoCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setClienteForm(f => ({
+          ...f,
+          logradouro: data.logradouro || "",
+          bairro: data.bairro || "",
+          cidade: data.localidade || "",
+          uf: data.uf || "",
+        }));
+      } else {
+        toast.error("CEP não encontrado");
+      }
+    } catch {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setBuscandoCep(false);
+    }
+  };
+
   const saveCliente = useMutation({
     mutationFn: async () => {
+      const payload = { ...clienteForm };
       if (editCliente) {
-        await supabase.from("clientes").update(clienteForm).eq("id", editCliente.id);
+        await supabase.from("clientes").update(payload).eq("id", editCliente.id);
       } else {
-        await supabase.from("clientes").insert(clienteForm);
+        await supabase.from("clientes").insert(payload);
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["clientes"] }); setClienteDialog(false); toast.success("Cliente salvo!"); }
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["clientes"] });
+      setClienteDialog(false);
+      toast.success("Cliente salvo!");
+      if (editCliente && selectedCliente?.id === editCliente.id) {
+        setSelectedCliente({ ...selectedCliente, ...clienteForm });
+      }
+    }
   });
 
   const saveExercicio = useMutation({
@@ -82,8 +143,17 @@ export default function ClientesPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["parametros"] }); setParamDialog(false); toast.success("Parâmetros salvos!"); }
   });
 
-  const openNewCliente = () => { setEditCliente(null); setClienteForm({ razao_social: "", nome_fantasia: "", cnpj: "", status: "ativo" }); setClienteDialog(true); };
-  const openEditCliente = (c: any) => { setEditCliente(c); setClienteForm({ razao_social: c.razao_social, nome_fantasia: c.nome_fantasia || "", cnpj: c.cnpj, status: c.status }); setClienteDialog(true); };
+  const openNewCliente = () => { setEditCliente(null); setClienteForm(emptyClienteForm); setClienteDialog(true); };
+  const openEditCliente = (c: any) => {
+    setEditCliente(c);
+    setClienteForm({
+      razao_social: c.razao_social, nome_fantasia: c.nome_fantasia || "", cnpj: c.cnpj, status: c.status,
+      cep: c.cep || "", logradouro: c.logradouro || "", numero: c.numero || "", complemento: c.complemento || "",
+      bairro: c.bairro || "", cidade: c.cidade || "", uf: c.uf || "",
+      nome_contador: c.nome_contador || "", email_contato: c.email_contato || "",
+    });
+    setClienteDialog(true);
+  };
 
   const openNewExercicio = () => {
     setExercicioForm({ ano_exercicio: new Date().getFullYear(), data_inicio: `${new Date().getFullYear()}-01-01`, data_fim: `${new Date().getFullYear()}-12-31`, status: "aberto" });
@@ -135,11 +205,33 @@ export default function ClientesPage() {
                   <CardTitle className="text-lg flex items-center gap-2"><Building2 size={18} />{selectedCliente.razao_social}</CardTitle>
                   <Button variant="outline" size="sm" onClick={() => openEditCliente(selectedCliente)}><Pencil size={14} className="mr-1" /> Editar</Button>
                 </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
+                <CardContent className="text-sm text-muted-foreground space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>CNPJ: <span className="font-mono text-foreground">{selectedCliente.cnpj}</span></div>
                     <div>Nome Fantasia: <span className="text-foreground">{selectedCliente.nome_fantasia || "—"}</span></div>
                   </div>
+                  {(selectedCliente.logradouro || selectedCliente.cidade) && (
+                    <div className="border-t pt-2">
+                      <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground mb-1"><MapPin size={12} /> Endereço</div>
+                      <div className="text-foreground text-sm">
+                        {[selectedCliente.logradouro, selectedCliente.numero, selectedCliente.complemento].filter(Boolean).join(", ")}
+                        {selectedCliente.bairro && ` — ${selectedCliente.bairro}`}
+                      </div>
+                      <div className="text-foreground text-sm">
+                        {[selectedCliente.cidade, selectedCliente.uf].filter(Boolean).join(" / ")}
+                        {selectedCliente.cep && ` — CEP ${selectedCliente.cep}`}
+                      </div>
+                    </div>
+                  )}
+                  {(selectedCliente.nome_contador || selectedCliente.email_contato) && (
+                    <div className="border-t pt-2">
+                      <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground mb-1"><User size={12} /> Contador / Contato</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>Contador: <span className="text-foreground">{selectedCliente.nome_contador || "—"}</span></div>
+                        <div>E-mail: <span className="text-foreground">{selectedCliente.email_contato || "—"}</span></div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -193,23 +285,80 @@ export default function ClientesPage() {
 
       {/* Cliente Dialog */}
       <Dialog open={clienteDialog} onOpenChange={setClienteDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editCliente ? "Editar Cliente" : "Novo Cliente"}</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Razão Social</Label><Input value={clienteForm.razao_social} onChange={e => setClienteForm(f => ({ ...f, razao_social: e.target.value }))} /></div>
-            <div><Label>Nome Fantasia</Label><Input value={clienteForm.nome_fantasia} onChange={e => setClienteForm(f => ({ ...f, nome_fantasia: e.target.value }))} /></div>
-            <div><Label>CNPJ</Label><Input value={clienteForm.cnpj} onChange={e => setClienteForm(f => ({ ...f, cnpj: e.target.value }))} /></div>
-            <div>
-              <Label>Status</Label>
-              <Select value={clienteForm.status} onValueChange={v => setClienteForm(f => ({ ...f, status: v as StatusCliente }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                  <SelectItem value="prospecto">Prospecto</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            {/* Dados básicos */}
+            <div className="space-y-3">
+              <div className="text-sm font-semibold text-muted-foreground flex items-center gap-1"><Building2 size={14} /> Dados da Empresa</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Razão Social</Label><Input value={clienteForm.razao_social} onChange={e => setClienteForm(f => ({ ...f, razao_social: e.target.value }))} /></div>
+                <div><Label>Nome Fantasia</Label><Input value={clienteForm.nome_fantasia} onChange={e => setClienteForm(f => ({ ...f, nome_fantasia: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>CNPJ</Label><Input value={clienteForm.cnpj} onChange={e => setClienteForm(f => ({ ...f, cnpj: e.target.value }))} /></div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={clienteForm.status} onValueChange={v => setClienteForm(f => ({ ...f, status: v as StatusCliente }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                      <SelectItem value="prospecto">Prospecto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
+
+            {/* Endereço */}
+            <div className="space-y-3 border-t pt-4">
+              <div className="text-sm font-semibold text-muted-foreground flex items-center gap-1"><MapPin size={14} /> Endereço</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>CEP</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      value={clienteForm.cep}
+                      onChange={e => setClienteForm(f => ({ ...f, cep: e.target.value }))}
+                      placeholder="00000-000"
+                      maxLength={9}
+                    />
+                    <Button type="button" variant="outline" size="icon" onClick={() => buscarCep(clienteForm.cep)} disabled={buscandoCep}>
+                      <Search size={14} />
+                    </Button>
+                  </div>
+                </div>
+                <div className="col-span-2"><Label>Logradouro</Label><Input value={clienteForm.logradouro} onChange={e => setClienteForm(f => ({ ...f, logradouro: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <div><Label>Número</Label><Input value={clienteForm.numero} onChange={e => setClienteForm(f => ({ ...f, numero: e.target.value }))} /></div>
+                <div><Label>Complemento</Label><Input value={clienteForm.complemento} onChange={e => setClienteForm(f => ({ ...f, complemento: e.target.value }))} /></div>
+                <div className="col-span-2"><Label>Bairro</Label><Input value={clienteForm.bairro} onChange={e => setClienteForm(f => ({ ...f, bairro: e.target.value }))} /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2"><Label>Cidade</Label><Input value={clienteForm.cidade} onChange={e => setClienteForm(f => ({ ...f, cidade: e.target.value }))} /></div>
+                <div>
+                  <Label>UF</Label>
+                  <Select value={clienteForm.uf} onValueChange={v => setClienteForm(f => ({ ...f, uf: v }))}>
+                    <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                    <SelectContent>
+                      {UF_LIST.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Contador / Contato */}
+            <div className="space-y-3 border-t pt-4">
+              <div className="text-sm font-semibold text-muted-foreground flex items-center gap-1"><User size={14} /> Contador / Contato</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Nome do Contador</Label><Input value={clienteForm.nome_contador} onChange={e => setClienteForm(f => ({ ...f, nome_contador: e.target.value }))} /></div>
+                <div><Label>E-mail de Contato</Label><Input type="email" value={clienteForm.email_contato} onChange={e => setClienteForm(f => ({ ...f, email_contato: e.target.value }))} /></div>
+              </div>
+            </div>
+
             <Button className="w-full" onClick={() => saveCliente.mutate()} disabled={saveCliente.isPending}>Salvar</Button>
           </div>
         </DialogContent>
