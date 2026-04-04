@@ -61,6 +61,11 @@ const emptyForm: AuditorForm = {
   perfil_acesso: "assistente", ativo: true, observacoes: "",
 };
 
+const bootstrapForm: AuditorForm = {
+  nome: "", email: "", cargo: "assistente", perfil: "assistente",
+  perfil_acesso: "assistente", ativo: true, observacoes: "",
+};
+
 export default function AuditoresPage() {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
