@@ -149,8 +149,23 @@ export default function AuditoresPage() {
     },
     onError: () => toast.error("Erro ao remover vínculo"),
   });
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Remove alocações em trabalhos primeiro
+      await supabase.from("trabalho_auditores").delete().eq("auditor_id", id);
+      const { error } = await supabase.from("auditores").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["auditores"] });
+      qc.invalidateQueries({ queryKey: ["current-auditor"] });
+      setDeleteTarget(null);
+      toast.success("Auditor excluído com sucesso");
+    },
+    onError: (err: any) => toast.error(err?.message || "Erro ao excluir auditor"),
+  });
 
-  const filtered = useMemo(() => {
+
     let list = auditores;
     if (search) {
       const s = search.toLowerCase();
