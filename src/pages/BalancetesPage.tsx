@@ -199,7 +199,7 @@ export default function BalancetesPage() {
                   <td className="px-4 py-2.5 text-center">{b.total_linhas}</td>
                   <td className="px-4 py-2.5 text-center">{b.total_linhas_com_mapeamento}</td>
                   <td className="px-4 py-2.5">
-                    <Badge variant="outline" className={b.status_importacao === "finalizado" ? "text-green-700 bg-green-50" : "text-yellow-700 bg-yellow-50"}>
+                    <Badge variant="outline" className={b.status_importacao === "finalizado" ? "text-success bg-success/15 border-success/30" : "text-warning bg-warning/15 border-warning/30"}>
                       {b.status_importacao}
                     </Badge>
                   </td>
