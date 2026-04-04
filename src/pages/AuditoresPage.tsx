@@ -166,7 +166,7 @@ export default function AuditoresPage() {
   });
 
 
-    let list = auditores;
+    const filtered = useMemo(() => {
     if (search) {
       const s = search.toLowerCase();
       list = list.filter((a: any) => a.nome?.toLowerCase().includes(s) || a.email?.toLowerCase().includes(s));
