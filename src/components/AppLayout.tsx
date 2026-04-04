@@ -24,7 +24,7 @@ const menuGroups = [
     label: "Auditoria",
     defaultOpen: true,
     items: [
-      { to: "/importar", label: "Importar Contas", icon: FileSpreadsheet },
+      
       { to: "/balancetes", label: "Balancetes", icon: BookOpen },
       { to: "/papeis-trabalho", label: "Papéis de Trabalho", icon: ClipboardList },
     ],

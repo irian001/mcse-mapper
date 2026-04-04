@@ -63,7 +63,7 @@ const App = () => (
               <Route path="/" element={<Navigate to="/mcse" replace />} />
               <Route path="/mcse" element={<McsePage />} />
               <Route path="/clientes" element={<ClientesPage />} />
-              <Route path="/importar" element={<ImportarPage />} />
+              
               <Route path="/plano-contas" element={<PlanoContasPage />} />
               <Route path="/mapeamento" element={<MapeamentoPage />} />
               <Route path="/regras" element={<RegrasPage />} />
