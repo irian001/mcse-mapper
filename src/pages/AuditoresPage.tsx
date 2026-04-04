@@ -165,8 +165,8 @@ export default function AuditoresPage() {
     onError: (err: any) => toast.error(err?.message || "Erro ao excluir auditor"),
   });
 
-
-    const filtered = useMemo(() => {
+  const filtered = useMemo(() => {
+    let list = auditores;
     if (search) {
       const s = search.toLowerCase();
       list = list.filter((a: any) => a.nome?.toLowerCase().includes(s) || a.email?.toLowerCase().includes(s));
