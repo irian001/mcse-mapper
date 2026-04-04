@@ -232,7 +232,7 @@ export default function AuditoresPage() {
                 </TableCell>
                 <TableCell>
                   {a.auth_user_id ? (
-                    <Badge variant="outline" className="text-xs text-green-700 bg-green-50">
+                    <Badge variant="outline" className="text-xs text-success bg-success/15 border-success/30">
                       <Link2 size={12} className="mr-1" />
                       {a.auth_user_id === currentUserId ? "Você" : "Vinculado"}
                     </Badge>
