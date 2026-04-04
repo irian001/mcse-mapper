@@ -38,10 +38,10 @@ const perfilAcessoLabel: Record<string, string> = {
 };
 
 const perfilAcessoColor: Record<string, string> = {
-  admin: "text-red-700 bg-red-50 border-red-200",
-  socio: "text-purple-700 bg-purple-50 border-purple-200",
-  gerente: "text-blue-700 bg-blue-50 border-blue-200",
-  senior: "text-green-700 bg-green-50 border-green-200",
+  admin: "text-destructive bg-destructive/15 border-destructive/30",
+  socio: "text-[hsl(270,60%,70%)] bg-[hsl(270,60%,55%)]/15 border-[hsl(270,60%,55%)]/30",
+  gerente: "text-info bg-info/15 border-info/30",
+  senior: "text-success bg-success/15 border-success/30",
   assistente: "text-muted-foreground",
 };
 
@@ -232,7 +232,7 @@ export default function AuditoresPage() {
                 </TableCell>
                 <TableCell>
                   {a.auth_user_id ? (
-                    <Badge variant="outline" className="text-xs text-green-700 bg-green-50">
+                    <Badge variant="outline" className="text-xs text-success bg-success/15 border-success/30">
                       <Link2 size={12} className="mr-1" />
                       {a.auth_user_id === currentUserId ? "Você" : "Vinculado"}
                     </Badge>

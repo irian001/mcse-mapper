@@ -41,11 +41,37 @@ export default function BalancetesPage() {
 
   const deleteBalanceteMutation = useMutation({
     mutationFn: async (balanceteId: string) => {
-      const { error: linhasError } = await supabase
+      // 1. Get all balancete_linha IDs
+      const { data: linhas } = await supabase
         .from("balancete_linhas")
-        .delete()
+        .select("id")
         .eq("balancete_id", balanceteId);
-      if (linhasError) throw linhasError;
+      const linhaIds = (linhas || []).map((l: any) => l.id);
+
+      if (linhaIds.length > 0) {
+        // 2. Delete documentos_referencia_balancete linked to these lines
+        const { error: docsError } = await supabase
+          .from("documentos_referencia_balancete")
+          .delete()
+          .in("balancete_linha_id", linhaIds);
+        if (docsError) throw docsError;
+
+        // 3. Delete papel_trabalho_linhas linked to these lines
+        const { error: ptlError } = await supabase
+          .from("papel_trabalho_linhas")
+          .delete()
+          .in("balancete_linha_id", linhaIds);
+        if (ptlError) throw ptlError;
+
+        // 4. Delete balancete_linhas
+        const { error: linhasError } = await supabase
+          .from("balancete_linhas")
+          .delete()
+          .eq("balancete_id", balanceteId);
+        if (linhasError) throw linhasError;
+      }
+
+      // 5. Delete balancete
       const { error } = await supabase
         .from("balancetes")
         .delete()
@@ -56,9 +82,10 @@ export default function BalancetesPage() {
       toast.success("Balancete apagado com sucesso");
       setSelectedBalancete(null);
       queryClient.invalidateQueries({ queryKey: ["balancetes"] });
+      queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
     },
     onError: (err: any) => {
-      toast.error("Erro ao apagar balancete: " + err.message);
+      toast.error("Erro ao apagar balancete: " + (err.message || "Erro desconhecido"));
     },
   });
 
@@ -86,8 +113,8 @@ export default function BalancetesPage() {
           <Button variant="outline" onClick={() => setSelectedBalancete(null)}>← Voltar</Button>
           <div className="flex gap-2 text-sm">
             <Badge variant="outline">{bal?.total_linhas} linhas</Badge>
-            <Badge variant="outline" className="text-green-700 bg-green-50">{bal?.total_linhas_com_mapeamento} com MCSE</Badge>
-            <Badge variant="outline" className="text-orange-700 bg-orange-50">{bal?.total_linhas_sem_mapeamento} sem MCSE</Badge>
+            <Badge variant="outline" className="text-success bg-success/15 border-success/30">{bal?.total_linhas_com_mapeamento} com MCSE</Badge>
+            <Badge variant="outline" className="text-warning bg-warning/15 border-warning/30">{bal?.total_linhas_sem_mapeamento} sem MCSE</Badge>
           </div>
           <div className="ml-auto">
             <AlertDialog>
@@ -172,7 +199,7 @@ export default function BalancetesPage() {
                   <td className="px-4 py-2.5 text-center">{b.total_linhas}</td>
                   <td className="px-4 py-2.5 text-center">{b.total_linhas_com_mapeamento}</td>
                   <td className="px-4 py-2.5">
-                    <Badge variant="outline" className={b.status_importacao === "finalizado" ? "text-green-700 bg-green-50" : "text-yellow-700 bg-yellow-50"}>
+                    <Badge variant="outline" className={b.status_importacao === "finalizado" ? "text-success bg-success/15 border-success/30" : "text-warning bg-warning/15 border-warning/30"}>
                       {b.status_importacao}
                     </Badge>
                   </td>
