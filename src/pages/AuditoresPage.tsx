@@ -69,6 +69,7 @@ export default function AuditoresPage() {
   const [search, setSearch] = useState("");
   const [filterCargo, setFilterCargo] = useState("all");
   const [filterAtivo, setFilterAtivo] = useState("all");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; nome: string } | null>(null);
 
   const { data: currentAuditor } = useCurrentAuditor();
   const isAdmin = currentAuditor?.perfil_acesso === "admin";
