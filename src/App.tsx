@@ -10,7 +10,7 @@ import AppLayout from "@/components/AppLayout";
 import AuthPage from "@/pages/AuthPage";
 import McsePage from "@/pages/McsePage";
 import ClientesPage from "@/pages/ClientesPage";
-import ImportarPage from "@/pages/ImportarPage";
+
 import PlanoContasPage from "@/pages/PlanoContasPage";
 import MapeamentoPage from "@/pages/MapeamentoPage";
 import RegrasPage from "@/pages/RegrasPage";
@@ -63,7 +63,7 @@ const App = () => (
               <Route path="/" element={<Navigate to="/mcse" replace />} />
               <Route path="/mcse" element={<McsePage />} />
               <Route path="/clientes" element={<ClientesPage />} />
-              <Route path="/importar" element={<ImportarPage />} />
+              
               <Route path="/plano-contas" element={<PlanoContasPage />} />
               <Route path="/mapeamento" element={<MapeamentoPage />} />
               <Route path="/regras" element={<RegrasPage />} />

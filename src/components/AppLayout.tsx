@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, FileSpreadsheet, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown } from "lucide-react";
+import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -24,7 +24,7 @@ const menuGroups = [
     label: "Auditoria",
     defaultOpen: true,
     items: [
-      { to: "/importar", label: "Importar Contas", icon: FileSpreadsheet },
+      
       { to: "/balancetes", label: "Balancetes", icon: BookOpen },
       { to: "/papeis-trabalho", label: "Papéis de Trabalho", icon: ClipboardList },
     ],

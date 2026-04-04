@@ -11,7 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, Upload, Download, RefreshCw } from "lucide-react";
+import ImportPlanoContasDialog from "@/components/plano-contas/ImportPlanoContasDialog";
+import * as XLSX from "xlsx";
 
 const statusLabels: Record<string, { label: string; className: string }> = {
   nao_mapeado: { label: "Não Mapeado", className: "bg-warning/15 text-warning-foreground border-warning/30" },
@@ -31,8 +33,9 @@ export default function PlanoContasPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteSelected, setShowDeleteSelected] = useState(false);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
-  const { data: contas = [] } = useQuery({
+  const { data: contas = [], refetch } = useQuery({
     queryKey: ["contas_origem", selectedCliente],
     queryFn: async () => { if (!selectedCliente) return []; const { data } = await fetchContasOrigem(selectedCliente); return data || []; },
     enabled: !!selectedCliente,
@@ -82,7 +85,6 @@ export default function PlanoContasPage() {
         const batch = ids.slice(i, i + 100);
         const { error } = await supabase.from("cliente_contas_origem").delete().in("id", batch);
         if (error) throw error;
-        // Also clean up mappings
         await supabase.from("cliente_mapeamento_mcse").delete().in("conta_origem_id", batch);
       }
       return ids.length;
@@ -112,70 +114,127 @@ export default function PlanoContasPage() {
     onError: (err: any) => toast.error("Erro: " + err.message),
   });
 
+  const handleExport = useCallback(() => {
+    if (!filtered.length) { toast.error("Nenhum dado para exportar"); return; }
+    const exportData = filtered.map((c: any) => ({
+      IDEMPRESA: c.idempresa || "",
+      IDCONTA: c.idconta,
+      NOME: c.nome,
+      ATIVA: c.ativa ? "S" : "N",
+      CLASSIFICACAO: c.classificacao || "",
+      ANALITICA: c.analitica ? "S" : "N",
+      GRAU: c.grau ?? "",
+      CLASMASC: c.clasmasc || "",
+      CONTABMP: c.contabmp || "",
+      DATA_INCLUSAO: c.data_inclusao || "",
+      TIPO_CONTAB: c.tipo_contab || "",
+      GERAR_LANCTOS_CSO: c.gerar_lanctos_cso ? "S" : "N",
+      IDVERSAO: c.idversao || "",
+      STATUS_MAPEAMENTO: c.status_mapeamento || "",
+      SUGESTAO_MCSE: c.codigo_mcse_sugerido || "",
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Plano de Contas");
+    XLSX.writeFile(wb, "plano_contas_export.xlsx");
+    toast.success("Arquivo exportado");
+  }, [filtered]);
+
+  // Stats
+  const totalContas = contas.length;
+  const naoMapeadas = contas.filter((c: any) => c.status_mapeamento === "nao_mapeado").length;
+  const analiticas = contas.filter((c: any) => c.analitica).length;
+
   return (
     <div>
-      <PageHeader title="Plano de Contas do Cliente" description="Visualizar o plano de contas importado" />
+      <PageHeader
+        title="Plano de Contas do Cliente"
+        description="Importar, visualizar e gerenciar o plano de contas"
+      />
 
+      {/* Client selector */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <Select value={selectedCliente} onValueChange={v => { setSelectedCliente(v); setSelectedIds(new Set()); }}>
           <SelectTrigger className="w-72"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
           <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>)}</SelectContent>
         </Select>
-        {selectedCliente && (
-          <>
-            <div className="relative flex-1 max-w-xs">
-              <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
-              <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" />
-            </div>
-            <Select value={filterAnalitica} onValueChange={(v: any) => setFilterAnalitica(v)}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="S">Analíticas</SelectItem>
-                <SelectItem value="N">Sintéticas</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos status</SelectItem>
-                <SelectItem value="nao_mapeado">Não mapeados</SelectItem>
-              </SelectContent>
-            </Select>
-            {graus.length > 0 && (
-              <Select value={filterGrau} onValueChange={setFilterGrau}>
-                <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Grau</SelectItem>
-                  {graus.map(g => <SelectItem key={g} value={String(g)}>Grau {g}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-          </>
-        )}
       </div>
 
-      {/* Actions bar */}
-      {selectedCliente && contas.length > 0 && (
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+      {/* Action bar */}
+      {selectedCliente && (
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4 p-3 rounded-lg border bg-card">
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setShowImport(true)}>
+              <Upload size={14} className="mr-1" /> Importar Plano de Contas
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={!contas.length}>
+              <Download size={14} className="mr-1" /> Exportar
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw size={14} className="mr-1" /> Atualizar
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
             {selectedIds.size > 0 && (
-              <>
-                <span className="text-sm text-muted-foreground">{selectedIds.size} conta(s) selecionada(s)</span>
-                <Button variant="destructive" size="sm" onClick={() => setShowDeleteSelected(true)} disabled={deleteSelected.isPending}>
-                  <Trash2 size={14} className="mr-1" /> Excluir selecionadas
-                </Button>
-              </>
+              <Button variant="destructive" size="sm" onClick={() => setShowDeleteSelected(true)} disabled={deleteSelected.isPending}>
+                <Trash2 size={14} className="mr-1" /> Excluir selecionadas ({selectedIds.size})
+              </Button>
+            )}
+            {contas.length > 0 && (
+              <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowDeleteAll(true)} disabled={deleteAll.isPending}>
+                <Trash2 size={14} className="mr-1" /> Excluir tudo
+              </Button>
             )}
           </div>
-          <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setShowDeleteAll(true)} disabled={deleteAll.isPending}>
-            <Trash2 size={14} className="mr-1" /> Excluir todo o plano de contas
-          </Button>
         </div>
       )}
 
+      {/* Stats */}
+      {selectedCliente && contas.length > 0 && (
+        <div className="flex items-center gap-4 mb-3 text-sm text-muted-foreground">
+          <span>Total: <strong className="text-foreground">{totalContas}</strong></span>
+          <span>Analíticas: <strong className="text-foreground">{analiticas}</strong></span>
+          <span>Não mapeadas: <strong className="text-warning-foreground">{naoMapeadas}</strong></span>
+        </div>
+      )}
+
+      {/* Filters */}
+      {selectedCliente && contas.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <div className="relative flex-1 max-w-xs">
+            <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
+            <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" />
+          </div>
+          <Select value={filterAnalitica} onValueChange={(v: any) => setFilterAnalitica(v)}>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="S">Analíticas</SelectItem>
+              <SelectItem value="N">Sintéticas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos status</SelectItem>
+              <SelectItem value="nao_mapeado">Não mapeados</SelectItem>
+            </SelectContent>
+          </Select>
+          {graus.length > 0 && (
+            <Select value={filterGrau} onValueChange={setFilterGrau}>
+              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Grau</SelectItem>
+                {graus.map(g => <SelectItem key={g} value={String(g)}>Grau {g}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      )}
+
+      {/* Table */}
       {selectedCliente && filtered.length > 0 && (
-        <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-280px)]">
+        <div className="rounded border bg-card overflow-auto max-h-[calc(100vh-380px)]">
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10">
               <TableRow>
@@ -232,9 +291,22 @@ export default function PlanoContasPage() {
 
       {selectedCliente && contas.length === 0 && (
         <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+          <Upload size={32} className="mb-3 opacity-50" />
           <p>Nenhuma conta importada para este cliente</p>
-          <p className="text-sm mt-1">Vá para "Importar Contas" para carregar o plano de contas</p>
+          <p className="text-sm mt-1">Clique em "Importar Plano de Contas" para carregar o plano</p>
+          <Button className="mt-4" onClick={() => setShowImport(true)}>
+            <Upload size={14} className="mr-1" /> Importar Plano de Contas
+          </Button>
         </div>
+      )}
+
+      {/* Import Dialog */}
+      {selectedCliente && (
+        <ImportPlanoContasDialog
+          open={showImport}
+          onOpenChange={setShowImport}
+          clienteId={selectedCliente}
+        />
       )}
 
       {/* Confirm delete selected */}
