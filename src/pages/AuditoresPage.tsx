@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Search, Link2, Unlink, ShieldCheck } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Pencil, Search, Link2, Unlink, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrentAuditor } from "@/hooks/useCurrentAuditor";
 
@@ -68,6 +69,7 @@ export default function AuditoresPage() {
   const [search, setSearch] = useState("");
   const [filterCargo, setFilterCargo] = useState("all");
   const [filterAtivo, setFilterAtivo] = useState("all");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; nome: string } | null>(null);
 
   const { data: currentAuditor } = useCurrentAuditor();
   const isAdmin = currentAuditor?.perfil_acesso === "admin";
@@ -146,6 +148,21 @@ export default function AuditoresPage() {
       toast.success("Vínculo removido");
     },
     onError: () => toast.error("Erro ao remover vínculo"),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Remove alocações em trabalhos primeiro
+      await supabase.from("trabalho_auditores").delete().eq("auditor_id", id);
+      const { error } = await supabase.from("auditores").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["auditores"] });
+      qc.invalidateQueries({ queryKey: ["current-auditor"] });
+      setDeleteTarget(null);
+      toast.success("Auditor excluído com sucesso");
+    },
+    onError: (err: any) => toast.error(err?.message || "Erro ao excluir auditor"),
   });
 
   const filtered = useMemo(() => {
@@ -258,6 +275,11 @@ export default function AuditoresPage() {
                         <Unlink size={14} className="text-destructive" />
                       </Button>
                     )}
+                    {isAdmin && a.auth_user_id !== currentUserId && (
+                      <Button variant="ghost" size="icon" title="Excluir auditor" onClick={() => setDeleteTarget({ id: a.id, nome: a.nome })}>
+                        <Trash2 size={14} className="text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -311,6 +333,27 @@ export default function AuditoresPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Auditor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o auditor <strong>{deleteTarget?.nome}</strong>? Esta ação removerá também suas alocações em trabalhos de auditoria e não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
