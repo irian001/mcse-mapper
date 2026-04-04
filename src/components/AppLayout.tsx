@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
+import logoAudiconsult from "@/assets/logo_audiconsult.jpg";
 
 const menuGroups = [
   {
@@ -34,27 +35,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="w-56 bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
-        <div className="p-4 border-b border-sidebar-border">
-          <h1 className="text-lg font-bold tracking-tight text-sidebar-primary">AuditEletric</h1>
-          <p className="text-xs text-sidebar-accent-foreground/60 mt-0.5">Auditoria Contábil</p>
-        </div>
-        <nav className="flex-1 py-2 px-2 space-y-1 overflow-auto">
-          {menuGroups.map((group) => (
-            <MenuGroup key={group.label} group={group} currentPath={location.pathname} />
-          ))}
-        </nav>
-        <div className="p-3 border-t border-sidebar-border flex items-center justify-between">
-          <span className="text-xs text-sidebar-foreground/40">v1.0 — Fase 1</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => supabase.auth.signOut()}>
-            <LogOut size={14} />
-          </Button>
-        </div>
-      </aside>
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">{children}</div>
-      </main>
+    <div className="flex h-screen overflow-hidden flex-col">
+      {/* Top header bar */}
+      <header className="h-12 shrink-0 bg-card border-b border-border flex items-center justify-between px-6">
+        <h2 className="text-sm font-semibold text-foreground tracking-wide uppercase">
+          MCSE Mapper — Sistema de Auditoria Contábil
+        </h2>
+        <img src={logoAudiconsult} alt="Audiconsult Auditores" className="h-9 object-contain" />
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-56 bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
+          <div className="p-4 border-b border-sidebar-border">
+            <h1 className="text-lg font-bold tracking-tight text-sidebar-primary">AuditEletric</h1>
+            <p className="text-xs text-sidebar-accent-foreground/60 mt-0.5">Auditoria Contábil</p>
+          </div>
+          <nav className="flex-1 py-2 px-2 space-y-1 overflow-auto">
+            {menuGroups.map((group) => (
+              <MenuGroup key={group.label} group={group} currentPath={location.pathname} />
+            ))}
+          </nav>
+          <div className="p-3 border-t border-sidebar-border flex items-center justify-between">
+            <span className="text-xs text-sidebar-foreground/40">v1.0 — Fase 1</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => supabase.auth.signOut()}>
+              <LogOut size={14} />
+            </Button>
+          </div>
+        </aside>
+        <main className="flex-1 overflow-auto">
+          <div className="p-6">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
