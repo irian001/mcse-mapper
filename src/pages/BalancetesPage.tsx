@@ -113,8 +113,8 @@ export default function BalancetesPage() {
           <Button variant="outline" onClick={() => setSelectedBalancete(null)}>← Voltar</Button>
           <div className="flex gap-2 text-sm">
             <Badge variant="outline">{bal?.total_linhas} linhas</Badge>
-            <Badge variant="outline" className="text-green-700 bg-green-50">{bal?.total_linhas_com_mapeamento} com MCSE</Badge>
-            <Badge variant="outline" className="text-orange-700 bg-orange-50">{bal?.total_linhas_sem_mapeamento} sem MCSE</Badge>
+            <Badge variant="outline" className="text-success bg-success/15 border-success/30">{bal?.total_linhas_com_mapeamento} com MCSE</Badge>
+            <Badge variant="outline" className="text-warning bg-warning/15 border-warning/30">{bal?.total_linhas_sem_mapeamento} sem MCSE</Badge>
           </div>
           <div className="ml-auto">
             <AlertDialog>
