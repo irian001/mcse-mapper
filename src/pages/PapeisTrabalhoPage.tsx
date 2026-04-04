@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, ClipboardList } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Search, Plus, ClipboardList, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import PtaDetailDialog from "@/components/pta/PtaDetailDialog";
 import GerarPtaDialog from "@/components/pta/GerarPtaDialog";
 
@@ -18,14 +20,15 @@ function fmt(v: number | null | undefined) {
 }
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  pendente: { label: "Pendente", cls: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  em_analise: { label: "Em Análise", cls: "bg-blue-100 text-blue-800 border-blue-200" },
-  em_revisao: { label: "Em Revisão", cls: "bg-purple-100 text-purple-800 border-purple-200" },
-  concluido: { label: "Concluído", cls: "bg-green-100 text-green-800 border-green-200" },
-  finalizado: { label: "Finalizado", cls: "bg-green-200 text-green-900 border-green-300" },
+  pendente: { label: "Pendente", cls: "bg-warning/15 text-warning-foreground border-warning/30" },
+  em_analise: { label: "Em Análise", cls: "bg-info/15 text-info border-info/30" },
+  em_revisao: { label: "Em Revisão", cls: "bg-[hsl(270,60%,55%)]/15 text-[hsl(270,60%,70%)] border-[hsl(270,60%,55%)]/30" },
+  concluido: { label: "Concluído", cls: "bg-success/15 text-success border-success/30" },
+  finalizado: { label: "Finalizado", cls: "bg-success/25 text-success border-success/50" },
 };
 
 export default function PapeisTrabalhoPage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterTrabalho, setFilterTrabalho] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -51,6 +54,30 @@ export default function PapeisTrabalhoPage() {
     queryFn: async () => {
       const { data } = await supabase.from("trabalhos_auditoria").select("id, nome_trabalho").order("nome_trabalho");
       return data || [];
+    },
+  });
+
+  const deletePtaMutation = useMutation({
+    mutationFn: async (ptaId: string) => {
+      // Delete linked lines first
+      const { error: linhasError } = await supabase
+        .from("papel_trabalho_linhas")
+        .delete()
+        .eq("papel_trabalho_id", ptaId);
+      if (linhasError) throw linhasError;
+      // Then delete the PTA itself
+      const { error } = await supabase
+        .from("papeis_trabalho")
+        .delete()
+        .eq("id", ptaId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Papel de trabalho excluído com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao excluir: " + (err.message || "Erro desconhecido"));
     },
   });
 
@@ -149,6 +176,7 @@ export default function PapeisTrabalhoPage() {
                 <TableHead className="text-center">Linhas</TableHead>
                 <TableHead className="text-center">Pend.</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -156,27 +184,44 @@ export default function PapeisTrabalhoPage() {
                 const hasDif = p.diferenca_total != null && p.diferenca_total !== 0;
                 const hasPend = (p.total_linhas_com_pendencia || 0) > 0;
                 const st = STATUS_MAP[p.status_pta] || { label: p.status_pta, cls: "" };
-                const rowCls =
-                  p.status_pta === "finalizado" ? "bg-green-50/30" :
-                  p.status_pta === "em_revisao" ? "bg-purple-50/30" :
-                  hasPend ? "bg-yellow-50/30" :
-                  hasDif ? "bg-amber-50/30" : "";
 
                 return (
                   <TableRow
                     key={p.id}
-                    className={`cursor-pointer transition-colors hover:bg-muted/30 ${rowCls}`}
-                    onClick={() => setSelectedPta(p)}
+                    className="cursor-pointer transition-colors hover:bg-muted/30"
                   >
-                    <TableCell className="font-medium text-xs max-w-[200px] truncate">{p.titulo_pta || "Sem título"}</TableCell>
-                    <TableCell className="text-xs">{p.trabalhos_auditoria?.nome_trabalho}</TableCell>
-                    <TableCell className="font-mono text-xs">{p.codigo_mcse || "—"}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">{fmt(p.saldo_atual_total)}</TableCell>
-                    <TableCell className="text-right font-mono text-xs">{fmt(p.valor_validado_total)}</TableCell>
-                    <TableCell className={`text-right font-mono text-xs ${hasDif ? "text-amber-600 font-semibold" : ""}`}>{fmt(p.diferenca_total)}</TableCell>
-                    <TableCell className="text-center text-xs">{p.total_linhas_vinculadas || 0}</TableCell>
-                    <TableCell className="text-center text-xs">{hasPend ? <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs">{p.total_linhas_com_pendencia}</Badge> : "—"}</TableCell>
-                    <TableCell><Badge variant="outline" className={`text-xs ${st.cls}`}>{st.label}</Badge></TableCell>
+                    <TableCell className="font-medium text-xs max-w-[200px] truncate" onClick={() => setSelectedPta(p)}>{p.titulo_pta || "Sem título"}</TableCell>
+                    <TableCell className="text-xs" onClick={() => setSelectedPta(p)}>{p.trabalhos_auditoria?.nome_trabalho}</TableCell>
+                    <TableCell className="font-mono text-xs" onClick={() => setSelectedPta(p)}>{p.codigo_mcse || "—"}</TableCell>
+                    <TableCell className="text-right font-mono text-xs" onClick={() => setSelectedPta(p)}>{fmt(p.saldo_atual_total)}</TableCell>
+                    <TableCell className="text-right font-mono text-xs" onClick={() => setSelectedPta(p)}>{fmt(p.valor_validado_total)}</TableCell>
+                    <TableCell className={`text-right font-mono text-xs ${hasDif ? "text-warning font-semibold" : ""}`} onClick={() => setSelectedPta(p)}>{fmt(p.diferenca_total)}</TableCell>
+                    <TableCell className="text-center text-xs" onClick={() => setSelectedPta(p)}>{p.total_linhas_vinculadas || 0}</TableCell>
+                    <TableCell className="text-center text-xs" onClick={() => setSelectedPta(p)}>{hasPend ? <Badge variant="outline" className="bg-warning/15 text-warning-foreground border-warning/30 text-xs">{p.total_linhas_com_pendencia}</Badge> : "—"}</TableCell>
+                    <TableCell onClick={() => setSelectedPta(p)}><Badge variant="outline" className={`text-xs ${st.cls}`}>{st.label}</Badge></TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
+                            <Trash2 size={14} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir papel de trabalho?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação irá excluir o PTA "{p.titulo_pta}" e todas as suas linhas vinculadas. Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deletePtaMutation.mutate(p.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
                   </TableRow>
                 );
               })}
