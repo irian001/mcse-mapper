@@ -38,9 +38,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden flex-col">
       {/* Top header bar */}
       <header className="h-12 shrink-0 bg-card border-b border-border flex items-center justify-between px-6">
-        <h2 className="text-sm font-semibold text-foreground tracking-wide uppercase">
-          MCSE Mapper — Sistema de Auditoria Contábil
-        </h2>
+        <div>
+          <h2 className="text-sm font-semibold text-foreground tracking-wide uppercase">
+            Sistema de Auditoria Contábil
+          </h2>
+          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+            Audiconsult Auditores S/S.
+          </p>
+        </div>
         <img src={logoAudiconsult} alt="Audiconsult Auditores" className="h-9 object-contain" />
       </header>
 
