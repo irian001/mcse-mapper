@@ -61,6 +61,11 @@ const emptyForm: AuditorForm = {
   perfil_acesso: "assistente", ativo: true, observacoes: "",
 };
 
+const bootstrapForm: AuditorForm = {
+  nome: "", email: "", cargo: "assistente", perfil: "assistente",
+  perfil_acesso: "assistente", ativo: true, observacoes: "",
+};
+
 export default function AuditoresPage() {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -303,14 +308,14 @@ export default function AuditoresPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Cargo</Label>
-                <Select value={form.cargo} onValueChange={(v) => setForm({ ...form, cargo: v as Cargo })}>
+                <Select value={form.cargo} onValueChange={(v) => setForm({ ...form, cargo: v as Cargo })} disabled={!isAdmin && !editingId}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{CARGOS.map((c) => <SelectItem key={c} value={c}>{cargoLabel[c]}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Perfil de Acesso</Label>
-                <Select value={form.perfil_acesso} onValueChange={(v) => setForm({ ...form, perfil_acesso: v as PerfilAcesso })}>
+                <Select value={form.perfil_acesso} onValueChange={(v) => setForm({ ...form, perfil_acesso: v as PerfilAcesso })} disabled={!isAdmin}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{PERFIS_ACESSO.map((p) => <SelectItem key={p} value={p}>{perfilAcessoLabel[p]}</SelectItem>)}</SelectContent>
                 </Select>
