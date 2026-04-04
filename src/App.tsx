@@ -10,7 +10,7 @@ import AppLayout from "@/components/AppLayout";
 import AuthPage from "@/pages/AuthPage";
 import McsePage from "@/pages/McsePage";
 import ClientesPage from "@/pages/ClientesPage";
-import ImportarPage from "@/pages/ImportarPage";
+
 import PlanoContasPage from "@/pages/PlanoContasPage";
 import MapeamentoPage from "@/pages/MapeamentoPage";
 import RegrasPage from "@/pages/RegrasPage";
