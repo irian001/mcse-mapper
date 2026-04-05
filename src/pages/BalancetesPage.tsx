@@ -194,7 +194,16 @@ export default function BalancetesPage() {
             <Badge variant="outline" className="text-success bg-success/15 border-success/30">{bal?.total_linhas_com_mapeamento} com MCSE</Badge>
             <Badge variant="outline" className="text-warning bg-warning/15 border-warning/30">{bal?.total_linhas_sem_mapeamento} sem MCSE</Badge>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={atualizarMcseMutation.isPending}
+              onClick={() => atualizarMcseMutation.mutate(selectedBalancete)}
+            >
+              <RefreshCw size={14} className={`mr-1 ${atualizarMcseMutation.isPending ? "animate-spin" : ""}`} />
+              {atualizarMcseMutation.isPending ? "Atualizando..." : "Atualizar MCSE"}
+            </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" disabled={deleteBalanceteMutation.isPending}>
