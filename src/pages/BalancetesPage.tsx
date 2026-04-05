@@ -10,8 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Plus, FileSpreadsheet, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { localizarConta, resolverMcse, calcStatusValidacao } from "@/lib/balancete-utils";
 
 export default function BalancetesPage() {
   const [mode, setMode] = useState<"list" | "import">("list");
