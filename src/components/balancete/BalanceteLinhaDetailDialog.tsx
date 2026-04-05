@@ -181,6 +181,11 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
         {/* Block 2 — Validation */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm text-muted-foreground">Validação</h4>
+          {linha.is_analitica === false && (
+            <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 border border-border">
+              Conta sintética (não analítica) — a validação é permitida apenas para contas do último nível (analíticas).
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Valor Validado</Label>
@@ -191,6 +196,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
                 value={valorValidado}
                 onChange={e => setValorValidado(e.target.value)}
                 className="h-9"
+                disabled={linha.is_analitica === false}
               />
             </div>
             <div className="space-y-1.5">
@@ -208,6 +214,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
             variant="outline"
             size="sm"
             className="border-green-300 text-green-700 hover:bg-green-50"
+            disabled={linha.is_analitica === false}
             onClick={() => {
               setValorValidado(String(linha.saldo_atual ?? 0));
               setStatusLinha("validado");
@@ -219,7 +226,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
 
           <div className="space-y-1.5">
             <Label className="text-xs">Status da Linha</Label>
-            <Select value={statusLinha} onValueChange={setStatusLinha}>
+            <Select value={statusLinha} onValueChange={setStatusLinha} disabled={linha.is_analitica === false}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map(s => (

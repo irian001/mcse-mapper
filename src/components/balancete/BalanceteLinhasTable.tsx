@@ -112,10 +112,13 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from("balancete_linhas")
-        .select("*")
+        .select("*, cliente_contas_origem(analitica)")
         .eq("balancete_id", balanceteId)
         .order("codigo_conta_balancete");
-      return data || [];
+      return (data || []).map((l: any) => ({
+        ...l,
+        is_analitica: l.cliente_contas_origem?.analitica ?? true,
+      }));
     },
     enabled: !!balanceteId,
   });
