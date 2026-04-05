@@ -90,6 +90,83 @@ export default function BalancetesPage() {
     },
   });
 
+  const atualizarMcseMutation = useMutation({
+    mutationFn: async (balanceteId: string) => {
+      // Get balancete info
+      const bal = balancetes.find((b: any) => b.id === balanceteId) as any;
+      if (!bal) throw new Error("Balancete não encontrado");
+
+      const clienteId = bal.cliente_id;
+
+      // Fetch all lines
+      const { data: linhas, error: linhasErr } = await supabase
+        .from("balancete_linhas")
+        .select("id, codigo_conta_balancete, descricao_conta_balancete, classificacao_origem")
+        .eq("balancete_id", balanceteId);
+      if (linhasErr) throw linhasErr;
+      if (!linhas || linhas.length === 0) throw new Error("Nenhuma linha encontrada");
+
+      // Fetch contas origem
+      const { data: contasOrigem } = await supabase
+        .from("cliente_contas_origem")
+        .select("id, idconta, nome, classificacao, status_mapeamento, codigo_mcse_sugerido")
+        .eq("cliente_id", clienteId);
+
+      // Fetch mapeamentos
+      const { data: mapeamentos } = await supabase
+        .from("cliente_mapeamento_mcse")
+        .select("conta_origem_id, conta_mcse_id, mcse_contas(codigo_mcse, descricao_conta, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo))")
+        .eq("cliente_id", clienteId);
+
+      let comMapeamento = 0;
+      let semMapeamento = 0;
+      let atualizadas = 0;
+
+      for (const linha of linhas) {
+        const loc = localizarConta(linha.codigo_conta_balancete, linha.descricao_conta_balancete, contasOrigem || []);
+        const contaOrig = (contasOrigem || []).find(c => c.id === loc.conta_origem_id);
+        const mcse = resolverMcse(contaOrig, mapeamentos || [], new Map());
+        const statusVal = calcStatusValidacao(loc.status_localizacao, mcse.status_mapeamento);
+
+        if (mcse.status_mapeamento === "mapeado") comMapeamento++;
+        else semMapeamento++;
+
+        const { error } = await supabase
+          .from("balancete_linhas")
+          .update({
+            conta_origem_id: loc.conta_origem_id,
+            conta_mcse_id: mcse.conta_mcse_id,
+            classificacao_origem: loc.classificacao_origem || linha.classificacao_origem || null,
+            codigo_mcse: mcse.codigo_mcse,
+            descricao_mcse: mcse.descricao_mcse,
+            grupo_mcse: mcse.grupo_mcse,
+            subgrupo_mcse: mcse.subgrupo_mcse,
+            status_localizacao_conta: loc.status_localizacao,
+            status_mapeamento_mcse: mcse.status_mapeamento,
+            status_validacao: statusVal,
+          })
+          .eq("id", linha.id);
+        if (!error) atualizadas++;
+      }
+
+      // Update balancete totals
+      await supabase.from("balancetes").update({
+        total_linhas_com_mapeamento: comMapeamento,
+        total_linhas_sem_mapeamento: semMapeamento,
+      }).eq("id", balanceteId);
+
+      return { total: linhas.length, atualizadas, comMapeamento, semMapeamento };
+    },
+    onSuccess: (result) => {
+      toast.success(`MCSE atualizado: ${result.comMapeamento} mapeadas, ${result.semMapeamento} sem mapeamento`);
+      queryClient.invalidateQueries({ queryKey: ["balancete_linhas"] });
+      queryClient.invalidateQueries({ queryKey: ["balancetes"] });
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao atualizar MCSE: " + (err.message || "Erro desconhecido"));
+    },
+  });
+
   const filtered = filterTrabalho === "all" ? balancetes : balancetes.filter((b: any) => b.trabalho_auditoria_id === filterTrabalho);
 
   if (mode === "import") {
