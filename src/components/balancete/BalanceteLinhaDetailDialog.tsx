@@ -236,7 +236,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
             variant="outline"
             size="sm"
             className="border-green-300 text-green-700 hover:bg-green-50"
-            disabled={linha.is_analitica === false}
+            disabled={validationDisabled}
             onClick={() => {
               setValorValidado(String(linha.saldo_atual ?? 0));
               setStatusLinha("validado");
