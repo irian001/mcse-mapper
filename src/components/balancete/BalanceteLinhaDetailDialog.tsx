@@ -197,6 +197,12 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
         {/* Block 2 — Validation */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm text-muted-foreground">Validação</h4>
+          {ptaFechado && (
+            <div className="text-xs text-destructive bg-destructive/10 rounded-md p-3 border border-destructive/30 flex items-center gap-2">
+              <XCircle size={14} />
+              PTA fechado ({ptaFechado.titulo_pta || "sem título"}) — validação bloqueada. Reabra o PTA para continuar.
+            </div>
+          )}
           {linha.is_analitica === false && (
             <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 border border-border">
               Conta sintética (não analítica) — a validação é permitida apenas para contas do último nível (analíticas).
