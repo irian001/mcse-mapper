@@ -308,27 +308,56 @@ export default function PapeisTrabalhoPage() {
                     <TableCell className="text-center text-xs" onClick={() => setSelectedPta(p)}>{hasPend ? <Badge variant="outline" className="bg-warning/15 text-warning-foreground border-warning/30 text-xs">{p.total_linhas_com_pendencia}</Badge> : "—"}</TableCell>
                     <TableCell onClick={() => setSelectedPta(p)}><Badge variant="outline" className={`text-xs ${st.cls}`}>{st.label}</Badge></TableCell>
                     <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
-                            <Trash2 size={14} />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir papel de trabalho?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação irá excluir o PTA "{p.titulo_pta}" e todas as suas linhas vinculadas. Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deletePtaMutation.mutate(p.id)}>
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground"
+                              onClick={e => { e.stopPropagation(); atualizarPtaMutation.mutate(p.id); }}
+                              disabled={atualizarPtaMutation.isPending}
+                            >
+                              <RefreshCw size={14} className={atualizarPtaMutation.isPending ? "animate-spin" : ""} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Atualizar PTA com dados do balancete</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-7 w-7 ${isFechado ? "text-warning" : "text-muted-foreground"}`}
+                              onClick={e => { e.stopPropagation(); toggleFechadoMutation.mutate({ ptaId: p.id, fechado: !isFechado }); }}
+                            >
+                              {isFechado ? <Unlock size={14} /> : <Lock size={14} />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{isFechado ? "Reabrir PTA" : "Fechar PTA"}</TooltipContent>
+                        </Tooltip>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
+                              <Trash2 size={14} />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir papel de trabalho?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação irá excluir o PTA "{p.titulo_pta}" e todas as suas linhas vinculadas. Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deletePtaMutation.mutate(p.id)}>
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
