@@ -60,6 +60,22 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
   const [diferencaAceita, setDiferencaAceita] = useState<boolean | null>(null);
   const [justificativa, setJustificativa] = useState("");
 
+  // Check if this line is linked to a closed PTA
+  const { data: ptaFechado } = useQuery({
+    queryKey: ["pta_fechado_check", linha?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("papel_trabalho_linhas")
+        .select("papel_trabalho_id, papeis_trabalho(fechado, titulo_pta)")
+        .eq("balancete_linha_id", linha.id);
+      const closed = (data || []).find((d: any) => d.papeis_trabalho?.fechado === true);
+      return closed ? closed.papeis_trabalho : null;
+    },
+    enabled: !!linha?.id,
+  });
+
+  const isBlockedByPta = !!ptaFechado;
+
   useEffect(() => {
     if (linha) {
       setValorValidado(linha.valor_validado != null ? String(linha.valor_validado) : "");
