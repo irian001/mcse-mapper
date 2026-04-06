@@ -98,8 +98,9 @@ export default function PapeisTrabalhoPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Papel de trabalho excluído com sucesso");
+      toast.success("Papel de trabalho excluído — validação das linhas do balancete reabilitada");
       queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
+      queryClient.invalidateQueries({ queryKey: ["balancete_linhas"] });
     },
     onError: (err: any) => {
       toast.error("Erro ao excluir: " + (err.message || "Erro desconhecido"));
