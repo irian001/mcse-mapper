@@ -248,7 +248,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
 
           <div className="space-y-1.5">
             <Label className="text-xs">Status da Linha</Label>
-            <Select value={statusLinha} onValueChange={setStatusLinha} disabled={linha.is_analitica === false}>
+            <Select value={statusLinha} onValueChange={setStatusLinha} disabled={validationDisabled}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map(s => (
