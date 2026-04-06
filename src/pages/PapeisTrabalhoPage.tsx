@@ -309,6 +309,7 @@ export default function PapeisTrabalhoPage() {
                     <TableCell className="text-center text-xs" onClick={() => setSelectedPta(p)}>{hasPend ? <Badge variant="outline" className="bg-warning/15 text-warning-foreground border-warning/30 text-xs">{p.total_linhas_com_pendencia}</Badge> : "—"}</TableCell>
                     <TableCell onClick={() => setSelectedPta(p)}><Badge variant="outline" className={`text-xs ${st.cls}`}>{st.label}</Badge></TableCell>
                     <TableCell>
+                      <TooltipProvider>
                       <div className="flex items-center gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
