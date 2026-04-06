@@ -295,7 +295,10 @@ export default function PapeisTrabalhoPage() {
                     key={p.id}
                     className="cursor-pointer transition-colors hover:bg-muted/30"
                   >
-                    <TableCell className="font-medium text-xs max-w-[200px] truncate" onClick={() => setSelectedPta(p)}>{p.titulo_pta || "Sem título"}</TableCell>
+                    <TableCell className="font-medium text-xs max-w-[200px] truncate" onClick={() => setSelectedPta(p)}>
+                      {isFechado && <Lock size={12} className="inline mr-1 text-muted-foreground" />}
+                      {p.titulo_pta || "Sem título"}
+                    </TableCell>
                     <TableCell className="text-xs" onClick={() => setSelectedPta(p)}>{p.trabalhos_auditoria?.nome_trabalho}</TableCell>
                     <TableCell className="font-mono text-xs" onClick={() => setSelectedPta(p)}>{p.codigo_mcse || "—"}</TableCell>
                     <TableCell className="text-right font-mono text-xs" onClick={() => setSelectedPta(p)}>{fmt(p.saldo_atual_total)}</TableCell>
