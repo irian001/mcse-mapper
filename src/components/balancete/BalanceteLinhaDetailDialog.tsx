@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Save, FileText, CheckCircle2, Clock, Eye, XCircle } from "lucide-react";
+import { Save, FileText, CheckCircle2, Clock, Eye, XCircle, Lock } from "lucide-react";
 import DocumentosReferenciaBlock from "./DocumentosReferenciaBlock";
 
 function fmt(v: number | null) {
