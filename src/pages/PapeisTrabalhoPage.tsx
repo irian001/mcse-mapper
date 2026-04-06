@@ -280,7 +280,7 @@ export default function PapeisTrabalhoPage() {
                 <TableHead className="text-center">Linhas</TableHead>
                 <TableHead className="text-center">Pend.</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-16"></TableHead>
+                <TableHead className="w-28"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
