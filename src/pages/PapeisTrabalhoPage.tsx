@@ -360,6 +360,7 @@ export default function PapeisTrabalhoPage() {
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 );
