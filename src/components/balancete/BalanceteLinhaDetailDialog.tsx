@@ -218,7 +218,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
                 value={valorValidado}
                 onChange={e => setValorValidado(e.target.value)}
                 className="h-9"
-                disabled={linha.is_analitica === false}
+                disabled={validationDisabled}
               />
             </div>
             <div className="space-y-1.5">
