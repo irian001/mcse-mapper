@@ -59,13 +59,38 @@ export default function PapeisTrabalhoPage() {
 
   const deletePtaMutation = useMutation({
     mutationFn: async (ptaId: string) => {
-      // Delete linked lines first
+      // 1. Get linked balancete_linha IDs before deleting
+      const { data: ptaLinhas } = await supabase
+        .from("papel_trabalho_linhas")
+        .select("balancete_linha_id")
+        .eq("papel_trabalho_id", ptaId);
+      const balLinhaIds = (ptaLinhas || []).map((l: any) => l.balancete_linha_id);
+
+      // 2. Delete linked lines
       const { error: linhasError } = await supabase
         .from("papel_trabalho_linhas")
         .delete()
         .eq("papel_trabalho_id", ptaId);
       if (linhasError) throw linhasError;
-      // Then delete the PTA itself
+
+      // 3. Reset validation on balancete lines so they can be re-validated
+      if (balLinhaIds.length > 0) {
+        const { error: resetError } = await supabase
+          .from("balancete_linhas")
+          .update({
+            status_linha: "pendente",
+            valor_validado: null,
+            diferenca_validacao: null,
+            diferenca_aceita: null,
+            justificativa_diferenca: null,
+            data_validacao: null,
+            data_revisao: null,
+          })
+          .in("id", balLinhaIds);
+        if (resetError) throw resetError;
+      }
+
+      // 4. Delete the PTA itself
       const { error } = await supabase
         .from("papeis_trabalho")
         .delete()
@@ -73,8 +98,9 @@ export default function PapeisTrabalhoPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Papel de trabalho excluído com sucesso");
+      toast.success("Papel de trabalho excluído — validação das linhas do balancete reabilitada");
       queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
+      queryClient.invalidateQueries({ queryKey: ["balancete_linhas"] });
     },
     onError: (err: any) => {
       toast.error("Erro ao excluir: " + (err.message || "Erro desconhecido"));
