@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, Plus, ClipboardList, Trash2 } from "lucide-react";
+import { Search, Plus, ClipboardList, Trash2, Lock, Unlock, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import PtaDetailDialog from "@/components/pta/PtaDetailDialog";
 import GerarPtaDialog from "@/components/pta/GerarPtaDialog";
