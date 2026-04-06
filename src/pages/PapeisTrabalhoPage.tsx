@@ -107,6 +107,84 @@ export default function PapeisTrabalhoPage() {
     },
   });
 
+  const toggleFechadoMutation = useMutation({
+    mutationFn: async ({ ptaId, fechado }: { ptaId: string; fechado: boolean }) => {
+      const { error } = await supabase
+        .from("papeis_trabalho")
+        .update({ fechado } as any)
+        .eq("id", ptaId);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      toast.success(vars.fechado ? "PTA fechado — validação das linhas bloqueada" : "PTA reaberto — validação das linhas liberada");
+      queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const atualizarPtaMutation = useMutation({
+    mutationFn: async (ptaId: string) => {
+      const { data: ptaLinhas } = await supabase
+        .from("papel_trabalho_linhas")
+        .select("balancete_linha_id")
+        .eq("papel_trabalho_id", ptaId);
+
+      if (!ptaLinhas || ptaLinhas.length === 0) return;
+
+      const linhaIds = ptaLinhas.map(l => l.balancete_linha_id);
+      const { data: linhas } = await supabase
+        .from("balancete_linhas")
+        .select("id, saldo_anterior, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia")
+        .in("id", linhaIds);
+
+      if (!linhas) return;
+
+      const saldoAnt = linhas.reduce((s, l) => s + (l.saldo_anterior || 0), 0);
+      const saldoAtual = linhas.reduce((s, l) => s + (l.saldo_atual || 0), 0);
+      const hasValidado = linhas.some(l => l.valor_validado != null);
+      const valValidado = hasValidado ? linhas.reduce((s, l) => s + (l.valor_validado || 0), 0) : null;
+      const diferenca = valValidado != null ? saldoAtual - valValidado : null;
+      const varAbs = saldoAtual - saldoAnt;
+      const varPct = saldoAnt !== 0 ? ((saldoAtual - saldoAnt) / saldoAnt) * 100 : null;
+      const pendencias = linhas.filter(l => l.possui_pendencia).length;
+
+      const { count: docCount } = await supabase
+        .from("documentos_referencia_balancete")
+        .select("id", { count: "exact", head: true })
+        .in("balancete_linha_id", linhaIds)
+        .eq("ativo", true);
+
+      for (const fl of linhas) {
+        await supabase.from("papel_trabalho_linhas")
+          .update({
+            saldo_atual_linha: fl.saldo_atual,
+            valor_validado_linha: fl.valor_validado,
+            diferenca_linha: fl.diferenca_validacao,
+            status_linha_snapshot: fl.status_linha,
+          })
+          .eq("papel_trabalho_id", ptaId)
+          .eq("balancete_linha_id", fl.id);
+      }
+
+      await supabase.from("papeis_trabalho").update({
+        saldo_anterior_total: saldoAnt,
+        saldo_atual_total: saldoAtual,
+        valor_validado_total: valValidado,
+        diferenca_total: diferenca,
+        variacao_absoluta_total: varAbs,
+        variacao_percentual_total: varPct,
+        total_linhas_vinculadas: linhas.length,
+        total_linhas_com_pendencia: pendencias,
+        total_documentos_referencia: docCount || 0,
+      }).eq("id", ptaId);
+    },
+    onSuccess: () => {
+      toast.success("PTA atualizado com os dados mais recentes do balancete");
+      queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const grupos = [...new Set(ptas.map((p: any) => p.grupo_mcse).filter(Boolean))].sort();
 
   const filtered = ptas.filter((p: any) => {
