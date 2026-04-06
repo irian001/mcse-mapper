@@ -288,6 +288,7 @@ export default function PapeisTrabalhoPage() {
                 const hasDif = p.diferenca_total != null && p.diferenca_total !== 0;
                 const hasPend = (p.total_linhas_com_pendencia || 0) > 0;
                 const st = STATUS_MAP[p.status_pta] || { label: p.status_pta, cls: "" };
+                const isFechado = (p as any).fechado === true;
 
                 return (
                   <TableRow
