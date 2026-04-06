@@ -74,7 +74,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
     enabled: !!linha?.id,
   });
 
-  const isBlockedByPta = !!ptaFechado;
+  const validationDisabled = linha?.is_analitica === false || !!ptaFechado;
 
   useEffect(() => {
     if (linha) {
