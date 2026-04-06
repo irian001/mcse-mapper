@@ -1,0 +1,1 @@
+ALTER TABLE public.papeis_trabalho ADD COLUMN fechado boolean NOT NULL DEFAULT false;

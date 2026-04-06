@@ -882,6 +882,7 @@ export type Database = {
           descricao_mcse: string | null
           diferenca_total: number | null
           exercicio_id: string
+          fechado: boolean
           grupo_mcse: string | null
           id: string
           limite_materialidade: number | null
@@ -916,6 +917,7 @@ export type Database = {
           descricao_mcse?: string | null
           diferenca_total?: number | null
           exercicio_id: string
+          fechado?: boolean
           grupo_mcse?: string | null
           id?: string
           limite_materialidade?: number | null
@@ -950,6 +952,7 @@ export type Database = {
           descricao_mcse?: string | null
           diferenca_total?: number | null
           exercicio_id?: string
+          fechado?: boolean
           grupo_mcse?: string | null
           id?: string
           limite_materialidade?: number | null

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -59,6 +59,22 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
   const [severidade, setSeveridade] = useState<string>("");
   const [diferencaAceita, setDiferencaAceita] = useState<boolean | null>(null);
   const [justificativa, setJustificativa] = useState("");
+
+  // Check if this line is linked to a closed PTA
+  const { data: ptaFechado } = useQuery({
+    queryKey: ["pta_fechado_check", linha?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("papel_trabalho_linhas")
+        .select("papel_trabalho_id, papeis_trabalho(fechado, titulo_pta)")
+        .eq("balancete_linha_id", linha.id);
+      const closed = (data || []).find((d: any) => d.papeis_trabalho?.fechado === true);
+      return closed ? closed.papeis_trabalho : null;
+    },
+    enabled: !!linha?.id,
+  });
+
+  const validationDisabled = linha?.is_analitica === false || !!ptaFechado;
 
   useEffect(() => {
     if (linha) {
@@ -181,6 +197,12 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
         {/* Block 2 — Validation */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm text-muted-foreground">Validação</h4>
+          {ptaFechado && (
+            <div className="text-xs text-destructive bg-destructive/10 rounded-md p-3 border border-destructive/30 flex items-center gap-2">
+              <XCircle size={14} />
+              PTA fechado ({ptaFechado.titulo_pta || "sem título"}) — validação bloqueada. Reabra o PTA para continuar.
+            </div>
+          )}
           {linha.is_analitica === false && (
             <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 border border-border">
               Conta sintética (não analítica) — a validação é permitida apenas para contas do último nível (analíticas).
@@ -196,7 +218,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
                 value={valorValidado}
                 onChange={e => setValorValidado(e.target.value)}
                 className="h-9"
-                disabled={linha.is_analitica === false}
+                disabled={validationDisabled}
               />
             </div>
             <div className="space-y-1.5">
@@ -214,7 +236,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
             variant="outline"
             size="sm"
             className="border-green-300 text-green-700 hover:bg-green-50"
-            disabled={linha.is_analitica === false}
+            disabled={validationDisabled}
             onClick={() => {
               setValorValidado(String(linha.saldo_atual ?? 0));
               setStatusLinha("validado");
@@ -226,7 +248,7 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
 
           <div className="space-y-1.5">
             <Label className="text-xs">Status da Linha</Label>
-            <Select value={statusLinha} onValueChange={setStatusLinha} disabled={linha.is_analitica === false}>
+            <Select value={statusLinha} onValueChange={setStatusLinha} disabled={validationDisabled}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map(s => (

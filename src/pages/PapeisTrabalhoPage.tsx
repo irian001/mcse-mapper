@@ -9,7 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Search, Plus, ClipboardList, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Search, Plus, ClipboardList, Trash2, Lock, Unlock, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import PtaDetailDialog from "@/components/pta/PtaDetailDialog";
 import GerarPtaDialog from "@/components/pta/GerarPtaDialog";
@@ -107,6 +108,84 @@ export default function PapeisTrabalhoPage() {
     },
   });
 
+  const toggleFechadoMutation = useMutation({
+    mutationFn: async ({ ptaId, fechado }: { ptaId: string; fechado: boolean }) => {
+      const { error } = await supabase
+        .from("papeis_trabalho")
+        .update({ fechado } as any)
+        .eq("id", ptaId);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      toast.success(vars.fechado ? "PTA fechado — validação das linhas bloqueada" : "PTA reaberto — validação das linhas liberada");
+      queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const atualizarPtaMutation = useMutation({
+    mutationFn: async (ptaId: string) => {
+      const { data: ptaLinhas } = await supabase
+        .from("papel_trabalho_linhas")
+        .select("balancete_linha_id")
+        .eq("papel_trabalho_id", ptaId);
+
+      if (!ptaLinhas || ptaLinhas.length === 0) return;
+
+      const linhaIds = ptaLinhas.map(l => l.balancete_linha_id);
+      const { data: linhas } = await supabase
+        .from("balancete_linhas")
+        .select("id, saldo_anterior, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia")
+        .in("id", linhaIds);
+
+      if (!linhas) return;
+
+      const saldoAnt = linhas.reduce((s, l) => s + (l.saldo_anterior || 0), 0);
+      const saldoAtual = linhas.reduce((s, l) => s + (l.saldo_atual || 0), 0);
+      const hasValidado = linhas.some(l => l.valor_validado != null);
+      const valValidado = hasValidado ? linhas.reduce((s, l) => s + (l.valor_validado || 0), 0) : null;
+      const diferenca = valValidado != null ? saldoAtual - valValidado : null;
+      const varAbs = saldoAtual - saldoAnt;
+      const varPct = saldoAnt !== 0 ? ((saldoAtual - saldoAnt) / saldoAnt) * 100 : null;
+      const pendencias = linhas.filter(l => l.possui_pendencia).length;
+
+      const { count: docCount } = await supabase
+        .from("documentos_referencia_balancete")
+        .select("id", { count: "exact", head: true })
+        .in("balancete_linha_id", linhaIds)
+        .eq("ativo", true);
+
+      for (const fl of linhas) {
+        await supabase.from("papel_trabalho_linhas")
+          .update({
+            saldo_atual_linha: fl.saldo_atual,
+            valor_validado_linha: fl.valor_validado,
+            diferenca_linha: fl.diferenca_validacao,
+            status_linha_snapshot: fl.status_linha,
+          })
+          .eq("papel_trabalho_id", ptaId)
+          .eq("balancete_linha_id", fl.id);
+      }
+
+      await supabase.from("papeis_trabalho").update({
+        saldo_anterior_total: saldoAnt,
+        saldo_atual_total: saldoAtual,
+        valor_validado_total: valValidado,
+        diferenca_total: diferenca,
+        variacao_absoluta_total: varAbs,
+        variacao_percentual_total: varPct,
+        total_linhas_vinculadas: linhas.length,
+        total_linhas_com_pendencia: pendencias,
+        total_documentos_referencia: docCount || 0,
+      }).eq("id", ptaId);
+    },
+    onSuccess: () => {
+      toast.success("PTA atualizado com os dados mais recentes do balancete");
+      queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const grupos = [...new Set(ptas.map((p: any) => p.grupo_mcse).filter(Boolean))].sort();
 
   const filtered = ptas.filter((p: any) => {
@@ -202,7 +281,7 @@ export default function PapeisTrabalhoPage() {
                 <TableHead className="text-center">Linhas</TableHead>
                 <TableHead className="text-center">Pend.</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-16"></TableHead>
+                <TableHead className="w-28"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -210,13 +289,17 @@ export default function PapeisTrabalhoPage() {
                 const hasDif = p.diferenca_total != null && p.diferenca_total !== 0;
                 const hasPend = (p.total_linhas_com_pendencia || 0) > 0;
                 const st = STATUS_MAP[p.status_pta] || { label: p.status_pta, cls: "" };
+                const isFechado = (p as any).fechado === true;
 
                 return (
                   <TableRow
                     key={p.id}
                     className="cursor-pointer transition-colors hover:bg-muted/30"
                   >
-                    <TableCell className="font-medium text-xs max-w-[200px] truncate" onClick={() => setSelectedPta(p)}>{p.titulo_pta || "Sem título"}</TableCell>
+                    <TableCell className="font-medium text-xs max-w-[200px] truncate" onClick={() => setSelectedPta(p)}>
+                      {isFechado && <Lock size={12} className="inline mr-1 text-muted-foreground" />}
+                      {p.titulo_pta || "Sem título"}
+                    </TableCell>
                     <TableCell className="text-xs" onClick={() => setSelectedPta(p)}>{p.trabalhos_auditoria?.nome_trabalho}</TableCell>
                     <TableCell className="font-mono text-xs" onClick={() => setSelectedPta(p)}>{p.codigo_mcse || "—"}</TableCell>
                     <TableCell className="text-right font-mono text-xs" onClick={() => setSelectedPta(p)}>{fmt(p.saldo_atual_total)}</TableCell>
@@ -226,27 +309,58 @@ export default function PapeisTrabalhoPage() {
                     <TableCell className="text-center text-xs" onClick={() => setSelectedPta(p)}>{hasPend ? <Badge variant="outline" className="bg-warning/15 text-warning-foreground border-warning/30 text-xs">{p.total_linhas_com_pendencia}</Badge> : "—"}</TableCell>
                     <TableCell onClick={() => setSelectedPta(p)}><Badge variant="outline" className={`text-xs ${st.cls}`}>{st.label}</Badge></TableCell>
                     <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
-                            <Trash2 size={14} />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir papel de trabalho?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação irá excluir o PTA "{p.titulo_pta}" e todas as suas linhas vinculadas. Esta ação não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deletePtaMutation.mutate(p.id)}>
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <TooltipProvider>
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground"
+                              onClick={e => { e.stopPropagation(); atualizarPtaMutation.mutate(p.id); }}
+                              disabled={atualizarPtaMutation.isPending}
+                            >
+                              <RefreshCw size={14} className={atualizarPtaMutation.isPending ? "animate-spin" : ""} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Atualizar PTA com dados do balancete</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-7 w-7 ${isFechado ? "text-warning" : "text-muted-foreground"}`}
+                              onClick={e => { e.stopPropagation(); toggleFechadoMutation.mutate({ ptaId: p.id, fechado: !isFechado }); }}
+                            >
+                              {isFechado ? <Unlock size={14} /> : <Lock size={14} />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{isFechado ? "Reabrir PTA" : "Fechar PTA"}</TooltipContent>
+                        </Tooltip>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
+                              <Trash2 size={14} />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir papel de trabalho?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação irá excluir o PTA "{p.titulo_pta}" e todas as suas linhas vinculadas. Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deletePtaMutation.mutate(p.id)}>
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 );
