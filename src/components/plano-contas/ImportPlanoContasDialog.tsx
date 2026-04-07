@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-client";
 import { suggestMcseCode, calcNivelClassificacao } from "@/lib/mcse-suggestion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

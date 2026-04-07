@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-client";
 import { fetchClientes, fetchContas, fetchContasOrigem, fetchMapeamentos } from "@/lib/supabase-queries";
 import { suggestMcseWithConfidence } from "@/lib/mcse-suggestion";
 import PageHeader from "@/components/PageHeader";

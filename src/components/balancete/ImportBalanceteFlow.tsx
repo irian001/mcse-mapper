@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-client";
 import { localizarConta, resolverMcse, calcVariacao, calcStatusValidacao, parseNumericValue } from "@/lib/balancete-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
