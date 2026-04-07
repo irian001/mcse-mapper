@@ -305,7 +305,7 @@ export default function AuditoresPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Cargo</Label>
-                <Select value={form.cargo} onValueChange={(v) => setForm({ ...form, cargo: v as Cargo })} disabled={!isAdmin && !editingId}>
+                <Select value={form.cargo} onValueChange={(v) => setForm({ ...form, cargo: v as Cargo })} disabled={!isAdmin}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{CARGOS.map((c) => <SelectItem key={c} value={c}>{cargoLabel[c]}</SelectItem>)}</SelectContent>
                 </Select>
