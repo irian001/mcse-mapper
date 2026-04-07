@@ -261,8 +261,11 @@ export default function AuditoresPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(a)}>
-                      <Pencil size={14} />
+                    {canEdit(a) && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(a)}>
+                        <Pencil size={14} />
+                      </Button>
+                    )}
                     </Button>
                     {!a.auth_user_id && !currentUserAlreadyLinked && (
                       <Button variant="ghost" size="icon" title="Vincular meu usuário" onClick={() => linkMutation.mutate(a.id)} disabled={linkMutation.isPending}>
