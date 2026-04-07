@@ -175,6 +175,8 @@ export default function AuditoresPage() {
 
   const currentUserAlreadyLinked = auditores.some((a: any) => a.auth_user_id === currentUserId);
 
+  const canEdit = (a: any) => isAdmin || a.auth_user_id === currentUserId;
+
   const openNew = () => { setEditingId(null); setForm(emptyForm); setDialogOpen(true); };
   const openEdit = (a: any) => {
     setEditingId(a.id);
