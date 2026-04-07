@@ -103,12 +103,8 @@ export default function AuditoresPage() {
         const { error } = await supabase.from("auditores").update(rest as any).eq("id", id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("auditores").insert(rest as any).select().single();
+        const { error } = await supabase.from("auditores").insert(rest as any).select().single();
         if (error) throw error;
-        // Bootstrap: if no auditor is linked yet, auto-link the newly created one
-        if (!currentUserAlreadyLinked && data?.id) {
-          await supabase.rpc("link_auditor_account", { p_auditor_id: data.id } as any).throwOnError();
-        }
       }
     },
     onSuccess: () => {
