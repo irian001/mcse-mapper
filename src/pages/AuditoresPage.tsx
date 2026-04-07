@@ -192,7 +192,7 @@ export default function AuditoresPage() {
       <PageHeader
         title="Auditores"
         description="Cadastro de auditores e controle de acesso"
-        actions={<Button size="sm" onClick={openNew}><Plus size={16} className="mr-1" />Novo Auditor</Button>}
+        actions={isAdmin ? <Button size="sm" onClick={openNew}><Plus size={16} className="mr-1" />Novo Auditor</Button> : undefined}
       />
 
       <div className="flex flex-wrap gap-3 mb-4">
