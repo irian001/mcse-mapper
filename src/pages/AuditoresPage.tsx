@@ -61,10 +61,6 @@ const emptyForm: AuditorForm = {
   perfil_acesso: "assistente", ativo: true, observacoes: "",
 };
 
-const bootstrapForm: AuditorForm = {
-  nome: "", email: "", cargo: "assistente", perfil: "assistente",
-  perfil_acesso: "assistente", ativo: true, observacoes: "",
-};
 
 export default function AuditoresPage() {
   const qc = useQueryClient();
@@ -103,12 +99,8 @@ export default function AuditoresPage() {
         const { error } = await supabase.from("auditores").update(rest as any).eq("id", id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("auditores").insert(rest as any).select().single();
+        const { error } = await supabase.from("auditores").insert(rest as any).select().single();
         if (error) throw error;
-        // Bootstrap: if no auditor is linked yet, auto-link the newly created one
-        if (!currentUserAlreadyLinked && data?.id) {
-          await supabase.rpc("link_auditor_account", { p_auditor_id: data.id } as any).throwOnError();
-        }
       }
     },
     onSuccess: () => {
@@ -183,6 +175,8 @@ export default function AuditoresPage() {
 
   const currentUserAlreadyLinked = auditores.some((a: any) => a.auth_user_id === currentUserId);
 
+  const canEdit = (a: any) => isAdmin || a.auth_user_id === currentUserId;
+
   const openNew = () => { setEditingId(null); setForm(emptyForm); setDialogOpen(true); };
   const openEdit = (a: any) => {
     setEditingId(a.id);
@@ -198,7 +192,7 @@ export default function AuditoresPage() {
       <PageHeader
         title="Auditores"
         description="Cadastro de auditores e controle de acesso"
-        actions={<Button size="sm" onClick={openNew}><Plus size={16} className="mr-1" />Novo Auditor</Button>}
+        actions={isAdmin ? <Button size="sm" onClick={openNew}><Plus size={16} className="mr-1" />Novo Auditor</Button> : undefined}
       />
 
       <div className="flex flex-wrap gap-3 mb-4">
@@ -263,14 +257,16 @@ export default function AuditoresPage() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Switch checked={a.ativo} onCheckedChange={(v) => toggleAtivo.mutate({ id: a.id, ativo: v })} disabled={!isAdmin && a.auth_user_id !== currentUserId} />
+                  <Switch checked={a.ativo} onCheckedChange={(v) => toggleAtivo.mutate({ id: a.id, ativo: v })} disabled={!isAdmin} />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(a)}>
-                      <Pencil size={14} />
-                    </Button>
-                    {!a.auth_user_id && !currentUserAlreadyLinked && (
+                    {canEdit(a) && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(a)}>
+                        <Pencil size={14} />
+                      </Button>
+                    )}
+                    {!a.auth_user_id && isAdmin && (
                       <Button variant="ghost" size="icon" title="Vincular meu usuário" onClick={() => linkMutation.mutate(a.id)} disabled={linkMutation.isPending}>
                         <Link2 size={14} className="text-primary" />
                       </Button>
@@ -308,7 +304,7 @@ export default function AuditoresPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Cargo</Label>
-                <Select value={form.cargo} onValueChange={(v) => setForm({ ...form, cargo: v as Cargo })} disabled={!isAdmin && !editingId}>
+                <Select value={form.cargo} onValueChange={(v) => setForm({ ...form, cargo: v as Cargo })} disabled={!isAdmin}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{CARGOS.map((c) => <SelectItem key={c} value={c}>{cargoLabel[c]}</SelectItem>)}</SelectContent>
                 </Select>
@@ -326,7 +322,7 @@ export default function AuditoresPage() {
               <Textarea value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} rows={3} />
             </div>
             <div className="flex items-center gap-2">
-              <Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
+              <Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} disabled={!isAdmin} />
               <Label>Ativo</Label>
             </div>
           </div>
