@@ -257,7 +257,7 @@ export default function AuditoresPage() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Switch checked={a.ativo} onCheckedChange={(v) => toggleAtivo.mutate({ id: a.id, ativo: v })} disabled={!isAdmin && a.auth_user_id !== currentUserId} />
+                  <Switch checked={a.ativo} onCheckedChange={(v) => toggleAtivo.mutate({ id: a.id, ativo: v })} disabled={!isAdmin} />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
