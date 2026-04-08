@@ -259,7 +259,7 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
                   <TableCell className="text-center">
                     <DiferencaAceitaIcon linha={l} />
                   </TableCell>
-                  <TableCell>{statusLinhaBadge(l.status_linha)}</TableCell>
+                  <TableCell>{l.is_analitica ? <span className="text-xs text-muted-foreground italic">Analítica</span> : statusLinhaBadge(l.status_linha)}</TableCell>
                   <TableCell className="text-center">
                     <PendenciaIcon linha={l} />
                   </TableCell>
