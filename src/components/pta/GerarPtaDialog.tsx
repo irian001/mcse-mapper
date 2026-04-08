@@ -64,14 +64,20 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
         .eq("id", autoContaMcseId)
         .maybeSingle();
 
-      // Fetch lines
-      const { data: linhas } = await supabase
+      // Fetch lines with conta_origem to filter synthetic only
+      const { data: linhasRaw } = await supabase
         .from("balancete_linhas")
-        .select("id, saldo_anterior, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia")
+        .select("id, saldo_anterior, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia, conta_origem_id, cliente_contas_origem(analitica)")
         .eq("trabalho_auditoria_id", autoTrabalhoId)
         .eq("conta_mcse_id", autoContaMcseId);
 
-      if (!linhas || linhas.length === 0) throw new Error("Nenhuma linha encontrada para essa conta MCSE neste trabalho");
+      // Filter to synthetic accounts only (analitica = false)
+      const linhas = (linhasRaw || []).filter((l: any) => {
+        const analitica = l.cliente_contas_origem?.analitica;
+        return analitica === false || analitica == null; // include lines without conta_origem
+      });
+
+      if (linhas.length === 0) throw new Error("Nenhuma linha sintética encontrada para essa conta MCSE neste trabalho");
 
       const saldoAnt = linhas.reduce((s, l) => s + (l.saldo_anterior || 0), 0);
       const saldoAtual = linhas.reduce((s, l) => s + (l.saldo_atual || 0), 0);

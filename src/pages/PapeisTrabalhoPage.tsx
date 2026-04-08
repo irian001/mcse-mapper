@@ -133,15 +133,22 @@ export default function PapeisTrabalhoPage() {
       if (!ptaLinhas || ptaLinhas.length === 0) return;
 
       const linhaIds = ptaLinhas.map(l => l.balancete_linha_id);
-      const { data: linhas } = await supabase
+      const { data: linhasRaw } = await supabase
         .from("balancete_linhas")
-        .select("id, saldo_anterior, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia")
+        .select("id, saldo_anterior, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia, conta_origem_id, cliente_contas_origem(analitica)")
         .in("id", linhaIds);
 
-      if (!linhas) return;
+      if (!linhasRaw) return;
 
-      const saldoAnt = linhas.reduce((s, l) => s + (l.saldo_anterior || 0), 0);
-      const saldoAtual = linhas.reduce((s, l) => s + (l.saldo_atual || 0), 0);
+      // Only sum synthetic accounts (analitica = false)
+      const linhasSinteticas = linhasRaw.filter((l: any) => {
+        const analitica = l.cliente_contas_origem?.analitica;
+        return analitica === false || analitica == null;
+      });
+      const linhas = linhasRaw; // keep all for snapshot updates
+
+      const saldoAnt = linhasSinteticas.reduce((s: number, l: any) => s + (l.saldo_anterior || 0), 0);
+      const saldoAtual = linhasSinteticas.reduce((s: number, l: any) => s + (l.saldo_atual || 0), 0);
       const hasValidado = linhas.some(l => l.valor_validado != null);
       const valValidado = hasValidado ? linhas.reduce((s, l) => s + (l.valor_validado || 0), 0) : null;
       const diferenca = valValidado != null ? saldoAtual - valValidado : null;
