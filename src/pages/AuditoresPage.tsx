@@ -126,17 +126,38 @@ export default function AuditoresPage() {
 
   const linkMutation = useMutation({
     mutationFn: async ({ auditorId, email }: { auditorId: string; email: string }) => {
-      // Step 1: find user_id by email using get_auth_users_for_linking
-      const { data: users, error: fetchErr } = await supabase.rpc("get_auth_users_for_linking" as any);
-      if (fetchErr) throw fetchErr;
-      const match = (users as any[])?.find((u: any) => u.user_email?.toLowerCase() === email.toLowerCase());
-      if (!match) throw new Error("Nenhum usuário encontrado com o email: " + email);
-      // Step 2: link using link_auditor_account with the found user_id
-      const { error } = await supabase.rpc("link_auditor_account", {
+      // Try link_auditor_by_email RPC first
+      const { error: rpcError } = await supabase.rpc("link_auditor_by_email" as any, {
         p_auditor_id: auditorId,
-        p_user_id: match.user_id,
-      } as any);
-      if (error) throw error;
+        p_user_email: email,
+      });
+      
+      if (rpcError) {
+        // If function not found (PGRST202), try fallback: get_auth_users_for_linking + link_auditor_account
+        if (rpcError.code === "PGRST202" || rpcError.message?.includes("schema cache")) {
+          // Try get_auth_users_for_linking
+          const { data: users, error: listErr } = await supabase.rpc("get_auth_users_for_linking" as any);
+          if (listErr) {
+            if (listErr.code === "PGRST202" || listErr.message?.includes("schema cache")) {
+              throw new Error(
+                "Funções de vínculo não encontradas no banco de dados. " +
+                "É necessário executar o SQL de criação no SQL Editor do painel Supabase."
+              );
+            }
+            throw listErr;
+          }
+          const match = (users as any[])?.find((u: any) => u.user_email?.toLowerCase() === email.toLowerCase());
+          if (!match) throw new Error("Nenhum usuário encontrado com o email: " + email);
+          
+          const { error: linkErr } = await supabase.rpc("link_auditor_account", {
+            p_auditor_id: auditorId,
+            p_user_id: match.user_id,
+          } as any);
+          if (linkErr) throw linkErr;
+        } else {
+          throw rpcError;
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["auditores"] });
