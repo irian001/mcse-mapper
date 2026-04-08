@@ -183,7 +183,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
         diferenca_total: diferenca,
         variacao_absoluta_total: varAbs,
         variacao_percentual_total: varPct,
-        total_linhas_vinculadas: linhas.length,
+        total_linhas_vinculadas: linhasRaw.length,
         total_linhas_com_pendencia: pendencias,
         total_documentos_referencia: docCount || 0,
       }).eq("id", pta.id);
