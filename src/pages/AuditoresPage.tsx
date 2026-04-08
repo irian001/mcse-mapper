@@ -126,9 +126,15 @@ export default function AuditoresPage() {
 
   const linkMutation = useMutation({
     mutationFn: async ({ auditorId, email }: { auditorId: string; email: string }) => {
-      const { error } = await supabase.rpc("link_auditor_by_email", {
+      // Step 1: find user_id by email using get_auth_users_for_linking
+      const { data: users, error: fetchErr } = await supabase.rpc("get_auth_users_for_linking" as any);
+      if (fetchErr) throw fetchErr;
+      const match = (users as any[])?.find((u: any) => u.user_email?.toLowerCase() === email.toLowerCase());
+      if (!match) throw new Error("Nenhum usuário encontrado com o email: " + email);
+      // Step 2: link using link_auditor_account with the found user_id
+      const { error } = await supabase.rpc("link_auditor_account", {
         p_auditor_id: auditorId,
-        p_user_email: email,
+        p_user_id: match.user_id,
       } as any);
       if (error) throw error;
     },
