@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import logoImg from "@/assets/logo_audiconsult.jpg";
 import { supabase } from "@/lib/supabase-client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,21 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
       return data || [];
     },
     enabled: !!pta?.id,
+  });
+
+  // Fetch audit team for this trabalho
+  const { data: equipeAuditores = [] } = useQuery({
+    queryKey: ["trabalho_auditores_equipe", pta?.trabalho_auditoria_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("trabalho_auditores")
+        .select("papel_no_trabalho, responsavel_principal, auditores(nome, cargo)")
+        .eq("trabalho_auditoria_id", pta.trabalho_auditoria_id)
+        .eq("ativo", true)
+        .order("responsavel_principal", { ascending: false });
+      return data || [];
+    },
+    enabled: !!pta?.trabalho_auditoria_id,
   });
 
   // Recalculate consolidation
@@ -230,12 +246,41 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   }, [linkedLines]);
 
   // Generate PDF
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Popup bloqueado — permita pop-ups para gerar o PDF");
       return;
     }
+
+    // Convert logo to base64 for embedding
+    let logoBase64 = "";
+    try {
+      const response = await fetch(logoImg);
+      const blob = await response.blob();
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch { /* logo won't show if it fails */ }
+
+    const PAPEL_MAP: Record<string, string> = {
+      elaborador: "Elaborador",
+      revisor_1: "Revisor 1",
+      revisor_2: "Revisor 2",
+      gerente: "Gerente",
+      socio: "Sócio",
+    };
+
+    const equipeHtml = equipeAuditores.length > 0
+      ? equipeAuditores.map((ea: any) => {
+          const nome = ea.auditores?.nome || "—";
+          const papel = PAPEL_MAP[ea.papel_no_trabalho] || ea.papel_no_trabalho;
+          const resp = ea.responsavel_principal ? " (Responsável)" : "";
+          return `<li>${nome} — <em>${papel}${resp}</em></li>`;
+        }).join("")
+      : "<li style='color:#999'>Nenhum auditor vinculado</li>";
 
     const linhasHtml = sortedLinkedLines.map((ll: any) => {
       const bl = ll.balancete_linhas;
@@ -260,6 +305,9 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; padding: 24px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .header-left { flex: 1; }
+  .header-logo img { max-height: 50px; max-width: 160px; }
   h1 { font-size: 16px; margin-bottom: 4px; }
   h2 { font-size: 13px; margin-top: 16px; margin-bottom: 6px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
   .subtitle { color: #666; font-size: 11px; margin-bottom: 12px; }
@@ -274,11 +322,19 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   th { background: #f0f0f0; font-weight: 600; }
   .obs { margin-top: 8px; }
   .obs p { white-space: pre-wrap; background: #fafafa; padding: 6px; border-radius: 4px; min-height: 20px; border: 1px solid #eee; }
+  .equipe-list { list-style: none; padding: 0; margin: 4px 0; }
+  .equipe-list li { padding: 2px 0; font-size: 11px; }
   .footer { margin-top: 20px; color: #999; font-size: 9px; text-align: center; border-top: 1px solid #eee; padding-top: 6px; }
   @media print { body { padding: 12px; } }
 </style></head><body>
-<h1>Papel de Trabalho de Auditoria</h1>
-<div class="subtitle">${pta.titulo_pta || "Sem título"} — Status: ${statusLabel} — Data: ${dataAtual}</div>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Papel de Trabalho de Auditoria</h1>
+    <div class="subtitle">${pta.titulo_pta || "Sem título"} — Status: ${statusLabel} — Data: ${dataAtual}</div>
+  </div>
+  ${logoBase64 ? `<div class="header-logo"><img src="${logoBase64}" alt="Logo" /></div>` : ""}
+</div>
 
 <h2>Identificação</h2>
 <div class="grid">
@@ -288,6 +344,9 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   <span class="label">Conta MCSE:</span><span style="font-family:monospace">${pta.codigo_mcse || "—"} ${pta.descricao_mcse ? "— " + pta.descricao_mcse : ""}</span>
   <span class="label">Grupo / Subgrupo:</span><span>${pta.grupo_mcse || "—"} / ${pta.subgrupo_mcse || "—"}</span>
 </div>
+
+<h2>Equipe de Auditoria</h2>
+<ul class="equipe-list">${equipeHtml}</ul>
 
 ${objetivoProcedimento ? `<h2>Objetivo do Procedimento</h2><div class="obs"><p>${objetivoProcedimento}</p></div>` : ""}
 
