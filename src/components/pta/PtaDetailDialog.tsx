@@ -93,6 +93,21 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
     enabled: !!pta?.id,
   });
 
+  // Fetch audit team for this trabalho
+  const { data: equipeAuditores = [] } = useQuery({
+    queryKey: ["trabalho_auditores_equipe", pta?.trabalho_auditoria_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("trabalho_auditores")
+        .select("papel_no_trabalho, responsavel_principal, auditores(nome, cargo)")
+        .eq("trabalho_auditoria_id", pta.trabalho_auditoria_id)
+        .eq("ativo", true)
+        .order("responsavel_principal", { ascending: false });
+      return data || [];
+    },
+    enabled: !!pta?.trabalho_auditoria_id,
+  });
+
   // Recalculate consolidation
   const recalcMutation = useMutation({
     mutationFn: async () => {
