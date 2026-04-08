@@ -1175,21 +1175,7 @@ export type Database = {
       }
     }
     Views: {
-      auth_users_for_linking: {
-        Row: {
-          user_email: string | null
-          user_id: string | null
-        }
-        Insert: {
-          user_email?: never
-          user_id?: string | null
-        }
-        Update: {
-          user_email?: never
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       can_access_storage_doc: {
@@ -1210,6 +1196,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       link_auditor_account: {
         Args: { p_auditor_id: string; p_user_id?: string }
+        Returns: undefined
+      }
+      link_auditor_by_email: {
+        Args: { p_auditor_id: string; p_user_email: string }
         Returns: undefined
       }
     }
