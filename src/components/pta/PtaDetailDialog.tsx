@@ -482,9 +482,14 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-sm text-muted-foreground">Linhas Vinculadas ({linkedLines.length})</h4>
-              <Button variant="outline" size="sm" onClick={() => setShowVincular(true)}>
-                <Plus size={13} className="mr-1" /> Vincular Linhas
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportPdf}>
+                  <FileDown size={13} className="mr-1" /> Salvar PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowVincular(true)}>
+                  <Plus size={13} className="mr-1" /> Vincular Linhas
+                </Button>
+              </div>
             </div>
             {linkedLines.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">Nenhuma linha vinculada</p>
