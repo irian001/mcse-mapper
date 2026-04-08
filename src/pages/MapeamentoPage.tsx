@@ -80,8 +80,6 @@ export default function MapeamentoPage() {
     if (search) {
       const s = search.toLowerCase();
       list = list.filter((c: any) =>
-        (c.idconta || "").toLowerCase().includes(s) ||
-        (c.nome || "").toLowerCase().includes(s) ||
         (c.classificacao || "").toLowerCase().includes(s)
       );
     }
