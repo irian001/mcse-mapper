@@ -1194,12 +1194,10 @@ export type Database = {
       get_my_auditor_id: { Args: never; Returns: string }
       has_any_admin: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
-      link_auditor_account:
-        | { Args: { p_auditor_id: string }; Returns: undefined }
-        | {
-            Args: { p_auditor_id: string; p_user_id?: string }
-            Returns: undefined
-          }
+      link_auditor_account: {
+        Args: { p_auditor_id: string; p_user_id?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       cargo_auditor: "assistente" | "senior" | "gerente" | "socio" | "revisor"
