@@ -71,22 +71,25 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
         .eq("trabalho_auditoria_id", autoTrabalhoId)
         .eq("conta_mcse_id", autoContaMcseId);
 
-      // Filter to synthetic accounts only (analitica = false)
-      const linhas = (linhasRaw || []).filter((l: any) => {
+      // All lines are included in the PTA
+      const linhas = linhasRaw || [];
+
+      if (linhas.length === 0) throw new Error("Nenhuma linha encontrada para essa conta MCSE neste trabalho");
+
+      // Only synthetic accounts (analitica = false or no conta_origem) are used for totals
+      const linhasSinteticas = linhas.filter((l: any) => {
         const analitica = l.cliente_contas_origem?.analitica;
-        return analitica === false || analitica == null; // include lines without conta_origem
+        return analitica === false || analitica == null;
       });
 
-      if (linhas.length === 0) throw new Error("Nenhuma linha sintética encontrada para essa conta MCSE neste trabalho");
-
-      const saldoAnt = linhas.reduce((s, l) => s + (l.saldo_anterior || 0), 0);
-      const saldoAtual = linhas.reduce((s, l) => s + (l.saldo_atual || 0), 0);
-      const hasVal = linhas.some(l => l.valor_validado != null);
-      const valValidado = hasVal ? linhas.reduce((s, l) => s + (l.valor_validado || 0), 0) : null;
+      const saldoAnt = linhasSinteticas.reduce((s, l) => s + (l.saldo_anterior || 0), 0);
+      const saldoAtual = linhasSinteticas.reduce((s, l) => s + (l.saldo_atual || 0), 0);
+      const hasVal = linhasSinteticas.some(l => l.valor_validado != null);
+      const valValidado = hasVal ? linhasSinteticas.reduce((s, l) => s + (l.valor_validado || 0), 0) : null;
       const diferenca = valValidado != null ? saldoAtual - valValidado : null;
       const varAbs = saldoAtual - saldoAnt;
       const varPct = saldoAnt !== 0 ? ((saldoAtual - saldoAnt) / saldoAnt) * 100 : null;
-      const pendencias = linhas.filter(l => l.possui_pendencia).length;
+      const pendencias = linhasSinteticas.filter(l => l.possui_pendencia).length;
 
       const { data: pta, error: ptaError } = await supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: autoTrabalhoId,
