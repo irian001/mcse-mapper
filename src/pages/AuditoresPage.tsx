@@ -266,7 +266,7 @@ export default function AuditoresPage() {
                         <Pencil size={14} />
                       </Button>
                     )}
-                    {!a.auth_user_id && isAdmin && (
+                    {!a.auth_user_id && isAdmin && !currentUserAlreadyLinked && (
                       <Button variant="ghost" size="icon" title="Vincular meu usuário" onClick={() => linkMutation.mutate(a.id)} disabled={linkMutation.isPending}>
                         <Link2 size={14} className="text-primary" />
                       </Button>
