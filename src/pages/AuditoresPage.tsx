@@ -72,7 +72,7 @@ export default function AuditoresPage() {
   const [filterAtivo, setFilterAtivo] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; nome: string } | null>(null);
   const [linkTarget, setLinkTarget] = useState<{ id: string; nome: string } | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [linkEmail, setLinkEmail] = useState<string>("");
 
   const { data: currentAuditor } = useCurrentAuditor();
   const isAdmin = currentAuditor?.perfil_acesso === "admin";
@@ -94,15 +94,6 @@ export default function AuditoresPage() {
     },
   });
 
-  const { data: availableUsers = [] } = useQuery({
-    queryKey: ["auth-users-for-linking"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_auth_users_for_linking");
-      if (error) throw error;
-      return (data as any[]) || [];
-    },
-    enabled: isAdmin && !!linkTarget,
-  });
 
   const saveMutation = useMutation({
     mutationFn: async (values: AuditorForm & { id?: string }) => {
@@ -134,19 +125,18 @@ export default function AuditoresPage() {
   });
 
   const linkMutation = useMutation({
-    mutationFn: async ({ auditorId, userId }: { auditorId: string; userId: string }) => {
-      const { error } = await supabase.rpc("link_auditor_account", {
+    mutationFn: async ({ auditorId, email }: { auditorId: string; email: string }) => {
+      const { error } = await supabase.rpc("link_auditor_by_email", {
         p_auditor_id: auditorId,
-        p_user_id: userId,
+        p_user_email: email,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["auditores"] });
       qc.invalidateQueries({ queryKey: ["current-auditor"] });
-      qc.invalidateQueries({ queryKey: ["auth-users-for-linking"] });
       setLinkTarget(null);
-      setSelectedUserId("");
+      setLinkEmail("");
       toast.success("Conta vinculada com sucesso!");
     },
     onError: (err: any) => toast.error(err?.message || "Não foi possível vincular a conta"),
@@ -206,8 +196,7 @@ export default function AuditoresPage() {
 
   const openLinkDialog = (a: any) => {
     setLinkTarget({ id: a.id, nome: a.nome });
-    setSelectedUserId("");
-    qc.invalidateQueries({ queryKey: ["auth-users-for-linking"] });
+    setLinkEmail(a.email || "");
   };
 
   return (
@@ -367,33 +356,26 @@ export default function AuditoresPage() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Selecione o usuário que será vinculado ao auditor <strong>{linkTarget?.nome}</strong>.
+              Informe o email da conta de acesso que será vinculada ao auditor <strong>{linkTarget?.nome}</strong>.
             </p>
             <div>
-              <Label>Usuário</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um usuário..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableUsers.length === 0 ? (
-                    <SelectItem value="_none" disabled>Nenhum usuário disponível</SelectItem>
-                  ) : (
-                    availableUsers.map((u: any) => (
-                      <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.user_email}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <Label>Email do usuário</Label>
+              <Input
+                type="email"
+                placeholder="usuario@email.com"
+                value={linkEmail}
+                onChange={(e) => setLinkEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                O usuário precisa ter uma conta cadastrada no sistema.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLinkTarget(null)}>Cancelar</Button>
             <Button
-              disabled={!selectedUserId || linkMutation.isPending}
-              onClick={() => linkTarget && linkMutation.mutate({ auditorId: linkTarget.id, userId: selectedUserId })}
+              disabled={!linkEmail.trim() || linkMutation.isPending}
+              onClick={() => linkTarget && linkMutation.mutate({ auditorId: linkTarget.id, email: linkEmail.trim() })}
             >
               {linkMutation.isPending ? "Vinculando..." : "Vincular"}
             </Button>
