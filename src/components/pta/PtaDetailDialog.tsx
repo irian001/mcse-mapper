@@ -403,7 +403,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {linkedLines.map((ll: any) => {
+                    {sortedLinkedLines.map((ll: any) => {
                       const bl = ll.balancete_linhas;
                       const stMap = STATUS_LINHA_MAP[bl?.status_linha || ""] || { label: bl?.status_linha || "—", cls: "" };
                       return (
