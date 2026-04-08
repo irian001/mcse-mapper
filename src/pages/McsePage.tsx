@@ -77,6 +77,17 @@ export default function McsePage() {
     nivel: 1, natureza: "ativo" as NaturezaConta, aceita_lancamento: false, conta_critica: false, aceita_reg_soc: false,
   });
 
+  // Subgrupos filtered by selected grupo in conta form
+  const { data: subgruposForConta = [] } = useQuery({
+    queryKey: ["mcse_subgrupos_for_conta", contaForm.grupo_id],
+    queryFn: async () => {
+      if (!contaForm.grupo_id) return [];
+      const { data } = await fetchSubgrupos(contaForm.grupo_id);
+      return data || [];
+    },
+    enabled: !!contaForm.grupo_id,
+  });
+
   const saveConta = useMutation({
     mutationFn: async () => {
       const payload = { ...contaForm, subgrupo_id: contaForm.subgrupo_id || null };
