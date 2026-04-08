@@ -356,33 +356,26 @@ export default function AuditoresPage() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Selecione o usuário que será vinculado ao auditor <strong>{linkTarget?.nome}</strong>.
+              Informe o email da conta de acesso que será vinculada ao auditor <strong>{linkTarget?.nome}</strong>.
             </p>
             <div>
-              <Label>Usuário</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um usuário..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableUsers.length === 0 ? (
-                    <SelectItem value="_none" disabled>Nenhum usuário disponível</SelectItem>
-                  ) : (
-                    availableUsers.map((u: any) => (
-                      <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.user_email}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <Label>Email do usuário</Label>
+              <Input
+                type="email"
+                placeholder="usuario@email.com"
+                value={linkEmail}
+                onChange={(e) => setLinkEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                O usuário precisa ter uma conta cadastrada no sistema.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLinkTarget(null)}>Cancelar</Button>
             <Button
-              disabled={!selectedUserId || linkMutation.isPending}
-              onClick={() => linkTarget && linkMutation.mutate({ auditorId: linkTarget.id, userId: selectedUserId })}
+              disabled={!linkEmail.trim() || linkMutation.isPending}
+              onClick={() => linkTarget && linkMutation.mutate({ auditorId: linkTarget.id, email: linkEmail.trim() })}
             >
               {linkMutation.isPending ? "Vinculando..." : "Vincular"}
             </Button>
