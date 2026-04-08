@@ -71,6 +71,8 @@ export default function AuditoresPage() {
   const [filterCargo, setFilterCargo] = useState("all");
   const [filterAtivo, setFilterAtivo] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; nome: string } | null>(null);
+  const [linkTarget, setLinkTarget] = useState<{ id: string; nome: string } | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   const { data: currentAuditor } = useCurrentAuditor();
   const isAdmin = currentAuditor?.perfil_acesso === "admin";
@@ -90,6 +92,16 @@ export default function AuditoresPage() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: availableUsers = [] } = useQuery({
+    queryKey: ["auth-users-for-linking"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_auth_users_for_linking");
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    enabled: isAdmin && !!linkTarget,
   });
 
   const saveMutation = useMutation({
@@ -122,16 +134,22 @@ export default function AuditoresPage() {
   });
 
   const linkMutation = useMutation({
-    mutationFn: async (auditorId: string) => {
-      const { error } = await supabase.rpc("link_auditor_account", { p_auditor_id: auditorId } as any);
+    mutationFn: async ({ auditorId, userId }: { auditorId: string; userId: string }) => {
+      const { error } = await supabase.rpc("link_auditor_account", {
+        p_auditor_id: auditorId,
+        p_user_id: userId,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["auditores"] });
       qc.invalidateQueries({ queryKey: ["current-auditor"] });
+      qc.invalidateQueries({ queryKey: ["auth-users-for-linking"] });
+      setLinkTarget(null);
+      setSelectedUserId("");
       toast.success("Conta vinculada com sucesso!");
     },
-    onError: () => toast.error("Não foi possível vincular a conta"),
+    onError: (err: any) => toast.error(err?.message || "Não foi possível vincular a conta"),
   });
 
   const unlinkMutation = useMutation({
@@ -142,13 +160,14 @@ export default function AuditoresPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["auditores"] });
       qc.invalidateQueries({ queryKey: ["current-auditor"] });
+      qc.invalidateQueries({ queryKey: ["auth-users-for-linking"] });
       toast.success("Vínculo removido");
     },
     onError: () => toast.error("Erro ao remover vínculo"),
   });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Remove alocações em trabalhos primeiro
       await supabase.from("trabalho_auditores").delete().eq("auditor_id", id);
       const { error } = await supabase.from("auditores").delete().eq("id", id);
       if (error) throw error;
@@ -173,8 +192,6 @@ export default function AuditoresPage() {
     return list;
   }, [auditores, search, filterCargo, filterAtivo]);
 
-  const currentUserAlreadyLinked = auditores.some((a: any) => a.auth_user_id === currentUserId);
-
   const canEdit = (a: any) => isAdmin || a.auth_user_id === currentUserId;
 
   const openNew = () => { setEditingId(null); setForm(emptyForm); setDialogOpen(true); };
@@ -185,6 +202,12 @@ export default function AuditoresPage() {
       perfil_acesso: a.perfil_acesso || "assistente", ativo: a.ativo, observacoes: a.observacoes || "",
     });
     setDialogOpen(true);
+  };
+
+  const openLinkDialog = (a: any) => {
+    setLinkTarget({ id: a.id, nome: a.nome });
+    setSelectedUserId("");
+    qc.invalidateQueries({ queryKey: ["auth-users-for-linking"] });
   };
 
   return (
@@ -266,8 +289,8 @@ export default function AuditoresPage() {
                         <Pencil size={14} />
                       </Button>
                     )}
-                    {!a.auth_user_id && isAdmin && !currentUserAlreadyLinked && (
-                      <Button variant="ghost" size="icon" title="Vincular meu usuário" onClick={() => linkMutation.mutate(a.id)} disabled={linkMutation.isPending}>
+                    {!a.auth_user_id && isAdmin && (
+                      <Button variant="ghost" size="icon" title="Vincular usuário" onClick={() => openLinkDialog(a)}>
                         <Link2 size={14} className="text-primary" />
                       </Button>
                     )}
@@ -289,6 +312,7 @@ export default function AuditoresPage() {
         </Table>
       </div>
 
+      {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingId ? "Editar Auditor" : "Novo Auditor"}</DialogTitle></DialogHeader>
@@ -335,6 +359,49 @@ export default function AuditoresPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Link User Dialog */}
+      <Dialog open={!!linkTarget} onOpenChange={(open) => !open && setLinkTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Vincular Usuário ao Auditor</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Selecione o usuário que será vinculado ao auditor <strong>{linkTarget?.nome}</strong>.
+            </p>
+            <div>
+              <Label>Usuário</Label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um usuário..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUsers.length === 0 ? (
+                    <SelectItem value="_none" disabled>Nenhum usuário disponível</SelectItem>
+                  ) : (
+                    availableUsers.map((u: any) => (
+                      <SelectItem key={u.user_id} value={u.user_id}>
+                        {u.user_email}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkTarget(null)}>Cancelar</Button>
+            <Button
+              disabled={!selectedUserId || linkMutation.isPending}
+              onClick={() => linkTarget && linkMutation.mutate({ auditorId: linkTarget.id, userId: selectedUserId })}
+            >
+              {linkMutation.isPending ? "Vinculando..." : "Vincular"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
