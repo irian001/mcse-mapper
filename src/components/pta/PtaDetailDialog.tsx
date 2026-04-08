@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Save, ClipboardList, Trash2, RefreshCw, Plus } from "lucide-react";
+import { Save, ClipboardList, Trash2, RefreshCw, Plus, FileDown } from "lucide-react";
 import PtaVincularLinhasDialog from "./PtaVincularLinhasDialog";
 
 function fmt(v: number | null | undefined) {
@@ -220,6 +220,106 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
     onError: (err: any) => toast.error(err.message),
   });
 
+  // Sort linked lines by codigo_conta_balancete
+  const sortedLinkedLines = useMemo(() => {
+    return [...linkedLines].sort((a: any, b: any) => {
+      const codeA = a.balancete_linhas?.codigo_conta_balancete || "";
+      const codeB = b.balancete_linhas?.codigo_conta_balancete || "";
+      return codeA.localeCompare(codeB, "pt-BR", { numeric: true });
+    });
+  }, [linkedLines]);
+
+  // Generate PDF
+  const handleExportPdf = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup bloqueado — permita pop-ups para gerar o PDF");
+      return;
+    }
+
+    const linhasHtml = sortedLinkedLines.map((ll: any) => {
+      const bl = ll.balancete_linhas;
+      const hasDif = bl?.diferenca_validacao != null && bl?.diferenca_validacao !== 0;
+      return `<tr>
+        <td style="font-family:monospace">${bl?.codigo_conta_balancete || ""}</td>
+        <td>${bl?.descricao_conta_balancete || ""}</td>
+        <td style="text-align:right;font-family:monospace">${fmt(bl?.saldo_atual)}</td>
+        <td style="text-align:right;font-family:monospace">${fmt(bl?.valor_validado)}</td>
+        <td style="text-align:right;font-family:monospace;${hasDif ? "color:#b45309;font-weight:600" : ""}">${fmt(bl?.diferenca_validacao)}</td>
+        <td>${bl?.status_linha || "pendente"}</td>
+        <td>${bl?.possui_pendencia ? "Sim" : "Não"}</td>
+      </tr>`;
+    }).join("");
+
+    const statusLabel = STATUS_OPTIONS.find(s => s.value === pta.status_pta)?.label || pta.status_pta;
+    const dataAtual = new Date().toLocaleDateString("pt-BR");
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<title>PTA — ${pta.titulo_pta || pta.codigo_mcse || "Sem título"}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; padding: 24px; }
+  h1 { font-size: 16px; margin-bottom: 4px; }
+  h2 { font-size: 13px; margin-top: 16px; margin-bottom: 6px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+  .subtitle { color: #666; font-size: 11px; margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: 140px 1fr; gap: 2px 8px; margin-bottom: 8px; }
+  .grid .label { color: #666; }
+  .stats { display: flex; gap: 16px; margin-bottom: 8px; }
+  .stat { text-align: center; flex: 1; background: #f5f5f5; padding: 6px; border-radius: 4px; }
+  .stat .val { font-family: monospace; font-weight: 600; font-size: 12px; }
+  .stat .lbl { color: #666; font-size: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; font-size: 10px; }
+  th { background: #f0f0f0; font-weight: 600; }
+  .obs { margin-top: 8px; }
+  .obs p { white-space: pre-wrap; background: #fafafa; padding: 6px; border-radius: 4px; min-height: 20px; border: 1px solid #eee; }
+  .footer { margin-top: 20px; color: #999; font-size: 9px; text-align: center; border-top: 1px solid #eee; padding-top: 6px; }
+  @media print { body { padding: 12px; } }
+</style></head><body>
+<h1>Papel de Trabalho de Auditoria</h1>
+<div class="subtitle">${pta.titulo_pta || "Sem título"} — Status: ${statusLabel} — Data: ${dataAtual}</div>
+
+<h2>Identificação</h2>
+<div class="grid">
+  <span class="label">Trabalho:</span><span>${pta.trabalhos_auditoria?.nome_trabalho || "—"}</span>
+  <span class="label">Cliente:</span><span>${pta.clientes?.razao_social || "—"}</span>
+  <span class="label">Exercício:</span><span>${pta.exercicios?.ano_exercicio || "—"}</span>
+  <span class="label">Conta MCSE:</span><span style="font-family:monospace">${pta.codigo_mcse || "—"} ${pta.descricao_mcse ? "— " + pta.descricao_mcse : ""}</span>
+  <span class="label">Grupo / Subgrupo:</span><span>${pta.grupo_mcse || "—"} / ${pta.subgrupo_mcse || "—"}</span>
+</div>
+
+${objetivoProcedimento ? `<h2>Objetivo do Procedimento</h2><div class="obs"><p>${objetivoProcedimento}</p></div>` : ""}
+
+<h2>Consolidação</h2>
+<div class="stats">
+  <div class="stat"><div class="lbl">Saldo Anterior</div><div class="val">${fmt(pta.saldo_anterior_total)}</div></div>
+  <div class="stat"><div class="lbl">Saldo Atual</div><div class="val">${fmt(pta.saldo_atual_total)}</div></div>
+  <div class="stat"><div class="lbl">Valor Validado</div><div class="val">${fmt(pta.valor_validado_total)}</div></div>
+  <div class="stat"><div class="lbl">Diferença</div><div class="val" style="${pta.diferenca_total && pta.diferenca_total !== 0 ? "color:#b45309" : ""}">${fmt(pta.diferenca_total)}</div></div>
+  <div class="stat"><div class="lbl">Var. Absoluta</div><div class="val">${fmt(pta.variacao_absoluta_total)}</div></div>
+  <div class="stat"><div class="lbl">Var. %</div><div class="val">${fmtPct(pta.variacao_percentual_total)}</div></div>
+</div>
+
+<h2>Linhas Vinculadas (${sortedLinkedLines.length})</h2>
+<table>
+  <thead><tr><th>Código</th><th>Descrição</th><th style="text-align:right">Saldo Atual</th><th style="text-align:right">Val. Validado</th><th style="text-align:right">Diferença</th><th>Status</th><th>Pendência</th></tr></thead>
+  <tbody>${linhasHtml || "<tr><td colspan='7' style='text-align:center;color:#999'>Nenhuma linha vinculada</td></tr>"}</tbody>
+</table>
+
+${comentarioAuditor ? `<h2>Comentário do Auditor</h2><div class="obs"><p>${comentarioAuditor}</p></div>` : ""}
+${comentarioRevisor ? `<h2>Comentário do Revisor</h2><div class="obs"><p>${comentarioRevisor}</p></div>` : ""}
+${conclusaoPreliminar ? `<h2>Conclusão Preliminar</h2><div class="obs"><p>${conclusaoPreliminar}</p></div>` : ""}
+${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFinal}</p></div>` : ""}
+
+<div class="footer">Documento gerado em ${dataAtual} — Papel de Trabalho de Auditoria — Uso interno</div>
+</body></html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 500);
+  };
+
   if (!pta) return null;
 
   return (
@@ -382,9 +482,14 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-sm text-muted-foreground">Linhas Vinculadas ({linkedLines.length})</h4>
-              <Button variant="outline" size="sm" onClick={() => setShowVincular(true)}>
-                <Plus size={13} className="mr-1" /> Vincular Linhas
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportPdf}>
+                  <FileDown size={13} className="mr-1" /> Salvar PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowVincular(true)}>
+                  <Plus size={13} className="mr-1" /> Vincular Linhas
+                </Button>
+              </div>
             </div>
             {linkedLines.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">Nenhuma linha vinculada</p>
@@ -403,7 +508,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {linkedLines.map((ll: any) => {
+                    {sortedLinkedLines.map((ll: any) => {
                       const bl = ll.balancete_linhas;
                       const stMap = STATUS_LINHA_MAP[bl?.status_linha || ""] || { label: bl?.status_linha || "—", cls: "" };
                       return (
