@@ -575,6 +575,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
                   <TableBody>
                     {sortedLinkedLines.map((ll: any) => {
                       const bl = ll.balancete_linhas;
+                      const isAnalitica = bl?.cliente_contas_origem?.analitica === true;
                       const stMap = STATUS_LINHA_MAP[bl?.status_linha || ""] || { label: bl?.status_linha || "—", cls: "" };
                       return (
                         <TableRow key={ll.id}>
@@ -583,7 +584,13 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
                           <TableCell className="text-right font-mono text-xs">{fmt(bl?.saldo_atual)}</TableCell>
                           <TableCell className="text-right font-mono text-xs">{fmt(bl?.valor_validado)}</TableCell>
                           <TableCell className="text-right font-mono text-xs">{fmt(bl?.diferenca_validacao)}</TableCell>
-                          <TableCell><Badge variant="outline" className={`text-xs ${stMap.cls}`}>{stMap.label}</Badge></TableCell>
+                          <TableCell>
+                            {isAnalitica ? (
+                              <span className="text-xs italic text-muted-foreground">Analítica</span>
+                            ) : (
+                              <Badge variant="outline" className={`text-xs ${stMap.cls}`}>{stMap.label}</Badge>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLinhaMutation.mutate(ll.id)}>
                               <Trash2 size={12} />
