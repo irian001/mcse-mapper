@@ -94,15 +94,6 @@ export default function AuditoresPage() {
     },
   });
 
-  const { data: availableUsers = [] } = useQuery({
-    queryKey: ["auth-users-for-linking"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_auth_users_for_linking");
-      if (error) throw error;
-      return (data as any[]) || [];
-    },
-    enabled: isAdmin && !!linkTarget,
-  });
 
   const saveMutation = useMutation({
     mutationFn: async (values: AuditorForm & { id?: string }) => {
