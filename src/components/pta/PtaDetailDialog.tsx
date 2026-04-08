@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Save, ClipboardList, Trash2, RefreshCw, Plus } from "lucide-react";
+import { Save, ClipboardList, Trash2, RefreshCw, Plus, FileDown } from "lucide-react";
 import PtaVincularLinhasDialog from "./PtaVincularLinhasDialog";
 
 function fmt(v: number | null | undefined) {
