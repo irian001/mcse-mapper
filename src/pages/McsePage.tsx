@@ -303,21 +303,31 @@ export default function McsePage() {
               <div><Label>Nível</Label><Input type="number" value={contaForm.nivel} onChange={e => setContaForm(f => ({ ...f, nivel: parseInt(e.target.value) || 1 }))} /></div>
             </div>
             <div><Label>Descrição</Label><Input value={contaForm.descricao_conta} onChange={e => setContaForm(f => ({ ...f, descricao_conta: e.target.value }))} /></div>
-            <div className="grid grid-cols-2 gap-3">
+             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Grupo</Label>
-                <Select value={contaForm.grupo_id} onValueChange={v => setContaForm(f => ({ ...f, grupo_id: v }))}>
+                <Select value={contaForm.grupo_id} onValueChange={v => setContaForm(f => ({ ...f, grupo_id: v, subgrupo_id: null }))}>
                   <SelectTrigger><SelectValue placeholder="Grupo" /></SelectTrigger>
                   <SelectContent>{grupos.map((g: any) => <SelectItem key={g.id} value={g.id}>{g.codigo_grupo} - {g.descricao_grupo}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Natureza</Label>
-                <Select value={contaForm.natureza} onValueChange={v => setContaForm(f => ({ ...f, natureza: v as NaturezaConta }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{naturezaOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+                <Label>Subgrupo</Label>
+                <Select value={contaForm.subgrupo_id || "none"} onValueChange={v => setContaForm(f => ({ ...f, subgrupo_id: v === "none" ? null : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {subgruposForConta.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.codigo_subgrupo} - {s.descricao_subgrupo}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div>
+              <Label>Natureza</Label>
+              <Select value={contaForm.natureza} onValueChange={v => setContaForm(f => ({ ...f, natureza: v as NaturezaConta }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{naturezaOptions.map(n => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div className="flex gap-6 pt-2">
               <label className="flex items-center gap-2 text-sm"><Checkbox checked={contaForm.aceita_lancamento} onCheckedChange={v => setContaForm(f => ({ ...f, aceita_lancamento: !!v }))} />Aceita lançamento</label>
