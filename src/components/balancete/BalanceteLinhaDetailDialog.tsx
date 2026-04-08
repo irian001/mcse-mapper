@@ -203,9 +203,9 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
               PTA fechado ({ptaFechado.titulo_pta || "sem título"}) — validação bloqueada. Reabra o PTA para continuar.
             </div>
           )}
-          {linha.is_analitica === false && (
+          {linha.is_analitica === true && (
             <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 border border-border">
-              Conta sintética (não analítica) — a validação é permitida apenas para contas do último nível (analíticas).
+              Conta analítica — a validação é permitida apenas para contas sintéticas (níveis superiores).
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
