@@ -85,7 +85,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from("papel_trabalho_linhas")
-        .select("*, balancete_linhas(codigo_conta_balancete, descricao_conta_balancete, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia, severidade)")
+        .select("*, balancete_linhas(codigo_conta_balancete, descricao_conta_balancete, saldo_atual, valor_validado, diferenca_validacao, status_linha, possui_pendencia, severidade, conta_origem_id, cliente_contas_origem(analitica))")
         .eq("papel_trabalho_id", pta.id)
         .order("created_at");
       return data || [];
