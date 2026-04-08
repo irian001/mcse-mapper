@@ -125,19 +125,18 @@ export default function AuditoresPage() {
   });
 
   const linkMutation = useMutation({
-    mutationFn: async ({ auditorId, userId }: { auditorId: string; userId: string }) => {
-      const { error } = await supabase.rpc("link_auditor_account", {
+    mutationFn: async ({ auditorId, email }: { auditorId: string; email: string }) => {
+      const { error } = await supabase.rpc("link_auditor_by_email", {
         p_auditor_id: auditorId,
-        p_user_id: userId,
+        p_user_email: email,
       } as any);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["auditores"] });
       qc.invalidateQueries({ queryKey: ["current-auditor"] });
-      qc.invalidateQueries({ queryKey: ["auth-users-for-linking"] });
       setLinkTarget(null);
-      setSelectedUserId("");
+      setLinkEmail("");
       toast.success("Conta vinculada com sucesso!");
     },
     onError: (err: any) => toast.error(err?.message || "Não foi possível vincular a conta"),
