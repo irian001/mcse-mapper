@@ -1175,7 +1175,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      auth_users_for_linking: {
+        Row: {
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          user_email?: never
+          user_id?: string | null
+        }
+        Update: {
+          user_email?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_access_storage_doc: {
