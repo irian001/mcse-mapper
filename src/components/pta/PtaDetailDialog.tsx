@@ -156,7 +156,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
         .in("balancete_linha_id", linhaIds)
         .eq("ativo", true);
 
-      // Update snapshots
+      // Update snapshots (all lines, not just synthetic)
       const { data: fullLinhas } = await supabase
         .from("balancete_linhas")
         .select("id, saldo_atual, valor_validado, diferenca_validacao, status_linha")
