@@ -29,7 +29,7 @@ export default function MapeamentoPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StatusFilter>("todos");
   const [filterGrupo, setFilterGrupo] = useState("all");
-  const [filterTipoConta, setFilterTipoConta] = useState<TipoContaFilter>("analitica");
+  const [filterTipoConta, setFilterTipoConta] = useState<TipoContaFilter>("todas");
   const [filterRisco, setFilterRisco] = useState<RiskFilter>("todos");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
