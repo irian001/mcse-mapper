@@ -1184,13 +1184,22 @@ export type Database = {
       }
       get_accessible_cliente_ids: { Args: never; Returns: string[] }
       get_accessible_trabalho_ids: { Args: never; Returns: string[] }
+      get_auth_users_for_linking: {
+        Args: never
+        Returns: {
+          user_email: string
+          user_id: string
+        }[]
+      }
       get_my_auditor_id: { Args: never; Returns: string }
       has_any_admin: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
-      link_auditor_account: {
-        Args: { p_auditor_id: string }
-        Returns: undefined
-      }
+      link_auditor_account:
+        | { Args: { p_auditor_id: string }; Returns: undefined }
+        | {
+            Args: { p_auditor_id: string; p_user_id?: string }
+            Returns: undefined
+          }
     }
     Enums: {
       cargo_auditor: "assistente" | "senior" | "gerente" | "socio" | "revisor"
