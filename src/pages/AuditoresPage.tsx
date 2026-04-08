@@ -196,8 +196,7 @@ export default function AuditoresPage() {
 
   const openLinkDialog = (a: any) => {
     setLinkTarget({ id: a.id, nome: a.nome });
-    setSelectedUserId("");
-    qc.invalidateQueries({ queryKey: ["auth-users-for-linking"] });
+    setLinkEmail(a.email || "");
   };
 
   return (
