@@ -778,49 +778,67 @@ export type Database = {
       }
       mcse_regras_conta: {
         Row: {
-          conta_id: string
+          ativo: boolean
+          codigo_mcse: string | null
+          conta_critica: boolean
+          conta_mcse_id: string
           created_at: string
+          descricao_mcse: string | null
+          exige_conciliacao_reg_soc: boolean
+          exige_documento_obrigatorio: boolean
+          exige_revisao_humana: boolean
+          gera_solicitacao_automatica: boolean
+          grupo_documental: string | null
           id: string
           limite_variacao_absoluta: number | null
           limite_variacao_percentual: number | null
           materialidade_padrao: number | null
           observacao_regra: string | null
-          requer_conciliacao_reg_soc: boolean
-          requer_documento_obrigatorio: boolean
-          requer_revisao_humana: boolean
           updated_at: string
         }
         Insert: {
-          conta_id: string
+          ativo?: boolean
+          codigo_mcse?: string | null
+          conta_critica?: boolean
+          conta_mcse_id: string
           created_at?: string
+          descricao_mcse?: string | null
+          exige_conciliacao_reg_soc?: boolean
+          exige_documento_obrigatorio?: boolean
+          exige_revisao_humana?: boolean
+          gera_solicitacao_automatica?: boolean
+          grupo_documental?: string | null
           id?: string
           limite_variacao_absoluta?: number | null
           limite_variacao_percentual?: number | null
           materialidade_padrao?: number | null
           observacao_regra?: string | null
-          requer_conciliacao_reg_soc?: boolean
-          requer_documento_obrigatorio?: boolean
-          requer_revisao_humana?: boolean
           updated_at?: string
         }
         Update: {
-          conta_id?: string
+          ativo?: boolean
+          codigo_mcse?: string | null
+          conta_critica?: boolean
+          conta_mcse_id?: string
           created_at?: string
+          descricao_mcse?: string | null
+          exige_conciliacao_reg_soc?: boolean
+          exige_documento_obrigatorio?: boolean
+          exige_revisao_humana?: boolean
+          gera_solicitacao_automatica?: boolean
+          grupo_documental?: string | null
           id?: string
           limite_variacao_absoluta?: number | null
           limite_variacao_percentual?: number | null
           materialidade_padrao?: number | null
           observacao_regra?: string | null
-          requer_conciliacao_reg_soc?: boolean
-          requer_documento_obrigatorio?: boolean
-          requer_revisao_humana?: boolean
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "mcse_regras_conta_conta_id_fkey"
-            columns: ["conta_id"]
-            isOneToOne: false
+            columns: ["conta_mcse_id"]
+            isOneToOne: true
             referencedRelation: "mcse_contas"
             referencedColumns: ["id"]
           },

@@ -17,8 +17,11 @@ export const fetchContas = (grupoId?: string, subgrupoId?: string) => {
   return q;
 };
 
-export const fetchRegras = (contaId: string) =>
-  supabase.from("mcse_regras_conta").select("*").eq("conta_id", contaId);
+export const fetchRegras = (contaId?: string) => {
+  let q = supabase.from("mcse_regras_conta").select("*").order("codigo_mcse");
+  if (contaId) q = q.eq("conta_mcse_id", contaId);
+  return q;
+};
 
 // Clientes
 export const fetchClientes = () =>
