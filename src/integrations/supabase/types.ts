@@ -844,6 +844,78 @@ export type Database = {
           },
         ]
       }
+      mcse_regras_documentos: {
+        Row: {
+          ativo: boolean
+          codigo_mcse: string | null
+          conta_mcse_id: string
+          created_at: string
+          descricao_documento: string
+          descricao_mcse: string | null
+          formato_aceito: string | null
+          id: string
+          obrigatorio: boolean
+          observacao: string | null
+          ordem_solicitacao: number
+          permite_excel: boolean
+          permite_pdf: boolean
+          regra_mcse_id: string
+          tipo_documento: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo_mcse?: string | null
+          conta_mcse_id: string
+          created_at?: string
+          descricao_documento?: string
+          descricao_mcse?: string | null
+          formato_aceito?: string | null
+          id?: string
+          obrigatorio?: boolean
+          observacao?: string | null
+          ordem_solicitacao?: number
+          permite_excel?: boolean
+          permite_pdf?: boolean
+          regra_mcse_id: string
+          tipo_documento?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo_mcse?: string | null
+          conta_mcse_id?: string
+          created_at?: string
+          descricao_documento?: string
+          descricao_mcse?: string | null
+          formato_aceito?: string | null
+          id?: string
+          obrigatorio?: boolean
+          observacao?: string | null
+          ordem_solicitacao?: number
+          permite_excel?: boolean
+          permite_pdf?: boolean
+          regra_mcse_id?: string
+          tipo_documento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcse_regras_documentos_conta_mcse_id_fkey"
+            columns: ["conta_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcse_regras_documentos_regra_mcse_id_fkey"
+            columns: ["regra_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_regras_conta"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mcse_subgrupos: {
         Row: {
           ativo: boolean
