@@ -23,6 +23,12 @@ export const fetchRegras = (contaId?: string) => {
   return q;
 };
 
+export const fetchRegrasDocumentos = (regraId?: string) => {
+  let q = supabase.from("mcse_regras_documentos").select("*").order("ordem_solicitacao");
+  if (regraId) q = q.eq("regra_mcse_id", regraId);
+  return q;
+};
+
 // Clientes
 export const fetchClientes = () =>
   supabase.from("clientes").select("*").order("razao_social");
