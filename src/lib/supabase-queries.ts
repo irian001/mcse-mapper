@@ -29,6 +29,18 @@ export const fetchRegrasDocumentos = (regraId?: string) => {
   return q;
 };
 
+export const fetchRegrasInstrucoes = (regraId?: string) => {
+  let q = supabase.from("mcse_regras_instrucoes").select("*").order("ordem");
+  if (regraId) q = q.eq("regra_mcse_id", regraId);
+  return q;
+};
+
+export const fetchRegrasEmissaoErp = (regraId?: string) => {
+  let q = supabase.from("mcse_regras_emissao_erp").select("*").order("ordem");
+  if (regraId) q = q.eq("regra_mcse_id", regraId);
+  return q;
+};
+
 // Clientes
 export const fetchClientes = () =>
   supabase.from("clientes").select("*").order("razao_social");

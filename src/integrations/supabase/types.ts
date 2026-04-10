@@ -916,6 +916,141 @@ export type Database = {
           },
         ]
       }
+      mcse_regras_emissao_erp: {
+        Row: {
+          ativo: boolean
+          caminho_emissao: string | null
+          campos_minimos_esperados: string | null
+          codigo_mcse: string | null
+          conta_mcse_id: string
+          created_at: string
+          descricao_mcse: string | null
+          erp_nome: string
+          filtros_obrigatorios: string | null
+          formato_preferencial: string | null
+          id: string
+          modulo_erp: string | null
+          nome_relatorio: string
+          observacao: string | null
+          ordem: number
+          regra_mcse_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          caminho_emissao?: string | null
+          campos_minimos_esperados?: string | null
+          codigo_mcse?: string | null
+          conta_mcse_id: string
+          created_at?: string
+          descricao_mcse?: string | null
+          erp_nome?: string
+          filtros_obrigatorios?: string | null
+          formato_preferencial?: string | null
+          id?: string
+          modulo_erp?: string | null
+          nome_relatorio?: string
+          observacao?: string | null
+          ordem?: number
+          regra_mcse_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          caminho_emissao?: string | null
+          campos_minimos_esperados?: string | null
+          codigo_mcse?: string | null
+          conta_mcse_id?: string
+          created_at?: string
+          descricao_mcse?: string | null
+          erp_nome?: string
+          filtros_obrigatorios?: string | null
+          formato_preferencial?: string | null
+          id?: string
+          modulo_erp?: string | null
+          nome_relatorio?: string
+          observacao?: string | null
+          ordem?: number
+          regra_mcse_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcse_regras_emissao_erp_conta_mcse_id_fkey"
+            columns: ["conta_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcse_regras_emissao_erp_regra_mcse_id_fkey"
+            columns: ["regra_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_regras_conta"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcse_regras_instrucoes: {
+        Row: {
+          ativo: boolean
+          codigo_mcse: string | null
+          conta_mcse_id: string
+          created_at: string
+          descricao_mcse: string | null
+          id: string
+          ordem: number
+          publico_alvo: string
+          regra_mcse_id: string
+          texto_instrucao: string
+          titulo_instrucao: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo_mcse?: string | null
+          conta_mcse_id: string
+          created_at?: string
+          descricao_mcse?: string | null
+          id?: string
+          ordem?: number
+          publico_alvo?: string
+          regra_mcse_id: string
+          texto_instrucao?: string
+          titulo_instrucao?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo_mcse?: string | null
+          conta_mcse_id?: string
+          created_at?: string
+          descricao_mcse?: string | null
+          id?: string
+          ordem?: number
+          publico_alvo?: string
+          regra_mcse_id?: string
+          texto_instrucao?: string
+          titulo_instrucao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcse_regras_instrucoes_conta_mcse_id_fkey"
+            columns: ["conta_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcse_regras_instrucoes_regra_mcse_id_fkey"
+            columns: ["regra_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_regras_conta"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mcse_subgrupos: {
         Row: {
           ativo: boolean

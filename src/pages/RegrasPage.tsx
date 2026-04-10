@@ -14,8 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, Search, Plus, X, Pencil, Filter, FileText, Settings } from "lucide-react";
+import { Save, Search, Plus, X, Pencil, Filter, FileText, Settings, BookOpen, Monitor } from "lucide-react";
 import RegrasDocumentosPanel from "@/components/regras/RegrasDocumentosPanel";
+import RegrasInstrucoesPanel from "@/components/regras/RegrasInstrucoesPanel";
+import RegrasEmissaoErpPanel from "@/components/regras/RegrasEmissaoErpPanel";
 
 const GRUPOS_DOCUMENTAIS = [
   "contabil", "fiscal", "regulatorio", "societario", "trabalhista", "ambiental", "outro",
@@ -152,6 +154,8 @@ export default function RegrasPage() {
         <TabsList>
           <TabsTrigger value="regras" className="gap-1.5"><Settings size={14} /> Regras</TabsTrigger>
           <TabsTrigger value="documentos" className="gap-1.5"><FileText size={14} /> Documentos</TabsTrigger>
+          <TabsTrigger value="instrucoes" className="gap-1.5"><BookOpen size={14} /> Instruções</TabsTrigger>
+          <TabsTrigger value="emissao_erp" className="gap-1.5"><Monitor size={14} /> Emissão ERP</TabsTrigger>
         </TabsList>
 
         <TabsContent value="regras">
@@ -273,6 +277,14 @@ export default function RegrasPage() {
 
         <TabsContent value="documentos">
           <RegrasDocumentosPanel regras={regras} />
+        </TabsContent>
+
+        <TabsContent value="instrucoes">
+          <RegrasInstrucoesPanel regras={regras} />
+        </TabsContent>
+
+        <TabsContent value="emissao_erp">
+          <RegrasEmissaoErpPanel regras={regras} />
         </TabsContent>
       </Tabs>
     </div>
