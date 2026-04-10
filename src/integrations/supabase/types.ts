@@ -1287,6 +1287,155 @@ export type Database = {
           },
         ]
       }
+      solicitacao_itens: {
+        Row: {
+          codigo_mcse: string | null
+          conta_mcse_id: string | null
+          created_at: string
+          descricao_documento: string
+          descricao_mcse: string | null
+          id: string
+          instrucoes_cliente: string | null
+          obrigatorio: boolean
+          observacao_auditor: string | null
+          observacao_cliente: string | null
+          ordem: number
+          prazo_item: string | null
+          regra_mcse_id: string | null
+          solicitacao_id: string
+          status_item: Database["public"]["Enums"]["status_item_solicitacao"]
+          tipo_documento: string
+          updated_at: string
+        }
+        Insert: {
+          codigo_mcse?: string | null
+          conta_mcse_id?: string | null
+          created_at?: string
+          descricao_documento?: string
+          descricao_mcse?: string | null
+          id?: string
+          instrucoes_cliente?: string | null
+          obrigatorio?: boolean
+          observacao_auditor?: string | null
+          observacao_cliente?: string | null
+          ordem?: number
+          prazo_item?: string | null
+          regra_mcse_id?: string | null
+          solicitacao_id: string
+          status_item?: Database["public"]["Enums"]["status_item_solicitacao"]
+          tipo_documento?: string
+          updated_at?: string
+        }
+        Update: {
+          codigo_mcse?: string | null
+          conta_mcse_id?: string | null
+          created_at?: string
+          descricao_documento?: string
+          descricao_mcse?: string | null
+          id?: string
+          instrucoes_cliente?: string | null
+          obrigatorio?: boolean
+          observacao_auditor?: string | null
+          observacao_cliente?: string | null
+          ordem?: number
+          prazo_item?: string | null
+          regra_mcse_id?: string | null
+          solicitacao_id?: string
+          status_item?: Database["public"]["Enums"]["status_item_solicitacao"]
+          tipo_documento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacao_itens_conta_mcse_id_fkey"
+            columns: ["conta_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_contas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacao_itens_regra_mcse_id_fkey"
+            columns: ["regra_mcse_id"]
+            isOneToOne: false
+            referencedRelation: "mcse_regras_conta"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacao_itens_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacoes_documentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solicitacoes_documentos: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_solicitacao: string
+          exercicio_id: string
+          id: string
+          observacoes: string | null
+          origem_solicitacao: string
+          prazo_resposta: string | null
+          status_solicitacao: Database["public"]["Enums"]["status_solicitacao"]
+          titulo_solicitacao: string
+          trabalho_auditoria_id: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_solicitacao?: string
+          exercicio_id: string
+          id?: string
+          observacoes?: string | null
+          origem_solicitacao?: string
+          prazo_resposta?: string | null
+          status_solicitacao?: Database["public"]["Enums"]["status_solicitacao"]
+          titulo_solicitacao?: string
+          trabalho_auditoria_id: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_solicitacao?: string
+          exercicio_id?: string
+          id?: string
+          observacoes?: string | null
+          origem_solicitacao?: string
+          prazo_resposta?: string | null
+          status_solicitacao?: Database["public"]["Enums"]["status_solicitacao"]
+          titulo_solicitacao?: string
+          trabalho_auditoria_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_documentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_documentos_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "exercicios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_documentos_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trabalho_auditores: {
         Row: {
           ativo: boolean
@@ -1453,6 +1602,12 @@ export type Database = {
         | "processando"
         | "erro"
         | "finalizado"
+      status_item_solicitacao:
+        | "pendente"
+        | "recebido"
+        | "aceito"
+        | "rejeitado"
+        | "dispensado"
       status_linha_balancete:
         | "pendente"
         | "em_analise"
@@ -1481,6 +1636,13 @@ export type Database = {
         | "em_revisao"
         | "concluido"
         | "finalizado"
+      status_solicitacao:
+        | "rascunho"
+        | "enviada"
+        | "parcialmente_respondida"
+        | "respondida"
+        | "concluida"
+        | "cancelada"
       status_trabalho:
         | "planejado"
         | "iniciado"
@@ -1649,6 +1811,13 @@ export const Constants = {
         "erro",
         "finalizado",
       ],
+      status_item_solicitacao: [
+        "pendente",
+        "recebido",
+        "aceito",
+        "rejeitado",
+        "dispensado",
+      ],
       status_linha_balancete: [
         "pendente",
         "em_analise",
@@ -1681,6 +1850,14 @@ export const Constants = {
         "em_revisao",
         "concluido",
         "finalizado",
+      ],
+      status_solicitacao: [
+        "rascunho",
+        "enviada",
+        "parcialmente_respondida",
+        "respondida",
+        "concluida",
+        "cancelada",
       ],
       status_trabalho: [
         "planejado",
