@@ -1,0 +1,450 @@
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase-client";
+import PageHeader from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Plus, FileText, Trash2, Save, Search, Filter, Pencil, Eye } from "lucide-react";
+import { gerarSolicitacao, salvarSolicitacaoRascunho, type ItemGerado, type GeracaoFiltros } from "@/lib/solicitacao-service";
+
+const STATUS_LABELS: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviada: "Enviada",
+  parcialmente_respondida: "Parcial",
+  respondida: "Respondida",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  rascunho: "text-muted-foreground bg-muted/50 border-muted",
+  enviada: "text-blue-600 bg-blue-50 border-blue-200",
+  parcialmente_respondida: "text-warning bg-warning/15 border-warning/30",
+  respondida: "text-success bg-success/15 border-success/30",
+  concluida: "text-success bg-success/15 border-success/30",
+  cancelada: "text-destructive bg-destructive/15 border-destructive/30",
+};
+
+export default function SolicitacoesPage() {
+  const qc = useQueryClient();
+  const [showGerarDialog, setShowGerarDialog] = useState(false);
+  const [showRevisao, setShowRevisao] = useState(false);
+  const [selectedSolicitacao, setSelectedSolicitacao] = useState<string | null>(null);
+  const [filterTrabalho, setFilterTrabalho] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  // Generation state
+  const [genTrabalhoId, setGenTrabalhoId] = useState("");
+  const [genFiltros, setGenFiltros] = useState<GeracaoFiltros>({
+    apenasContasCriticas: false,
+    apenasComSaldo: true,
+    todasComRegraAtiva: true,
+  });
+  const [itensGerados, setItensGerados] = useState<ItemGerado[]>([]);
+  const [genContexto, setGenContexto] = useState<{ clienteId: string; exercicioId: string } | null>(null);
+  const [titulo, setTitulo] = useState("");
+  const [prazo, setPrazo] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+
+  const { data: trabalhos = [] } = useQuery({
+    queryKey: ["trabalhos_sol"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("trabalhos_auditoria")
+        .select("id, nome_trabalho, clientes(razao_social), exercicios(ano_exercicio)")
+        .order("nome_trabalho");
+      return data || [];
+    },
+  });
+
+  const { data: solicitacoes = [], isLoading } = useQuery({
+    queryKey: ["solicitacoes"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("solicitacoes_documentos")
+        .select("*, trabalhos_auditoria(nome_trabalho), clientes(razao_social), exercicios(ano_exercicio)")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: solItens = [] } = useQuery({
+    queryKey: ["solicitacao_itens", selectedSolicitacao],
+    enabled: !!selectedSolicitacao,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("solicitacao_itens")
+        .select("*")
+        .eq("solicitacao_id", selectedSolicitacao!)
+        .order("ordem");
+      return data || [];
+    },
+  });
+
+  const gerarMutation = useMutation({
+    mutationFn: async () => {
+      if (!genTrabalhoId) throw new Error("Selecione um trabalho");
+      return gerarSolicitacao(genTrabalhoId, genFiltros);
+    },
+    onSuccess: (result) => {
+      setItensGerados(result.itens);
+      setGenContexto({ clienteId: result.clienteId, exercicioId: result.exercicioId });
+      const trab = trabalhos.find((t: any) => t.id === genTrabalhoId) as any;
+      setTitulo(`Solicitação Documental — ${trab?.clientes?.razao_social || ""} — ${trab?.exercicios?.ano_exercicio || ""}`);
+      setShowGerarDialog(false);
+      setShowRevisao(true);
+      toast.success(`${result.itens.length} itens gerados para revisão`);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao gerar solicitação"),
+  });
+
+  const salvarMutation = useMutation({
+    mutationFn: async () => {
+      if (!genContexto) throw new Error("Contexto inválido");
+      return salvarSolicitacaoRascunho(
+        genTrabalhoId,
+        genContexto.clienteId,
+        genContexto.exercicioId,
+        titulo,
+        prazo || null,
+        observacoes,
+        itensGerados
+      );
+    },
+    onSuccess: () => {
+      toast.success("Solicitação salva como rascunho!");
+      qc.invalidateQueries({ queryKey: ["solicitacoes"] });
+      setShowRevisao(false);
+      setItensGerados([]);
+      setGenContexto(null);
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase.from("solicitacao_itens").delete().eq("id", itemId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["solicitacao_itens", selectedSolicitacao] });
+      toast.success("Item removido");
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao remover item"),
+  });
+
+  const removeItemGerado = (index: number) => {
+    setItensGerados((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateItemGerado = (index: number, field: keyof ItemGerado, value: any) => {
+    setItensGerados((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  };
+
+  // Group items by conta MCSE
+  const groupByMcse = (items: any[]) => {
+    const groups = new Map<string, { codigo: string; descricao: string; items: any[] }>();
+    for (const item of items) {
+      const key = item.conta_mcse_id || item.codigo_mcse || "sem_mcse";
+      if (!groups.has(key)) {
+        groups.set(key, { codigo: item.codigo_mcse || "", descricao: item.descricao_mcse || "", items: [] });
+      }
+      groups.get(key)!.items.push(item);
+    }
+    return [...groups.values()];
+  };
+
+  const filteredSolicitacoes = solicitacoes.filter((s: any) => {
+    if (filterTrabalho !== "all" && s.trabalho_auditoria_id !== filterTrabalho) return false;
+    if (filterStatus !== "all" && s.status_solicitacao !== filterStatus) return false;
+    return true;
+  });
+
+  // === REVISÃO DE ITENS GERADOS ===
+  if (showRevisao) {
+    const groups = groupByMcse(itensGerados.map((item, i) => ({ ...item, _index: i })));
+
+    return (
+      <div>
+        <PageHeader title="Revisão da Solicitação" description="Revise e ajuste os itens antes de salvar" />
+        <Button variant="outline" className="mb-4" onClick={() => { setShowRevisao(false); setItensGerados([]); }}>← Cancelar</Button>
+
+        <Card className="mb-4">
+          <CardContent className="pt-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><Label>Título</Label><Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
+              <div><Label>Prazo de Resposta</Label><Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></div>
+            </div>
+            <div><Label>Observações</Label><Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={2} /></div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4 mb-4">
+          {groups.map((group) => (
+            <Card key={group.codigo}>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{group.codigo}</span>
+                  {group.descricao}
+                  <Badge variant="outline" className="ml-auto text-xs">{group.items.length} doc(s)</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">Ord.</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead className="text-center">Obrig.</TableHead>
+                      <TableHead className="w-20">Instruções</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.items.map((item: any) => (
+                      <TableRow key={item._index}>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            className="w-14 h-7 text-xs"
+                            value={item.ordem}
+                            onChange={(e) => updateItemGerado(item._index, "ordem", parseInt(e.target.value) || 1)}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm">{item.tipo_documento}</TableCell>
+                        <TableCell className="text-sm max-w-[250px]">
+                          <Input
+                            className="h-7 text-xs"
+                            value={item.descricao_documento}
+                            onChange={(e) => updateItemGerado(item._index, "descricao_documento", e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={item.obrigatorio}
+                            onCheckedChange={(v) => updateItemGerado(item._index, "obrigatorio", !!v)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {item.instrucoes_cliente ? (
+                            <Badge variant="outline" className="text-xs cursor-help" title={item.instrucoes_cliente}>✓</Badge>
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItemGerado(item._index)}>
+                            <Trash2 size={13} className="text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">{itensGerados.length} item(ns) no total</p>
+          <Button onClick={() => salvarMutation.mutate()} disabled={salvarMutation.isPending || itensGerados.length === 0}>
+            <Save size={14} className="mr-1" /> {salvarMutation.isPending ? "Salvando..." : "Salvar como Rascunho"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // === DETALHE DE UMA SOLICITAÇÃO EXISTENTE ===
+  if (selectedSolicitacao) {
+    const sol = solicitacoes.find((s: any) => s.id === selectedSolicitacao) as any;
+    const groups = groupByMcse(solItens);
+
+    return (
+      <div>
+        <PageHeader
+          title={sol?.titulo_solicitacao || "Solicitação"}
+          description={`${sol?.trabalhos_auditoria?.nome_trabalho} — ${sol?.clientes?.razao_social}`}
+        />
+        <div className="flex items-center gap-3 mb-4">
+          <Button variant="outline" onClick={() => setSelectedSolicitacao(null)}>← Voltar</Button>
+          <Badge variant="outline" className={STATUS_COLORS[sol?.status_solicitacao] || ""}>{STATUS_LABELS[sol?.status_solicitacao] || sol?.status_solicitacao}</Badge>
+          <Badge variant="outline">{solItens.length} item(ns)</Badge>
+          {sol?.prazo_resposta && <span className="text-xs text-muted-foreground">Prazo: {new Date(sol.prazo_resposta).toLocaleDateString("pt-BR")}</span>}
+        </div>
+
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <Card key={group.codigo}>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{group.codigo}</span>
+                  {group.descricao}
+                  <Badge variant="outline" className="ml-auto text-xs">{group.items.length} doc(s)</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">Ord.</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead className="text-center">Obrig.</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.items.map((item: any) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-xs">{item.ordem}</TableCell>
+                        <TableCell className="text-sm">{item.tipo_documento}</TableCell>
+                        <TableCell className="text-sm max-w-[300px] truncate">{item.descricao_documento}</TableCell>
+                        <TableCell className="text-center">{item.obrigatorio ? "✓" : "—"}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{item.status_item}</Badge></TableCell>
+                        <TableCell>
+                          {sol?.status_solicitacao === "rascunho" && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteItemMutation.mutate(item.id)}>
+                              <Trash2 size={13} className="text-destructive" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // === LISTA DE SOLICITAÇÕES ===
+  return (
+    <div>
+      <PageHeader title="Solicitações Documentais" description="Solicitações geradas a partir dos balancetes" />
+
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <Select value={filterTrabalho} onValueChange={setFilterTrabalho}>
+            <SelectTrigger className="h-9 w-64 text-xs"><Filter size={12} className="mr-1" /><SelectValue placeholder="Trabalho" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os trabalhos</SelectItem>
+              {trabalhos.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.nome_trabalho}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="h-9 w-44 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={() => { setGenTrabalhoId(""); setShowGerarDialog(true); }}>
+          <Plus size={14} className="mr-1" /> Gerar Solicitação
+        </Button>
+      </div>
+
+      {filteredSolicitacoes.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <FileText size={36} className="mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">{isLoading ? "Carregando..." : "Nenhuma solicitação encontrada"}</p>
+            <Button className="mt-4" onClick={() => { setGenTrabalhoId(""); setShowGerarDialog(true); }}>Gerar Primeira Solicitação</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="rounded border bg-card overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Título</TableHead>
+                <TableHead>Trabalho</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Prazo</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredSolicitacoes.map((s: any) => (
+                <TableRow key={s.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setSelectedSolicitacao(s.id)}>
+                  <TableCell className="font-medium text-sm max-w-[250px] truncate">{s.titulo_solicitacao}</TableCell>
+                  <TableCell className="text-sm">{s.trabalhos_auditoria?.nome_trabalho}</TableCell>
+                  <TableCell className="text-sm">{s.clientes?.razao_social}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-xs ${STATUS_COLORS[s.status_solicitacao] || ""}`}>
+                      {STATUS_LABELS[s.status_solicitacao] || s.status_solicitacao}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{s.prazo_resposta ? new Date(s.prazo_resposta).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{new Date(s.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                  <TableCell><Eye size={14} className="text-muted-foreground" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Dialog de geração */}
+      <Dialog open={showGerarDialog} onOpenChange={setShowGerarDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gerar Solicitação Documental</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Trabalho de Auditoria *</Label>
+              <Select value={genTrabalhoId} onValueChange={setGenTrabalhoId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o trabalho..." /></SelectTrigger>
+                <SelectContent>
+                  {trabalhos.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.nome_trabalho} — {t.clientes?.razao_social} ({t.exercicios?.ano_exercicio})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Filtros de Geração</Label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={genFiltros.apenasComSaldo} onCheckedChange={(v) => setGenFiltros((f) => ({ ...f, apenasComSaldo: !!v }))} />
+                Apenas contas com saldo ≠ 0
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={genFiltros.apenasContasCriticas} onCheckedChange={(v) => setGenFiltros((f) => ({ ...f, apenasContasCriticas: !!v }))} />
+                Apenas contas críticas
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={genFiltros.todasComRegraAtiva} onCheckedChange={(v) => setGenFiltros((f) => ({ ...f, todasComRegraAtiva: !!v }))} />
+                Incluir todas com regra ativa
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGerarDialog(false)}>Cancelar</Button>
+            <Button onClick={() => gerarMutation.mutate()} disabled={gerarMutation.isPending || !genTrabalhoId}>
+              {gerarMutation.isPending ? "Gerando..." : "Gerar Itens"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
