@@ -1638,10 +1638,14 @@ export type Database = {
         | "finalizado"
       status_solicitacao:
         | "rascunho"
+        | "revisada"
         | "enviada"
         | "parcialmente_respondida"
+        | "parcialmente_atendida"
+        | "atendida"
         | "respondida"
         | "concluida"
+        | "encerrada"
         | "cancelada"
       status_trabalho:
         | "planejado"
@@ -1853,10 +1857,14 @@ export const Constants = {
       ],
       status_solicitacao: [
         "rascunho",
+        "revisada",
         "enviada",
         "parcialmente_respondida",
+        "parcialmente_atendida",
+        "atendida",
         "respondida",
         "concluida",
+        "encerrada",
         "cancelada",
       ],
       status_trabalho: [
