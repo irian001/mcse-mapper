@@ -1287,6 +1287,62 @@ export type Database = {
           },
         ]
       }
+      solicitacao_item_documentos: {
+        Row: {
+          created_at: string
+          id: string
+          nome_arquivo: string
+          observacao_auditor: string | null
+          observacao_cliente: string | null
+          solicitacao_item_id: string
+          status_documento: Database["public"]["Enums"]["status_documento_item"]
+          tipo_arquivo: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+          url_arquivo: string
+          versao: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          observacao_auditor?: string | null
+          observacao_cliente?: string | null
+          solicitacao_item_id: string
+          status_documento?: Database["public"]["Enums"]["status_documento_item"]
+          tipo_arquivo?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          url_arquivo: string
+          versao?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          observacao_auditor?: string | null
+          observacao_cliente?: string | null
+          solicitacao_item_id?: string
+          status_documento?: Database["public"]["Enums"]["status_documento_item"]
+          tipo_arquivo?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          url_arquivo?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacao_item_documentos_solicitacao_item_id_fkey"
+            columns: ["solicitacao_item_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacao_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solicitacao_itens: {
         Row: {
           codigo_mcse: string | null
@@ -1596,6 +1652,12 @@ export type Database = {
       segmento_cliente: "setor_eletrico" | "outro"
       severidade_pendencia: "baixa" | "media" | "alta" | "critica"
       status_cliente: "ativo" | "inativo" | "prospecto"
+      status_documento_item:
+        | "enviado"
+        | "em_analise"
+        | "aceito"
+        | "recusado"
+        | "complementar"
       status_exercicio: "aberto" | "em_andamento" | "fechado" | "arquivado"
       status_importacao_balancete:
         | "importado"
@@ -1808,6 +1870,13 @@ export const Constants = {
       segmento_cliente: ["setor_eletrico", "outro"],
       severidade_pendencia: ["baixa", "media", "alta", "critica"],
       status_cliente: ["ativo", "inativo", "prospecto"],
+      status_documento_item: [
+        "enviado",
+        "em_analise",
+        "aceito",
+        "recusado",
+        "complementar",
+      ],
       status_exercicio: ["aberto", "em_andamento", "fechado", "arquivado"],
       status_importacao_balancete: [
         "importado",
