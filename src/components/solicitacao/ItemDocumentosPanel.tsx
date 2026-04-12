@@ -390,6 +390,18 @@ export default function ItemDocumentosPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de vínculo ao balancete */}
+      {trabalhoAuditoriaId && clienteId && exercicioId && (
+        <VincularBalanceteDialog
+          open={showVincularDialog}
+          onOpenChange={setShowVincularDialog}
+          documento={vincularDoc}
+          trabalhoAuditoriaId={trabalhoAuditoriaId}
+          clienteId={clienteId}
+          exercicioId={exercicioId}
+        />
+      )}
     </div>
   );
 }
