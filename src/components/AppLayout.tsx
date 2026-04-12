@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 import logoAudiconsult from "@/assets/logo_audiconsult.jpg";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const menuGroups = [
   {
@@ -35,6 +36,7 @@ const menuGroups = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const { data: profile } = useUserProfile();
 
   return (
     <div className="flex h-screen overflow-hidden flex-col">
@@ -62,11 +64,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <MenuGroup key={group.label} group={group} currentPath={location.pathname} />
             ))}
           </nav>
-          <div className="p-3 border-t border-sidebar-border flex items-center justify-between">
-            <span className="text-xs text-sidebar-foreground/40">v1.0 — Fase 1</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => supabase.auth.signOut()}>
-              <LogOut size={14} />
-            </Button>
+          <div className="p-3 border-t border-sidebar-border space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-sidebar-foreground/40">v1.0 — Fase 1</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => supabase.auth.signOut()}>
+                <LogOut size={14} />
+              </Button>
+            </div>
+            <div className="text-xs text-sidebar-foreground/60 truncate">
+              {profile?.auditor?.nome || "Usuário"}
+            </div>
+            <span className="inline-block text-[10px] font-medium uppercase tracking-wider text-sidebar-primary/70 bg-sidebar-accent px-1.5 py-0.5 rounded">
+              Auditor
+            </span>
           </div>
         </aside>
         <main className="flex-1 overflow-auto">

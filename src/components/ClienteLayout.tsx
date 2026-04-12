@@ -51,13 +51,19 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
               </NavLink>
             ))}
           </nav>
-          <div className="p-3 border-t border-sidebar-border flex items-center justify-between">
-            <span className="text-xs text-sidebar-foreground/40 truncate max-w-[120px]">
+          <div className="p-3 border-t border-sidebar-border space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-sidebar-foreground/40">v1.0 — Fase 1</span>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => supabase.auth.signOut()}>
+                <LogOut size={14} />
+              </Button>
+            </div>
+            <div className="text-xs text-sidebar-foreground/60 truncate">
               {profile?.clienteUsuario?.nome || "Cliente"}
+            </div>
+            <span className="inline-block text-[10px] font-medium uppercase tracking-wider text-sidebar-primary/70 bg-sidebar-accent px-1.5 py-0.5 rounded">
+              Cliente
             </span>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={() => supabase.auth.signOut()}>
-              <LogOut size={14} />
-            </Button>
           </div>
         </aside>
         <main className="flex-1 overflow-auto">
