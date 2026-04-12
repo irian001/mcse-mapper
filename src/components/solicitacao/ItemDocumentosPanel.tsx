@@ -47,7 +47,7 @@ const DOC_STATUS_COLORS: Record<string, string> = {
   complementar: "text-orange-600 bg-orange-500/10 border-orange-500/30",
 };
 
-// Map doc status to item status
+type StatusDocumento = "enviado" | "em_analise" | "aceito" | "recusado" | "complementar";
 const DOC_TO_ITEM_STATUS: Record<string, string> = {
   enviado: "recebido",
   em_analise: "recebido",
