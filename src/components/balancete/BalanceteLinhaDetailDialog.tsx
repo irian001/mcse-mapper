@@ -358,6 +358,11 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
 
         <Separator />
 
+        {/* Block 6 — Linked Solicitation Documents */}
+        <LinkedDocsBlock linhaId={linha.id} saldoAtual={linha.saldo_atual} />
+
+        <Separator />
+
         {/* Save */}
         <Button
           onClick={() => saveMutation.mutate()}
