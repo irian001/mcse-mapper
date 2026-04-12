@@ -278,6 +278,20 @@ export default function ItemDocumentosPanel({
               >
                 <ExternalLink size={12} />
               </Button>
+              {doc.status_documento === "aceito" && trabalhoAuditoriaId && clienteId && exercicioId && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 text-primary"
+                  title="Vincular ao balancete"
+                  onClick={() => {
+                    setVincularDoc(doc);
+                    setShowVincularDialog(true);
+                  }}
+                >
+                  <Link2 size={12} />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
