@@ -586,6 +586,47 @@ export type Database = {
           },
         ]
       }
+      cliente_usuarios: {
+        Row: {
+          ativo: boolean
+          auth_user_id: string | null
+          cliente_id: string
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          auth_user_id?: string | null
+          cliente_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          auth_user_id?: string | null
+          cliente_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_usuarios_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           bairro: string | null
@@ -1705,9 +1746,11 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_cliente_usuario_cliente_id: { Args: never; Returns: string }
       get_my_auditor_id: { Args: never; Returns: string }
       has_any_admin: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      is_cliente_usuario: { Args: never; Returns: boolean }
       link_auditor_account: {
         Args: { p_auditor_id: string; p_user_id?: string }
         Returns: undefined
