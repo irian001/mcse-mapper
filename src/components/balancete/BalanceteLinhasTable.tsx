@@ -254,10 +254,12 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
               <TableHead>Status</TableHead>
               <TableHead className="text-center w-[50px]">Pend.</TableHead>
               <TableHead className="text-right">Var. %</TableHead>
+              <TableHead className="text-center w-[50px]">Docs</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.slice(0, 300).map((l: any) => {
+              const docInfo = docsSummaryMap.get(l.id);
               const highVar = l.variacao_percentual != null && Math.abs(l.variacao_percentual) > 10;
               const hasDif = l.diferenca_validacao != null && l.diferenca_validacao !== 0;
               const rowCls =
@@ -288,6 +290,11 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
                   </TableCell>
                   <TableCell className={`text-right font-mono text-xs ${highVar ? "text-amber-600 font-semibold" : ""}`}>
                     {fmtPct(l.variacao_percentual)}
+                  </TableCell>
+                  <TableCell className="text-center text-xs">
+                    {docInfo && docInfo.count > 0 ? (
+                      <Badge variant="outline" className="text-[10px]">{docInfo.count}</Badge>
+                    ) : "—"}
                   </TableCell>
                 </TableRow>
               );
