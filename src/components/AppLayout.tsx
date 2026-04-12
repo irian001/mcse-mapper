@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText } from "lucide-react";
+import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText, UserPlus } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -17,6 +17,7 @@ const menuGroups = [
       { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
       { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
       { to: "/auditores", label: "Auditores", icon: UserCheck },
+      { to: "/cliente-usuarios", label: "Usuários Cliente", icon: UserPlus },
       { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
     ],
   },
