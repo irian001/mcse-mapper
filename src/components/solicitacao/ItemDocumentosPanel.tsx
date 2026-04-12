@@ -64,7 +64,7 @@ interface Props {
 
 export default function ItemDocumentosPanel({
   itemId,
-  itemDescricao,
+  itemDescricao: _itemDescricao,
   solicitacaoId,
 }: Props) {
   const qc = useQueryClient();
@@ -176,7 +176,7 @@ export default function ItemDocumentosPanel({
       });
       setShowAnaliseDialog(false);
       setSelectedDoc(null);
-      setNovoStatus("");
+      setNovoStatus("enviado");
       setObsAuditor("");
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao analisar"),
@@ -299,7 +299,7 @@ export default function ItemDocumentosPanel({
           <div className="space-y-4 py-2">
             <div>
               <Label>Status do Documento</Label>
-              <Select value={novoStatus} onValueChange={setNovoStatus}>
+              <Select value={novoStatus} onValueChange={(v) => setNovoStatus(v as StatusDocumento)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
