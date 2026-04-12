@@ -17,6 +17,7 @@ const menuGroups = [
       { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
       { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
       { to: "/auditores", label: "Auditores", icon: UserCheck },
+      { to: "/cliente-usuarios", label: "Usuários Cliente", icon: UserPlus },
       { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
     ],
   },
