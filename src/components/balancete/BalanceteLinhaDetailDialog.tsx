@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Save, FileText, CheckCircle2, Clock, Eye, XCircle } from "lucide-react";
 import DocumentosReferenciaBlock from "./DocumentosReferenciaBlock";
+import LinkedDocsBlock from "./LinkedDocsBlock";
 
 function fmt(v: number | null) {
   if (v == null) return "—";
@@ -354,6 +355,11 @@ export default function BalanceteLinhaDetailDialog({ linha, balanceteId, onClose
 
         {/* Block 5 — Documents */}
         <DocumentosReferenciaBlock linha={linha} />
+
+        <Separator />
+
+        {/* Block 6 — Linked Solicitation Documents */}
+        <LinkedDocsBlock linhaId={linha.id} saldoAtual={linha.saldo_atual} />
 
         <Separator />
 

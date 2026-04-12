@@ -56,6 +56,90 @@ export type Database = {
         }
         Relationships: []
       }
+      balancete_linha_documentos: {
+        Row: {
+          aceito_para_validacao: boolean
+          balancete_linha_id: string
+          cliente_id: string
+          created_at: string
+          exercicio_id: string
+          id: string
+          observacao_vinculo: string | null
+          solicitacao_item_documento_id: string
+          tipo_vinculo: Database["public"]["Enums"]["tipo_vinculo_documento"]
+          trabalho_auditoria_id: string
+          updated_at: string
+          valor_considerado_validacao: number | null
+          valor_documento: number | null
+        }
+        Insert: {
+          aceito_para_validacao?: boolean
+          balancete_linha_id: string
+          cliente_id: string
+          created_at?: string
+          exercicio_id: string
+          id?: string
+          observacao_vinculo?: string | null
+          solicitacao_item_documento_id: string
+          tipo_vinculo?: Database["public"]["Enums"]["tipo_vinculo_documento"]
+          trabalho_auditoria_id: string
+          updated_at?: string
+          valor_considerado_validacao?: number | null
+          valor_documento?: number | null
+        }
+        Update: {
+          aceito_para_validacao?: boolean
+          balancete_linha_id?: string
+          cliente_id?: string
+          created_at?: string
+          exercicio_id?: string
+          id?: string
+          observacao_vinculo?: string | null
+          solicitacao_item_documento_id?: string
+          tipo_vinculo?: Database["public"]["Enums"]["tipo_vinculo_documento"]
+          trabalho_auditoria_id?: string
+          updated_at?: string
+          valor_considerado_validacao?: number | null
+          valor_documento?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balancete_linha_documentos_balancete_linha_id_fkey"
+            columns: ["balancete_linha_id"]
+            isOneToOne: false
+            referencedRelation: "balancete_linhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linha_documentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linha_documentos_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "exercicios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linha_documentos_solicitacao_item_documento_id_fkey"
+            columns: ["solicitacao_item_documento_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacao_item_documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balancete_linha_documentos_trabalho_auditoria_id_fkey"
+            columns: ["trabalho_auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "trabalhos_auditoria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balancete_linhas: {
         Row: {
           balancete_id: string
@@ -1723,6 +1807,11 @@ export type Database = {
         | "revisar_mapeamento"
       tipo_balancete: "mensal" | "trimestral" | "semestral" | "anual" | "outro"
       tipo_mapeamento: "manual" | "automatico"
+      tipo_vinculo_documento:
+        | "principal"
+        | "complementar"
+        | "parcial"
+        | "analitico"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1952,6 +2041,12 @@ export const Constants = {
       ],
       tipo_balancete: ["mensal", "trimestral", "semestral", "anual", "outro"],
       tipo_mapeamento: ["manual", "automatico"],
+      tipo_vinculo_documento: [
+        "principal",
+        "complementar",
+        "parcial",
+        "analitico",
+      ],
     },
   },
 } as const

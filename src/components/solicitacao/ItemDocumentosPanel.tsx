@@ -29,7 +29,9 @@ import {
   XCircle,
   Search,
   RefreshCw,
+  Link2,
 } from "lucide-react";
+import VincularBalanceteDialog from "./VincularBalanceteDialog";
 
 const DOC_STATUS_LABELS: Record<string, string> = {
   enviado: "Enviado",
@@ -60,12 +62,18 @@ interface Props {
   itemId: string;
   itemDescricao: string;
   solicitacaoId: string;
+  trabalhoAuditoriaId?: string;
+  clienteId?: string;
+  exercicioId?: string;
 }
 
 export default function ItemDocumentosPanel({
   itemId,
   itemDescricao: _itemDescricao,
   solicitacaoId,
+  trabalhoAuditoriaId,
+  clienteId,
+  exercicioId,
 }: Props) {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +82,8 @@ export default function ItemDocumentosPanel({
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [novoStatus, setNovoStatus] = useState<"enviado" | "em_analise" | "aceito" | "recusado" | "complementar">("enviado");
   const [obsAuditor, setObsAuditor] = useState("");
+  const [showVincularDialog, setShowVincularDialog] = useState(false);
+  const [vincularDoc, setVincularDoc] = useState<any>(null);
 
   const { data: documentos = [], isLoading } = useQuery({
     queryKey: ["sol_item_docs", itemId],
@@ -268,6 +278,20 @@ export default function ItemDocumentosPanel({
               >
                 <ExternalLink size={12} />
               </Button>
+              {doc.status_documento === "aceito" && trabalhoAuditoriaId && clienteId && exercicioId && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 text-primary"
+                  title="Vincular ao balancete"
+                  onClick={() => {
+                    setVincularDoc(doc);
+                    setShowVincularDialog(true);
+                  }}
+                >
+                  <Link2 size={12} />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -366,6 +390,18 @@ export default function ItemDocumentosPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de vínculo ao balancete */}
+      {trabalhoAuditoriaId && clienteId && exercicioId && (
+        <VincularBalanceteDialog
+          open={showVincularDialog}
+          onOpenChange={setShowVincularDialog}
+          documento={vincularDoc}
+          trabalhoAuditoriaId={trabalhoAuditoriaId}
+          clienteId={clienteId}
+          exercicioId={exercicioId}
+        />
+      )}
     </div>
   );
 }

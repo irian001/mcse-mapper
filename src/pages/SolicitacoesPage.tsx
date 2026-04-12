@@ -444,6 +444,9 @@ export default function SolicitacoesPage() {
                                     itemId={item.id}
                                     itemDescricao={item.descricao_documento}
                                     solicitacaoId={selectedSolicitacao!}
+                                    trabalhoAuditoriaId={sol?.trabalho_auditoria_id}
+                                    clienteId={sol?.cliente_id}
+                                    exercicioId={sol?.exercicio_id}
                                   />
                                 </td>
                               </tr>

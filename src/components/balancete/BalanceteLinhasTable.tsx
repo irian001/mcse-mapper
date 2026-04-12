@@ -123,6 +123,29 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
     enabled: !!balanceteId,
   });
 
+  // Fetch linked docs summary per line
+  const linhaIds = linhas.map((l: any) => l.id);
+  const { data: docsSummary = [] } = useQuery({
+    queryKey: ["bal_linha_docs_summary", balanceteId],
+    enabled: linhaIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("balancete_linha_documentos")
+        .select("balancete_linha_id, valor_considerado_validacao, aceito_para_validacao")
+        .in("balancete_linha_id", linhaIds);
+      return data || [];
+    },
+  });
+
+  // Build summary map: linhaId -> { count, totalValor }
+  const docsSummaryMap = new Map<string, { count: number; total: number }>();
+  for (const d of docsSummary as any[]) {
+    const entry = docsSummaryMap.get(d.balancete_linha_id) || { count: 0, total: 0 };
+    entry.count++;
+    if (d.aceito_para_validacao) entry.total += d.valor_considerado_validacao || 0;
+    docsSummaryMap.set(d.balancete_linha_id, entry);
+  }
+
   // Extract unique groups for filter
   const grupos = [...new Set(linhas.map((l: any) => l.grupo_mcse).filter(Boolean))].sort();
 
@@ -231,10 +254,12 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
               <TableHead>Status</TableHead>
               <TableHead className="text-center w-[50px]">Pend.</TableHead>
               <TableHead className="text-right">Var. %</TableHead>
+              <TableHead className="text-center w-[50px]">Docs</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.slice(0, 300).map((l: any) => {
+              const docInfo = docsSummaryMap.get(l.id);
               const highVar = l.variacao_percentual != null && Math.abs(l.variacao_percentual) > 10;
               const hasDif = l.diferenca_validacao != null && l.diferenca_validacao !== 0;
               const rowCls =
@@ -265,6 +290,11 @@ export default function BalanceteLinhasTable({ balanceteId }: Props) {
                   </TableCell>
                   <TableCell className={`text-right font-mono text-xs ${highVar ? "text-amber-600 font-semibold" : ""}`}>
                     {fmtPct(l.variacao_percentual)}
+                  </TableCell>
+                  <TableCell className="text-center text-xs">
+                    {docInfo && docInfo.count > 0 ? (
+                      <Badge variant="outline" className="text-[10px]">{docInfo.count}</Badge>
+                    ) : "—"}
                   </TableCell>
                 </TableRow>
               );
