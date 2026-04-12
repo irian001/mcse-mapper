@@ -106,7 +106,7 @@ export default function ClienteSolicitacoesPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((sol: any) => {
-            const counts = countByCol(sol.id);
+            const counts = countBySol(sol.id);
             const sf = STATUS_FRIENDLY[sol.status_solicitacao] || { label: sol.status_solicitacao, color: "" };
             return (
               <Card key={sol.id} className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setSelectedId(sol.id)}>
@@ -141,11 +141,6 @@ export default function ClienteSolicitacoesPage() {
   );
 }
 
-// Fix typo in function name used above
-function countByCol(solId: string) {
-  // This is a placeholder - we use the parent component's countByCol
-  return { total: 0, pendentes: 0 };
-}
 
 // === DETAIL VIEW ===
 function SolicitacaoDetalhe({ solicitacaoId, onBack, clienteId }: { solicitacaoId: string; onBack: () => void; clienteId: string }) {
