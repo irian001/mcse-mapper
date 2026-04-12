@@ -72,7 +72,7 @@ export default function ItemDocumentosPanel({
   const [uploading, setUploading] = useState(false);
   const [showAnaliseDialog, setShowAnaliseDialog] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
-  const [novoStatus, setNovoStatus] = useState("");
+  const [novoStatus, setNovoStatus] = useState<"enviado" | "em_analise" | "aceito" | "recusado" | "complementar">("enviado");
   const [obsAuditor, setObsAuditor] = useState("");
 
   const { data: documentos = [], isLoading } = useQuery({
