@@ -62,12 +62,18 @@ interface Props {
   itemId: string;
   itemDescricao: string;
   solicitacaoId: string;
+  trabalhoAuditoriaId?: string;
+  clienteId?: string;
+  exercicioId?: string;
 }
 
 export default function ItemDocumentosPanel({
   itemId,
   itemDescricao: _itemDescricao,
   solicitacaoId,
+  trabalhoAuditoriaId,
+  clienteId,
+  exercicioId,
 }: Props) {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,6 +82,8 @@ export default function ItemDocumentosPanel({
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [novoStatus, setNovoStatus] = useState<"enviado" | "em_analise" | "aceito" | "recusado" | "complementar">("enviado");
   const [obsAuditor, setObsAuditor] = useState("");
+  const [showVincularDialog, setShowVincularDialog] = useState(false);
+  const [vincularDoc, setVincularDoc] = useState<any>(null);
 
   const { data: documentos = [], isLoading } = useQuery({
     queryKey: ["sol_item_docs", itemId],
