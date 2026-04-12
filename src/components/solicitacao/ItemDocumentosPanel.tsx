@@ -29,7 +29,9 @@ import {
   XCircle,
   Search,
   RefreshCw,
+  Link2,
 } from "lucide-react";
+import VincularBalanceteDialog from "./VincularBalanceteDialog";
 
 const DOC_STATUS_LABELS: Record<string, string> = {
   enviado: "Enviado",
