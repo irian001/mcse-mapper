@@ -14,9 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Plus, FileText, Trash2, Save, Filter, Eye, ChevronDown, FileDown, CheckCircle2, BookOpen, Monitor } from "lucide-react";
+import { Plus, FileText, Trash2, Save, Filter, Eye, ChevronDown, FileDown, CheckCircle2, BookOpen, Monitor, Paperclip } from "lucide-react";
 import { gerarSolicitacao, salvarSolicitacaoRascunho, type ItemGerado, type GeracaoFiltros } from "@/lib/solicitacao-service";
 import { fetchSolicitacaoPdfData, gerarSolicitacaoPdfHtml, downloadPdfViaHtml } from "@/lib/solicitacao-pdf";
+import ItemDocumentosPanel from "@/components/solicitacao/ItemDocumentosPanel";
 
 const STATUS_LABELS: Record<string, string> = {
   rascunho: "Rascunho",
