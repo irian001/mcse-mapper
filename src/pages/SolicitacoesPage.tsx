@@ -14,9 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Plus, FileText, Trash2, Save, Filter, Eye, ChevronDown, FileDown, CheckCircle2, BookOpen, Monitor } from "lucide-react";
+import { Plus, FileText, Trash2, Save, Filter, Eye, ChevronDown, FileDown, CheckCircle2, BookOpen, Monitor, Paperclip } from "lucide-react";
 import { gerarSolicitacao, salvarSolicitacaoRascunho, type ItemGerado, type GeracaoFiltros } from "@/lib/solicitacao-service";
 import { fetchSolicitacaoPdfData, gerarSolicitacaoPdfHtml, downloadPdfViaHtml } from "@/lib/solicitacao-pdf";
+import ItemDocumentosPanel from "@/components/solicitacao/ItemDocumentosPanel";
 
 const STATUS_LABELS: Record<string, string> = {
   rascunho: "Rascunho",
@@ -403,31 +404,52 @@ export default function SolicitacoesPage() {
                         <TableHead>Descrição</TableHead>
                         <TableHead className="text-center">Obrig.</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="w-10">Docs</TableHead>
                         {canEdit && <TableHead className="w-10"></TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {group.items.map((item: any) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="text-xs">{item.ordem}</TableCell>
-                          <TableCell className="text-sm">{item.tipo_documento}</TableCell>
-                          <TableCell className="text-sm max-w-[300px] truncate">{item.descricao_documento}</TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline" className={`text-xs ${item.obrigatorio ? "text-destructive border-destructive/30" : ""}`}>
-                              {item.obrigatorio ? "Sim" : "Não"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">{ITEM_STATUS_LABELS[item.status_item] || item.status_item}</Badge>
-                          </TableCell>
-                          {canEdit && (
-                            <TableCell>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteItemMutation.mutate(item.id)}>
-                                <Trash2 size={13} className="text-destructive" />
-                              </Button>
-                            </TableCell>
-                          )}
-                        </TableRow>
+                        <Collapsible key={item.id} asChild>
+                          <>
+                            <CollapsibleTrigger asChild>
+                              <TableRow className="cursor-pointer hover:bg-muted/30">
+                                <TableCell className="text-xs">{item.ordem}</TableCell>
+                                <TableCell className="text-sm">{item.tipo_documento}</TableCell>
+                                <TableCell className="text-sm max-w-[300px] truncate">{item.descricao_documento}</TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant="outline" className={`text-xs ${item.obrigatorio ? "text-destructive border-destructive/30" : ""}`}>
+                                    {item.obrigatorio ? "Sim" : "Não"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-xs">{ITEM_STATUS_LABELS[item.status_item] || item.status_item}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Paperclip size={13} className="text-muted-foreground" />
+                                </TableCell>
+                                {canEdit && (
+                                  <TableCell>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deleteItemMutation.mutate(item.id); }}>
+                                      <Trash2 size={13} className="text-destructive" />
+                                    </Button>
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent asChild>
+                              <tr>
+                                <td colSpan={canEdit ? 7 : 6} className="p-0">
+                                  <ItemDocumentosPanel
+                                    itemId={item.id}
+                                    itemDescricao={item.descricao_documento}
+                                    solicitacaoId={selectedSolicitacao!}
+                                  />
+                                </td>
+                              </tr>
+                            </CollapsibleContent>
+                          </>
+                        </Collapsible>
                       ))}
                     </TableBody>
                   </Table>
