@@ -9,6 +9,7 @@ import type { Session } from "@supabase/supabase-js";
 import AppLayout from "@/components/AppLayout";
 import ClienteLayout from "@/components/ClienteLayout";
 import AuthPage from "@/pages/AuthPage";
+import DashboardPage from "@/pages/DashboardPage";
 import McsePage from "@/pages/McsePage";
 import ClientesPage from "@/pages/ClientesPage";
 import ClienteUsuariosPage from "@/pages/ClienteUsuariosPage";
@@ -99,7 +100,8 @@ function ProfileRouter() {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/mcse" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/mcse" element={<McsePage />} />
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/cliente-usuarios" element={<ClienteUsuariosPage />} />
