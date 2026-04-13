@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FileText, LogOut } from "lucide-react";
+import { FileText, LogOut, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -7,6 +7,7 @@ import logoAudiconsult from "@/assets/logo_audiconsult.jpg";
 
 const menuItems = [
   { to: "/cliente/solicitacoes", label: "Minhas Solicitações", icon: FileText },
+  { to: "/cliente/pendencias", label: "Pendências", icon: AlertTriangle },
 ];
 
 export default function ClienteLayout({ children }: { children: React.ReactNode }) {

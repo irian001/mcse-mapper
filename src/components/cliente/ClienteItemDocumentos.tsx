@@ -11,6 +11,8 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 
 const DOC_STATUS: Record<string, { label: string; color: string }> = {
@@ -24,9 +26,11 @@ const DOC_STATUS: Record<string, { label: string; color: string }> = {
 interface Props {
   itemId: string;
   solicitacaoId: string;
+  /** Status atual do item para exibir alertas de pendência */
+  statusItem?: string;
 }
 
-export default function ClienteItemDocumentos({ itemId, solicitacaoId }: Props) {
+export default function ClienteItemDocumentos({ itemId, solicitacaoId, statusItem }: Props) {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -44,6 +48,10 @@ export default function ClienteItemDocumentos({ itemId, solicitacaoId }: Props) 
       return data || [];
     },
   });
+
+  // Último documento enviado (maior versão)
+  const ultimoDoc = documentos.length > 0 ? documentos[0] : null;
+  const precisaReenvio = ultimoDoc && (ultimoDoc.status_documento === "recusado" || ultimoDoc.status_documento === "complementar");
 
   const handleUpload = async (file: File) => {
     if (!file.type.includes("pdf")) {
@@ -87,7 +95,6 @@ export default function ClienteItemDocumentos({ itemId, solicitacaoId }: Props) 
 
       if (insertError) throw insertError;
 
-      // Update item status to recebido
       await supabase
         .from("solicitacao_itens")
         .update({ status_item: "recebido" })
@@ -121,6 +128,31 @@ export default function ClienteItemDocumentos({ itemId, solicitacaoId }: Props) 
 
   return (
     <div className="mt-2">
+      {/* Alerta de pendência do auditor */}
+      {precisaReenvio && (
+        <div className={`flex items-start gap-2 p-3 rounded-md border mb-2 ${
+          ultimoDoc.status_documento === "recusado"
+            ? "bg-destructive/5 border-destructive/30"
+            : "bg-orange-500/5 border-orange-500/30"
+        }`}>
+          <AlertTriangle size={16} className={
+            ultimoDoc.status_documento === "recusado" ? "text-destructive shrink-0 mt-0.5" : "text-orange-600 shrink-0 mt-0.5"
+          } />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold">
+              {ultimoDoc.status_documento === "recusado"
+                ? "Documento recusado — necessário reenvio"
+                : "Complementação solicitada pelo auditor"}
+            </p>
+            {ultimoDoc.observacao_auditor && (
+              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">
+                {ultimoDoc.observacao_auditor}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Compact toggle + upload row */}
       <div className="flex items-center gap-2 flex-wrap">
         <input
@@ -134,14 +166,14 @@ export default function ClienteItemDocumentos({ itemId, solicitacaoId }: Props) 
           }}
         />
         <Button
-          variant="outline"
+          variant={precisaReenvio ? "default" : "outline"}
           size="sm"
           className="h-7 text-xs"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >
-          <Upload size={12} className="mr-1" />
-          {uploading ? "Enviando..." : "Anexar PDF"}
+          {precisaReenvio ? <RefreshCw size={12} className="mr-1" /> : <Upload size={12} className="mr-1" />}
+          {uploading ? "Enviando..." : precisaReenvio ? "Reenviar documento" : "Anexar PDF"}
         </Button>
 
         {docCount > 0 && (
