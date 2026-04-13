@@ -23,6 +23,7 @@ import BalancetesPage from "@/pages/BalancetesPage";
 import PapeisTrabalhoPage from "@/pages/PapeisTrabalhoPage";
 import SolicitacoesPage from "@/pages/SolicitacoesPage";
 import ClienteSolicitacoesPage from "@/pages/cliente/ClienteSolicitacoesPage";
+import ClientePendenciasPage from "@/pages/cliente/ClientePendenciasPage";
 import NotFound from "@/pages/NotFound";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ function ProfileRouter() {
         <Routes>
           <Route path="/" element={<Navigate to="/cliente/solicitacoes" replace />} />
           <Route path="/cliente/solicitacoes" element={<ClienteSolicitacoesPage />} />
+          <Route path="/cliente/pendencias" element={<ClientePendenciasPage />} />
           <Route path="*" element={<Navigate to="/cliente/solicitacoes" replace />} />
         </Routes>
       </ClienteLayout>
