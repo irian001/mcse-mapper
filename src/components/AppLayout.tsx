@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText, UserPlus } from "lucide-react";
+import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText, UserPlus, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -12,6 +12,7 @@ const menuGroups = [
     label: "Início",
     defaultOpen: true,
     items: [
+      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/mcse", label: "Base MCSE", icon: Database },
       { to: "/clientes", label: "Clientes", icon: Users },
       { to: "/plano-contas", label: "Plano de Contas", icon: List },
