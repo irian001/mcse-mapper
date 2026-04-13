@@ -269,33 +269,41 @@ function SolicitacaoDetalhe({ solicitacaoId, onBack, clienteId }: { solicitacaoI
                     {group.items.map((item: any, idx: number) => {
                       const is = ITEM_FRIENDLY[item.status_item] || { label: item.status_item, icon: Clock, color: "text-muted-foreground" };
                       const Icon = is.icon;
+                      const colCount = group.items.some((i: any) => i.prazo_item) ? 5 : 4;
                       return (
-                        <TableRow key={item.id}>
-                          <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
-                          <TableCell>
-                            <p className="text-sm font-medium">{item.descricao_documento}</p>
-                            <p className="text-xs text-muted-foreground">{item.tipo_documento}</p>
-                            {item.instrucoes_cliente && (
-                              <p className="text-xs text-muted-foreground mt-1 italic">💡 {item.instrucoes_cliente}</p>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline" className={`text-xs ${item.obrigatorio ? "text-destructive border-destructive/30" : ""}`}>
-                              {item.obrigatorio ? "Sim" : "Não"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              <Icon size={14} className={is.color} />
-                              <span className={`text-xs ${is.color}`}>{is.label}</span>
-                            </div>
-                          </TableCell>
-                          {group.items.some((i: any) => i.prazo_item) && (
-                            <TableCell className="text-xs text-muted-foreground">
-                              {item.prazo_item ? new Date(item.prazo_item).toLocaleDateString("pt-BR") : "—"}
+                        <React.Fragment key={item.id}>
+                          <TableRow>
+                            <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+                            <TableCell>
+                              <p className="text-sm font-medium">{item.descricao_documento}</p>
+                              <p className="text-xs text-muted-foreground">{item.tipo_documento}</p>
+                              {item.instrucoes_cliente && (
+                                <p className="text-xs text-muted-foreground mt-1 italic">💡 {item.instrucoes_cliente}</p>
+                              )}
                             </TableCell>
-                          )}
-                        </TableRow>
+                            <TableCell className="text-center">
+                              <Badge variant="outline" className={`text-xs ${item.obrigatorio ? "text-destructive border-destructive/30" : ""}`}>
+                                {item.obrigatorio ? "Sim" : "Não"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                <Icon size={14} className={is.color} />
+                                <span className={`text-xs ${is.color}`}>{is.label}</span>
+                              </div>
+                            </TableCell>
+                            {group.items.some((i: any) => i.prazo_item) && (
+                              <TableCell className="text-xs text-muted-foreground">
+                                {item.prazo_item ? new Date(item.prazo_item).toLocaleDateString("pt-BR") : "—"}
+                              </TableCell>
+                            )}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell colSpan={colCount} className="pt-0 pb-3">
+                              <ClienteItemDocumentos itemId={item.id} solicitacaoId={solicitacaoId} />
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>
