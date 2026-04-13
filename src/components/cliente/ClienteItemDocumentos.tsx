@@ -9,11 +9,6 @@ import {
   Upload,
   FileText,
   ExternalLink,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  RefreshCw,
-  Search,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
