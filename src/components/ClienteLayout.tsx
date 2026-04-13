@@ -7,6 +7,7 @@ import logoAudiconsult from "@/assets/logo_audiconsult.jpg";
 
 const menuItems = [
   { to: "/cliente/solicitacoes", label: "Minhas Solicitações", icon: FileText },
+  { to: "/cliente/pendencias", label: "Pendências", icon: AlertTriangle },
 ];
 
 export default function ClienteLayout({ children }: { children: React.ReactNode }) {
