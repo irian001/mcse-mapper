@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { FileText, Eye, ChevronDown, BookOpen, Monitor, Clock, CheckCircle2, AlertCircle, RefreshCw, Upload } from "lucide-react";
+import { FileText, Eye, ChevronDown, BookOpen, Monitor, Clock, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import ClienteItemDocumentos from "@/components/cliente/ClienteItemDocumentos";
 
 const STATUS_FRIENDLY: Record<string, { label: string; color: string }> = {
