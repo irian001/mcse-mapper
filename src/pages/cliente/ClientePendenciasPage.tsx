@@ -7,10 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Clock, RefreshCw, XCircle } from "lucide-react";
 import ClienteItemDocumentos from "@/components/cliente/ClienteItemDocumentos";
 
-const PENDENCIA_STATUS: Record<string, { label: string; icon: any; color: string; bg: string }> = {
-  rejeitado: { label: "Recusado", icon: XCircle, color: "text-destructive", bg: "border-destructive/30" },
-  pendente: { label: "Aguardando envio", icon: Clock, color: "text-warning", bg: "border-warning/30" },
-};
 
 export default function ClientePendenciasPage() {
   const { data: profile } = useUserProfile();
@@ -136,7 +132,7 @@ export default function ClientePendenciasPage() {
             const sol = solMap.get(item.solicitacao_id);
             const isRecusado = item._type === "rejeitado";
             const isComplementar = item._type === "complementar";
-            const isPendente = item._type === "pendente";
+            
 
             const statusConfig = isRecusado
               ? { label: "Recusado", icon: XCircle, color: "text-destructive", borderColor: "border-destructive/30" }
