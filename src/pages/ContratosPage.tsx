@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Search, FileSignature, Eye } from "lucide-react";
+import { Plus, Pencil, Search, FileSignature } from "lucide-react";
 import { toast } from "sonner";
 
 const TIPOS_CONTRATACAO = [
@@ -70,7 +70,7 @@ export default function ContratosPage() {
   const { data: contratos = [], isLoading } = useQuery({
     queryKey: ["contratos"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("contratos")
         .select("*, clientes(razao_social, nome_fantasia), auditores:gestor_contrato_id(nome)")
         .order("created_at", { ascending: false });
@@ -120,10 +120,10 @@ export default function ContratosPage() {
       };
 
       if (editing) {
-        const { error } = await supabase.from("contratos").update(record).eq("id", editing.id);
+        const { error } = await (supabase as any).from("contratos").update(record).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("contratos").insert(record);
+        const { error } = await (supabase as any).from("contratos").insert(record);
         if (error) throw error;
       }
     },
