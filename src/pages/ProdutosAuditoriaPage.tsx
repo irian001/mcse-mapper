@@ -109,11 +109,11 @@ export default function ProdutosAuditoriaPage() {
         codigo_produto: values.codigo_produto.trim(),
         nome_produto: values.nome_produto.trim(),
         descricao: values.descricao?.trim() || null,
-        categoria: values.categoria,
-        segmento: values.segmento,
-        subtipo: values.subtipo,
-        complexidade_padrao: values.complexidade_padrao,
-        risco_padrao: values.risco_padrao,
+        categoria: values.categoria as any,
+        segmento: values.segmento as any,
+        subtipo: values.subtipo as any,
+        complexidade_padrao: values.complexidade_padrao as any,
+        risco_padrao: values.risco_padrao as any,
         horas_base_estimadas: values.horas_base_estimadas ? Number(values.horas_base_estimadas) : null,
         valor_base_referencia: values.valor_base_referencia ? Number(values.valor_base_referencia) : null,
         exige_balancete: values.exige_balancete,
@@ -176,7 +176,7 @@ export default function ProdutosAuditoriaPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Produtos de Auditoria" subtitle="Catálogo de serviços da firma" />
+      <PageHeader title="Produtos de Auditoria" description="Catálogo de serviços da firma" />
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-3 items-end">
