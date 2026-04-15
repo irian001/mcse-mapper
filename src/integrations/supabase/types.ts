@@ -1412,6 +1412,63 @@ export type Database = {
           },
         ]
       }
+      produtos_auditoria: {
+        Row: {
+          ativo: boolean
+          categoria: Database["public"]["Enums"]["categoria_produto"]
+          codigo_produto: string
+          complexidade_padrao: Database["public"]["Enums"]["complexidade"]
+          created_at: string
+          descricao: string | null
+          exige_balancete: boolean
+          exige_documentacao: boolean
+          horas_base_estimadas: number | null
+          id: string
+          nome_produto: string
+          risco_padrao: Database["public"]["Enums"]["nivel_risco"]
+          segmento: Database["public"]["Enums"]["segmento_produto"]
+          subtipo: Database["public"]["Enums"]["subtipo_produto"]
+          updated_at: string
+          valor_base_referencia: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: Database["public"]["Enums"]["categoria_produto"]
+          codigo_produto: string
+          complexidade_padrao?: Database["public"]["Enums"]["complexidade"]
+          created_at?: string
+          descricao?: string | null
+          exige_balancete?: boolean
+          exige_documentacao?: boolean
+          horas_base_estimadas?: number | null
+          id?: string
+          nome_produto: string
+          risco_padrao?: Database["public"]["Enums"]["nivel_risco"]
+          segmento?: Database["public"]["Enums"]["segmento_produto"]
+          subtipo?: Database["public"]["Enums"]["subtipo_produto"]
+          updated_at?: string
+          valor_base_referencia?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: Database["public"]["Enums"]["categoria_produto"]
+          codigo_produto?: string
+          complexidade_padrao?: Database["public"]["Enums"]["complexidade"]
+          created_at?: string
+          descricao?: string | null
+          exige_balancete?: boolean
+          exige_documentacao?: boolean
+          horas_base_estimadas?: number | null
+          id?: string
+          nome_produto?: string
+          risco_padrao?: Database["public"]["Enums"]["nivel_risco"]
+          segmento?: Database["public"]["Enums"]["segmento_produto"]
+          subtipo?: Database["public"]["Enums"]["subtipo_produto"]
+          updated_at?: string
+          valor_base_referencia?: number | null
+        }
+        Relationships: []
+      }
       solicitacao_item_documentos: {
         Row: {
           created_at: string
@@ -1762,6 +1819,13 @@ export type Database = {
     }
     Enums: {
       cargo_auditor: "assistente" | "senior" | "gerente" | "socio" | "revisor"
+      categoria_produto:
+        | "auditoria_contabil"
+        | "auditoria_regulatoria"
+        | "revisao_limitada"
+        | "ppa"
+        | "outros"
+      complexidade: "baixa" | "media" | "alta"
       natureza_conta:
         | "ativo"
         | "passivo"
@@ -1769,6 +1833,7 @@ export type Database = {
         | "receita"
         | "despesa"
         | "compensacao"
+      nivel_risco: "baixo" | "medio" | "alto"
       papel_trabalho:
         | "elaborador"
         | "revisor_1"
@@ -1777,6 +1842,11 @@ export type Database = {
         | "socio"
       perfil_acesso: "assistente" | "senior" | "gerente" | "socio" | "admin"
       segmento_cliente: "setor_eletrico" | "outro"
+      segmento_produto:
+        | "setor_eletrico"
+        | "cooperativas_credito"
+        | "industria"
+        | "outros"
       severidade_pendencia: "baixa" | "media" | "alta" | "critica"
       status_cliente: "ativo" | "inativo" | "prospecto"
       status_documento_item:
@@ -1848,6 +1918,11 @@ export type Database = {
         | "pendente"
         | "pronto_para_analise"
         | "revisar_mapeamento"
+      subtipo_produto:
+        | "societaria"
+        | "regulatoria"
+        | "consolidada"
+        | "individual"
       tipo_balancete: "mensal" | "trimestral" | "semestral" | "anual" | "outro"
       tipo_mapeamento: "manual" | "automatico"
       tipo_vinculo_documento:
@@ -1983,6 +2058,14 @@ export const Constants = {
   public: {
     Enums: {
       cargo_auditor: ["assistente", "senior", "gerente", "socio", "revisor"],
+      categoria_produto: [
+        "auditoria_contabil",
+        "auditoria_regulatoria",
+        "revisao_limitada",
+        "ppa",
+        "outros",
+      ],
+      complexidade: ["baixa", "media", "alta"],
       natureza_conta: [
         "ativo",
         "passivo",
@@ -1991,6 +2074,7 @@ export const Constants = {
         "despesa",
         "compensacao",
       ],
+      nivel_risco: ["baixo", "medio", "alto"],
       papel_trabalho: [
         "elaborador",
         "revisor_1",
@@ -2000,6 +2084,12 @@ export const Constants = {
       ],
       perfil_acesso: ["assistente", "senior", "gerente", "socio", "admin"],
       segmento_cliente: ["setor_eletrico", "outro"],
+      segmento_produto: [
+        "setor_eletrico",
+        "cooperativas_credito",
+        "industria",
+        "outros",
+      ],
       severidade_pendencia: ["baixa", "media", "alta", "critica"],
       status_cliente: ["ativo", "inativo", "prospecto"],
       status_documento_item: [
@@ -2081,6 +2171,12 @@ export const Constants = {
         "pendente",
         "pronto_para_analise",
         "revisar_mapeamento",
+      ],
+      subtipo_produto: [
+        "societaria",
+        "regulatoria",
+        "consolidada",
+        "individual",
       ],
       tipo_balancete: ["mensal", "trimestral", "semestral", "anual", "outro"],
       tipo_mapeamento: ["manual", "automatico"],
