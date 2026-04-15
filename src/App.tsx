@@ -20,6 +20,7 @@ import RegrasPage from "@/pages/RegrasPage";
 import AuditoresPage from "@/pages/AuditoresPage";
 import TrabalhosPage from "@/pages/TrabalhosPage";
 import ProdutosAuditoriaPage from "@/pages/ProdutosAuditoriaPage";
+import ContratosPage from "@/pages/ContratosPage";
 import BalancetesPage from "@/pages/BalancetesPage";
 import PapeisTrabalhoPage from "@/pages/PapeisTrabalhoPage";
 import SolicitacoesPage from "@/pages/SolicitacoesPage";
@@ -114,6 +115,7 @@ function ProfileRouter() {
         <Route path="/auditores" element={<AuditoresPage />} />
         <Route path="/trabalhos" element={<TrabalhosPage />} />
         <Route path="/produtos-auditoria" element={<ProdutosAuditoriaPage />} />
+        <Route path="/contratos" element={<ContratosPage />} />
         <Route path="/balancetes" element={<BalancetesPage />} />
         <Route path="/papeis-trabalho" element={<PapeisTrabalhoPage />} />
         <Route path="/solicitacoes" element={<SolicitacoesPage />} />
