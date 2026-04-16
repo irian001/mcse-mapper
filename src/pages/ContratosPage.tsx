@@ -441,6 +441,11 @@ export default function ContratosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ContratoDetailDialog
+        contrato={detailContrato}
+        open={!!detailContrato}
+        onClose={() => setDetailContrato(null)}
+      />
     </>
   );
 }
