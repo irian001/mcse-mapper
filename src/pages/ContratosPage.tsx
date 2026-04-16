@@ -275,7 +275,10 @@ export default function ContratosPage() {
                   <span className={c.data_fim < today ? "text-destructive" : ""}>{c.data_fim}</span>
                 </TableCell>
                 <TableCell>{getStatusBadge(c.status_contrato)}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDetailContrato(c)}>
+                    <Eye size={14} />
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(c)}>
                     <Pencil size={14} />
                   </Button>
