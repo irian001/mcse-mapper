@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Search, FileSignature } from "lucide-react";
+import { Plus, Pencil, Search, FileSignature, Eye } from "lucide-react";
 import { toast } from "sonner";
+import ContratoDetailDialog from "@/components/contratos/ContratoDetailDialog";
 
 const TIPOS_CONTRATACAO = [
   { value: "por_hora", label: "Por Hora" },
@@ -61,6 +62,7 @@ export default function ContratosPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [detailContrato, setDetailContrato] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
@@ -273,7 +275,10 @@ export default function ContratosPage() {
                   <span className={c.data_fim < today ? "text-destructive" : ""}>{c.data_fim}</span>
                 </TableCell>
                 <TableCell>{getStatusBadge(c.status_contrato)}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDetailContrato(c)}>
+                    <Eye size={14} />
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(c)}>
                     <Pencil size={14} />
                   </Button>
@@ -436,6 +441,11 @@ export default function ContratosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ContratoDetailDialog
+        contrato={detailContrato}
+        open={!!detailContrato}
+        onClose={() => setDetailContrato(null)}
+      />
     </>
   );
 }
