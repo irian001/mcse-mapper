@@ -62,6 +62,7 @@ export default function ContratosPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [detailContrato, setDetailContrato] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
