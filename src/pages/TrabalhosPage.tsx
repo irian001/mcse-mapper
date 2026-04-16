@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Search, Users, Trash2 } from "lucide-react";
+import { Plus, Pencil, Search, Users, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -31,6 +31,9 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 const PAPEIS = ["elaborador", "revisor_1", "revisor_2", "gerente", "socio"] as const;
 const papelLabel: Record<string, string> = { elaborador: "Elaborador", revisor_1: "Revisor 1", revisor_2: "Revisor 2", gerente: "Gerente", socio: "Sócio" };
 
+const TIPO_CONTROLE_HORAS = ["obrigatorio", "opcional", "nao_aplicavel"] as const;
+const tipoControleLabel: Record<string, string> = { obrigatorio: "Obrigatório", opcional: "Opcional", nao_aplicavel: "Não Aplicável" };
+
 interface TrabalhoForm {
   cliente_id: string;
   exercicio_id: string;
@@ -42,12 +45,17 @@ interface TrabalhoForm {
   data_fim_real: string;
   status_trabalho: StatusTrabalho;
   observacoes: string;
+  contrato_id: string;
+  contrato_produto_id: string;
+  controle_horas_ativo: boolean;
+  tipo_controle_horas: string;
 }
 
 const emptyForm: TrabalhoForm = {
   cliente_id: "", exercicio_id: "", nome_trabalho: "", descricao: "",
   data_inicio_programada: "", data_fim_programada: "", data_inicio_real: "", data_fim_real: "",
   status_trabalho: "planejado", observacoes: "",
+  contrato_id: "", contrato_produto_id: "", controle_horas_ativo: false, tipo_controle_horas: "nao_aplicavel",
 };
 
 export default function TrabalhosPage() {
@@ -101,6 +109,40 @@ export default function TrabalhosPage() {
     },
   });
 
+  // Contratos do cliente selecionado (excluindo encerrados para novo trabalho)
+  const { data: contratosCliente = [] } = useQuery({
+    queryKey: ["contratos-cliente", form.cliente_id],
+    enabled: !!form.cliente_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("contratos" as any)
+        .select("*")
+        .eq("cliente_id", form.cliente_id)
+        .order("created_at", { ascending: false });
+      return (data || []) as any[];
+    },
+  });
+
+  // Produtos do contrato selecionado
+  const { data: produtosContrato = [] } = useQuery({
+    queryKey: ["contrato-produtos", form.contrato_id],
+    enabled: !!form.contrato_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("contrato_produtos" as any)
+        .select("*, produtos_auditoria(nome_produto, codigo_produto)")
+        .eq("contrato_id", form.contrato_id)
+        .eq("ativo", true);
+      return (data || []) as any[];
+    },
+  });
+
+  // Filtrar contratos: para edição mostrar todos; para criação excluir encerrados
+  const contratosDisponiveis = useMemo(() => {
+    if (editingId) return contratosCliente;
+    return contratosCliente.filter((c: any) => c.status_contrato !== "encerrado");
+  }, [contratosCliente, editingId]);
+
   const exerciciosFiltrados = useMemo(() => {
     if (!form.cliente_id) return [];
     return exercicios.filter((e: any) => e.cliente_id === form.cliente_id);
@@ -139,11 +181,13 @@ export default function TrabalhosPage() {
       if (!payload.data_fim_programada) payload.data_fim_programada = null;
       if (!payload.data_inicio_real) payload.data_inicio_real = null;
       if (!payload.data_fim_real) payload.data_fim_real = null;
+      if (!payload.contrato_id) { payload.contrato_id = null; payload.contrato_produto_id = null; }
+      if (!payload.contrato_produto_id) payload.contrato_produto_id = null;
       if (id) {
-        const { error } = await supabase.from("trabalhos_auditoria").update(payload).eq("id", id);
+        const { error } = await supabase.from("trabalhos_auditoria").update(payload as any).eq("id", id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("trabalhos_auditoria").insert(payload);
+        const { error } = await supabase.from("trabalhos_auditoria").insert(payload as any);
         if (error) throw error;
       }
     },
@@ -200,10 +244,41 @@ export default function TrabalhosPage() {
       descricao: t.descricao || "", data_inicio_programada: t.data_inicio_programada || "",
       data_fim_programada: t.data_fim_programada || "", data_inicio_real: t.data_inicio_real || "",
       data_fim_real: t.data_fim_real || "", status_trabalho: t.status_trabalho, observacoes: t.observacoes || "",
+      contrato_id: t.contrato_id || "", contrato_produto_id: t.contrato_produto_id || "",
+      controle_horas_ativo: t.controle_horas_ativo || false,
+      tipo_controle_horas: t.tipo_controle_horas || "nao_aplicavel",
     });
     setDialogOpen(true);
   };
   const openEquipe = (id: string) => { setSelectedTrabalhoId(id); setEquipeDialogOpen(true); };
+
+  // Sugerir tipo_controle_horas baseado no contrato
+  const handleContratoChange = (contratoId: string) => {
+    const contrato = contratosCliente.find((c: any) => c.id === contratoId);
+    let sugestaoControle = form.tipo_controle_horas;
+    let sugestaoAtivo = form.controle_horas_ativo;
+
+    if (contrato) {
+      if (contrato.tipo_contratacao === "por_hora") {
+        sugestaoControle = "obrigatorio";
+        sugestaoAtivo = true;
+      } else if (contrato.tipo_contratacao === "por_demanda") {
+        sugestaoControle = "opcional";
+        sugestaoAtivo = true;
+      } else if (contrato.tipo_contratacao === "preco_fixo") {
+        sugestaoControle = "opcional";
+        sugestaoAtivo = false;
+      }
+    }
+
+    setForm({
+      ...form,
+      contrato_id: contratoId,
+      contrato_produto_id: "",
+      controle_horas_ativo: sugestaoAtivo,
+      tipo_controle_horas: sugestaoControle,
+    });
+  };
 
   // Add auditor form state
   const [addAuditorId, setAddAuditorId] = useState("");
@@ -214,6 +289,10 @@ export default function TrabalhosPage() {
     const idsJaVinculados = equipeAtual.map((e: any) => e.auditor_id);
     return auditores.filter((a: any) => !idsJaVinculados.includes(a.id));
   }, [auditores, equipeAtual]);
+
+  const contratoStatusLabel: Record<string, string> = {
+    em_negociacao: "Negociação", ativo: "Ativo", suspenso: "Suspenso", encerrado: "Encerrado",
+  };
 
   return (
     <div>
@@ -254,15 +333,16 @@ export default function TrabalhosPage() {
               <TableHead>Início Prog.</TableHead>
               <TableHead>Fim Prog.</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Horas</TableHead>
               <TableHead>Equipe</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum trabalho encontrado</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum trabalho encontrado</TableCell></TableRow>
             ) : filtered.map((t: any) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.nome_trabalho}</TableCell>
@@ -274,6 +354,16 @@ export default function TrabalhosPage() {
                   <Badge variant="outline" className={`text-xs font-medium ${statusConfig[t.status_trabalho]?.className || ""}`}>
                     {statusConfig[t.status_trabalho]?.label || t.status_trabalho}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {(t as any).controle_horas_ativo ? (
+                    <Badge variant="outline" className="text-xs bg-info/10 text-info border-info/30">
+                      <Clock size={10} className="mr-1" />
+                      {tipoControleLabel[(t as any).tipo_controle_horas] || "—"}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" className="gap-1" onClick={() => openEquipe(t.id)}>
@@ -291,7 +381,7 @@ export default function TrabalhosPage() {
 
       {/* Dialog: Criar/Editar Trabalho */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingId ? "Editar Trabalho" : "Novo Trabalho"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
@@ -301,7 +391,7 @@ export default function TrabalhosPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Cliente *</Label>
-                <Select value={form.cliente_id} onValueChange={(v) => setForm({ ...form, cliente_id: v, exercicio_id: "" })}>
+                <Select value={form.cliente_id} onValueChange={(v) => setForm({ ...form, cliente_id: v, exercicio_id: "", contrato_id: "", contrato_produto_id: "" })}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>{clientes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.razao_social}</SelectItem>)}</SelectContent>
                 </Select>
@@ -332,6 +422,45 @@ export default function TrabalhosPage() {
                 </Select>
               </div>
             </div>
+
+            {/* Contrato e Produto */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Contrato</Label>
+                <Select value={form.contrato_id || "none"} onValueChange={(v) => handleContratoChange(v === "none" ? "" : v)} disabled={!form.cliente_id}>
+                  <SelectTrigger><SelectValue placeholder="Sem contrato" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem contrato</SelectItem>
+                    {contratosDisponiveis.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.numero_contrato ? `${c.numero_contrato} — ` : ""}{c.descricao?.substring(0, 40) || "Sem descrição"}
+                        {" "}({contratoStatusLabel[c.status_contrato] || c.status_contrato})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Produto do Contrato</Label>
+                <Select
+                  value={form.contrato_produto_id || "none"}
+                  onValueChange={(v) => setForm({ ...form, contrato_produto_id: v === "none" ? "" : v })}
+                  disabled={!form.contrato_id}
+                >
+                  <SelectTrigger><SelectValue placeholder="Sem produto" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem produto vinculado</SelectItem>
+                    {produtosContrato.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.produtos_auditoria?.codigo_produto} — {p.produtos_auditoria?.nome_produto}
+                        {p.horas_previstas ? ` (${p.horas_previstas}h)` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div>
               <Label>Descrição</Label>
               <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
@@ -363,6 +492,34 @@ export default function TrabalhosPage() {
                 <SelectContent>{STATUS_LIST.map((s) => <SelectItem key={s} value={s}>{statusConfig[s].label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+
+            {/* Controle de Horas */}
+            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-info" />
+                  <Label className="text-sm font-medium">Controle de Horas</Label>
+                </div>
+                <Switch
+                  checked={form.controle_horas_ativo}
+                  onCheckedChange={(v) => setForm({ ...form, controle_horas_ativo: v })}
+                />
+              </div>
+              {form.controle_horas_ativo && (
+                <div>
+                  <Label className="text-xs">Tipo de Controle</Label>
+                  <Select value={form.tipo_controle_horas} onValueChange={(v) => setForm({ ...form, tipo_controle_horas: v })}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TIPO_CONTROLE_HORAS.map((t) => (
+                        <SelectItem key={t} value={t}>{tipoControleLabel[t]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
             <div>
               <Label>Observações</Label>
               <Textarea value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} rows={2} />
