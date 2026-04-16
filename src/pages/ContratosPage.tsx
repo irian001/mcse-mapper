@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Search, FileSignature } from "lucide-react";
+import { Plus, Pencil, Search, FileSignature, Eye } from "lucide-react";
 import { toast } from "sonner";
+import ContratoDetailDialog from "@/components/contratos/ContratoDetailDialog";
 
 const TIPOS_CONTRATACAO = [
   { value: "por_hora", label: "Por Hora" },
