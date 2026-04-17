@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText, UserPlus, LayoutDashboard, Package, FileSignature } from "lucide-react";
+import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText, UserPlus, LayoutDashboard, Package, FileSignature, ClipboardCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -33,6 +33,7 @@ const menuGroups = [
       { to: "/balancetes", label: "Balancetes", icon: BookOpen },
       { to: "/solicitacoes", label: "Solicitações", icon: FileText },
       { to: "/papeis-trabalho", label: "Papéis de Trabalho", icon: ClipboardList },
+      { to: "/procedimentos-auxiliares", label: "Procedimentos Auxiliares", icon: ClipboardCheck },
     ],
   },
 ];
