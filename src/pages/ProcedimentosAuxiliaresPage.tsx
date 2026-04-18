@@ -479,7 +479,7 @@ export default function ProcedimentosAuxiliaresPage() {
 
       {/* Detail dialog */}
       <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhe do Procedimento</DialogTitle>
           </DialogHeader>
@@ -502,6 +502,12 @@ export default function ProcedimentosAuxiliaresPage() {
                 <Field label="Conclusão Final" value={detail.conclusao_final || "—"} className="col-span-2" />
                 <Field label="Observações" value={detail.observacoes || "—"} className="col-span-2" />
               </div>
+
+              {detail.tipo_procedimento === "contagem_caixa" && (
+                <div className="border-t border-border pt-4">
+                  <ContagemCaixaPanel procedimentoId={detail.id} />
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
