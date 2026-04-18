@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Search, Eye, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
+import ContagemCaixaPanel from "@/components/procedimentos/ContagemCaixaPanel";
 
 const TIPOS_PROCEDIMENTO = [
   { value: "contagem_caixa", label: "Contagem de Caixa" },
