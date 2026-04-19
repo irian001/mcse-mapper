@@ -624,6 +624,8 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
           </form>
         </DialogContent>
       </Dialog>
+
+      <TermoContagemCaixa open={openTermo} onClose={() => setOpenTermo(false)} procedimento={procedimento} />
     </div>
   );
 }
