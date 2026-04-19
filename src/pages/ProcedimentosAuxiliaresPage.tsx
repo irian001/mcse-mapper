@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, Search, Eye, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import ContagemCaixaPanel from "@/components/procedimentos/ContagemCaixaPanel";
+import DocumentosProcedimentoPanel from "@/components/procedimentos/DocumentosProcedimentoPanel";
 
 const TIPOS_PROCEDIMENTO = [
   { value: "contagem_caixa", label: "Contagem de Caixa" },
@@ -505,9 +506,17 @@ export default function ProcedimentosAuxiliaresPage() {
 
               {detail.tipo_procedimento === "contagem_caixa" && (
                 <div className="border-t border-border pt-4">
-                  <ContagemCaixaPanel procedimentoId={detail.id} />
+                  <ContagemCaixaPanel procedimentoId={detail.id} procedimento={detail} />
                 </div>
               )}
+
+              <div className="border-t border-border pt-4">
+                <DocumentosProcedimentoPanel
+                  procedimentoId={detail.id}
+                  defaultTipo={detail.tipo_procedimento === "contagem_caixa" ? "termo_contagem_assinado" : "anexo_suporte"}
+                  triggerLabel={detail.tipo_procedimento === "contagem_caixa" ? "Anexar Termo Assinado" : "Anexar Documento"}
+                />
+              </div>
             </div>
           )}
         </DialogContent>
