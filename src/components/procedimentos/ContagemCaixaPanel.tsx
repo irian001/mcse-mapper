@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Banknote, Coins } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Banknote, Coins, FileSignature } from "lucide-react";
 import { toast } from "sonner";
+import TermoContagemCaixa from "./TermoContagemCaixa";
 
 const DENOMINACOES_MOEDA = [0.01, 0.05, 0.1, 0.25, 0.5, 1.0];
 const DENOMINACOES_NOTA = [2, 5, 10, 20, 50, 100, 200];
@@ -19,14 +20,16 @@ const fmtBRL = (v: number | null | undefined) =>
 
 interface Props {
   procedimentoId: string;
+  procedimento?: any;
 }
 
-export default function ContagemCaixaPanel({ procedimentoId }: Props) {
+export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Props) {
   const qc = useQueryClient();
   const [openItem, setOpenItem] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [openDetalhe, setOpenDetalhe] = useState<{ itemId: string; editing: any } | null>(null);
+  const [openTermo, setOpenTermo] = useState(false);
 
   const [itemForm, setItemForm] = useState({
     caixa_identificacao: "",
