@@ -253,9 +253,22 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
             Itens de caixa com detalhamento físico (cédulas e moedas).
           </p>
         </div>
-        <Button size="sm" onClick={handleNewItem}>
-          <Plus size={14} className="mr-1" /> Novo Caixa
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (itens.length === 0) return toast.error("Cadastre ao menos 1 caixa");
+              if ((detalhes as any[]).length === 0) return toast.error("Adicione ao menos 1 lançamento (cédula/moeda)");
+              setOpenTermo(true);
+            }}
+          >
+            <FileSignature size={14} className="mr-1" /> Gerar Termo
+          </Button>
+          <Button size="sm" onClick={handleNewItem}>
+            <Plus size={14} className="mr-1" /> Novo Caixa
+          </Button>
+        </div>
       </div>
 
       {/* Resumo */}
