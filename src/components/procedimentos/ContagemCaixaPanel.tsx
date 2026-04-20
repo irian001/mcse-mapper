@@ -29,7 +29,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
   const [openItem, setOpenItem] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
-  const [openDetalhe, setOpenDetalhe] = useState<{ itemId: string; editing: any } | null>(null);
   const [openTermo, setOpenTermo] = useState(false);
 
   const [itemForm, setItemForm] = useState({
@@ -37,13 +36,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
     descricao_local: "",
     responsavel_caixa: "",
     valor_informado: "",
-    observacao: "",
-  });
-
-  const [detalheForm, setDetalheForm] = useState({
-    tipo_denomincacao: "nota" as "nota" | "moeda",
-    valor_unitario: "",
-    quantidade: "",
     observacao: "",
   });
 
