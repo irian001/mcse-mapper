@@ -129,50 +129,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
     onError: (e: any) => toast.error(e.message || "Erro ao remover"),
   });
 
-  const upsertDetalhe = useMutation({
-    mutationFn: async () => {
-      if (!openDetalhe) return;
-      const payload = {
-        contagem_caixa_item_id: openDetalhe.itemId,
-        tipo_denomincacao: detalheForm.tipo_denomincacao,
-        valor_unitario: Number(detalheForm.valor_unitario),
-        quantidade: parseInt(detalheForm.quantidade || "0", 10),
-        observacao: detalheForm.observacao || null,
-      };
-      if (openDetalhe.editing) {
-        const { error } = await (supabase as any)
-          .from("procedimento_contagem_caixa_detalhes")
-          .update(payload)
-          .eq("id", openDetalhe.editing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await (supabase as any).from("procedimento_contagem_caixa_detalhes").insert(payload);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-detalhes", procedimentoId] });
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-itens", procedimentoId] });
-      toast.success("Lançamento salvo");
-      setOpenDetalhe(null);
-      resetDetalheForm();
-    },
-    onError: (e: any) => toast.error(e.message || "Erro ao salvar lançamento"),
-  });
-
-  const deleteDetalhe = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("procedimento_contagem_caixa_detalhes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-detalhes", procedimentoId] });
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-itens", procedimentoId] });
-      toast.success("Lançamento removido");
-    },
-    onError: (e: any) => toast.error(e.message || "Erro ao remover lançamento"),
-  });
-
   function resetItemForm() {
     setItemForm({
       caixa_identificacao: "",
@@ -181,9 +137,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
       valor_informado: "",
       observacao: "",
     });
-  }
-  function resetDetalheForm() {
-    setDetalheForm({ tipo_denomincacao: "nota", valor_unitario: "", quantidade: "", observacao: "" });
   }
 
   const handleEditItem = (item: any) => {
@@ -204,36 +157,11 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
     setOpenItem(true);
   };
 
-  const handleNewDetalhe = (itemId: string) => {
-    resetDetalheForm();
-    setOpenDetalhe({ itemId, editing: null });
-  };
-
-  const handleEditDetalhe = (itemId: string, det: any) => {
-    setDetalheForm({
-      tipo_denomincacao: det.tipo_denomincacao,
-      valor_unitario: String(det.valor_unitario),
-      quantidade: String(det.quantidade),
-      observacao: det.observacao || "",
-    });
-    setOpenDetalhe({ itemId, editing: det });
-  };
-
   const submitItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemForm.caixa_identificacao.trim()) return toast.error("Identificação do caixa é obrigatória");
     upsertItem.mutate();
   };
-
-  const submitDetalhe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!detalheForm.valor_unitario) return toast.error("Valor unitário é obrigatório");
-    if (!detalheForm.quantidade) return toast.error("Quantidade é obrigatória");
-    upsertDetalhe.mutate();
-  };
-
-  const denominacoesSugeridas =
-    detalheForm.tipo_denomincacao === "nota" ? DENOMINACOES_NOTA : DENOMINACOES_MOEDA;
 
   return (
     <div className="space-y-4">
