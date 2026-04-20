@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Banknote, Coins, FileSignature } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Banknote, FileSignature } from "lucide-react";
 import { toast } from "sonner";
 import TermoContagemCaixa from "./TermoContagemCaixa";
+import ContagemCaixaInlineGrid from "./ContagemCaixaInlineGrid";
 
 const DENOMINACOES_MOEDA = [0.01, 0.05, 0.1, 0.25, 0.5, 1.0];
 const DENOMINACOES_NOTA = [2, 5, 10, 20, 50, 100, 200];
@@ -28,7 +28,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
   const [openItem, setOpenItem] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
-  const [openDetalhe, setOpenDetalhe] = useState<{ itemId: string; editing: any } | null>(null);
   const [openTermo, setOpenTermo] = useState(false);
 
   const [itemForm, setItemForm] = useState({
@@ -36,13 +35,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
     descricao_local: "",
     responsavel_caixa: "",
     valor_informado: "",
-    observacao: "",
-  });
-
-  const [detalheForm, setDetalheForm] = useState({
-    tipo_denomincacao: "nota" as "nota" | "moeda",
-    valor_unitario: "",
-    quantidade: "",
     observacao: "",
   });
 
@@ -136,50 +128,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
     onError: (e: any) => toast.error(e.message || "Erro ao remover"),
   });
 
-  const upsertDetalhe = useMutation({
-    mutationFn: async () => {
-      if (!openDetalhe) return;
-      const payload = {
-        contagem_caixa_item_id: openDetalhe.itemId,
-        tipo_denomincacao: detalheForm.tipo_denomincacao,
-        valor_unitario: Number(detalheForm.valor_unitario),
-        quantidade: parseInt(detalheForm.quantidade || "0", 10),
-        observacao: detalheForm.observacao || null,
-      };
-      if (openDetalhe.editing) {
-        const { error } = await (supabase as any)
-          .from("procedimento_contagem_caixa_detalhes")
-          .update(payload)
-          .eq("id", openDetalhe.editing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await (supabase as any).from("procedimento_contagem_caixa_detalhes").insert(payload);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-detalhes", procedimentoId] });
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-itens", procedimentoId] });
-      toast.success("Lançamento salvo");
-      setOpenDetalhe(null);
-      resetDetalheForm();
-    },
-    onError: (e: any) => toast.error(e.message || "Erro ao salvar lançamento"),
-  });
-
-  const deleteDetalhe = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("procedimento_contagem_caixa_detalhes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-detalhes", procedimentoId] });
-      qc.invalidateQueries({ queryKey: ["contagem-caixa-itens", procedimentoId] });
-      toast.success("Lançamento removido");
-    },
-    onError: (e: any) => toast.error(e.message || "Erro ao remover lançamento"),
-  });
-
   function resetItemForm() {
     setItemForm({
       caixa_identificacao: "",
@@ -188,9 +136,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
       valor_informado: "",
       observacao: "",
     });
-  }
-  function resetDetalheForm() {
-    setDetalheForm({ tipo_denomincacao: "nota", valor_unitario: "", quantidade: "", observacao: "" });
   }
 
   const handleEditItem = (item: any) => {
@@ -211,36 +156,11 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
     setOpenItem(true);
   };
 
-  const handleNewDetalhe = (itemId: string) => {
-    resetDetalheForm();
-    setOpenDetalhe({ itemId, editing: null });
-  };
-
-  const handleEditDetalhe = (itemId: string, det: any) => {
-    setDetalheForm({
-      tipo_denomincacao: det.tipo_denomincacao,
-      valor_unitario: String(det.valor_unitario),
-      quantidade: String(det.quantidade),
-      observacao: det.observacao || "",
-    });
-    setOpenDetalhe({ itemId, editing: det });
-  };
-
   const submitItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!itemForm.caixa_identificacao.trim()) return toast.error("Identificação do caixa é obrigatória");
     upsertItem.mutate();
   };
-
-  const submitDetalhe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!detalheForm.valor_unitario) return toast.error("Valor unitário é obrigatório");
-    if (!detalheForm.quantidade) return toast.error("Quantidade é obrigatória");
-    upsertDetalhe.mutate();
-  };
-
-  const denominacoesSugeridas =
-    detalheForm.tipo_denomincacao === "nota" ? DENOMINACOES_NOTA : DENOMINACOES_MOEDA;
 
   return (
     <div className="space-y-4">
@@ -362,80 +282,14 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
                     <TableRow key={`${item.id}-exp`}>
                       <TableCell colSpan={8} className="bg-muted/30 p-0">
                         <div className="p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Mapa de Contagem — {item.caixa_identificacao}
-                            </div>
-                            <Button size="sm" variant="outline" onClick={() => handleNewDetalhe(item.id)}>
-                              <Plus size={12} className="mr-1" /> Lançar Cédula/Moeda
-                            </Button>
+                          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Mapa de Contagem — {item.caixa_identificacao}
                           </div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead className="text-right">Valor Unitário</TableHead>
-                                <TableHead className="text-right">Quantidade</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
-                                <TableHead>Observação</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {dets.length === 0 && (
-                                <TableRow>
-                                  <TableCell colSpan={6} className="text-center text-muted-foreground py-4 text-sm">
-                                    Nenhum lançamento. Adicione cédulas ou moedas.
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                              {dets.map((d: any) => (
-                                <TableRow key={d.id}>
-                                  <TableCell>
-                                    <span className="inline-flex items-center gap-1 text-xs">
-                                      {d.tipo_denomincacao === "nota" ? (
-                                        <>
-                                          <Banknote size={12} /> Nota
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Coins size={12} /> Moeda
-                                        </>
-                                      )}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-right font-mono text-sm">
-                                    {fmtBRL(d.valor_unitario)}
-                                  </TableCell>
-                                  <TableCell className="text-right font-mono text-sm">{d.quantidade}</TableCell>
-                                  <TableCell className="text-right font-mono text-sm font-semibold">
-                                    {fmtBRL(d.valor_total_linha)}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-muted-foreground">{d.observacao || "—"}</TableCell>
-                                  <TableCell className="text-right">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => handleEditDetalhe(item.id, d)}
-                                    >
-                                      <Pencil size={12} />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 text-destructive"
-                                      onClick={() => {
-                                        if (confirm("Remover este lançamento?")) deleteDetalhe.mutate(d.id);
-                                      }}
-                                    >
-                                      <Trash2 size={12} />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                          <ContagemCaixaInlineGrid
+                            itemId={item.id}
+                            procedimentoId={procedimentoId}
+                            detalhes={dets}
+                          />
                           {item.observacao && (
                             <div className="text-xs text-muted-foreground mt-2">
                               <span className="font-semibold">Observação do caixa:</span> {item.observacao}
@@ -524,101 +378,6 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
               </Button>
               <Button type="submit" disabled={upsertItem.isPending}>
                 {upsertItem.isPending ? "Salvando..." : "Salvar"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog detalhe */}
-      <Dialog
-        open={!!openDetalhe}
-        onOpenChange={(v) => {
-          if (!v) {
-            setOpenDetalhe(null);
-            resetDetalheForm();
-          }
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{openDetalhe?.editing ? "Editar Lançamento" : "Novo Lançamento"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={submitDetalhe} className="space-y-3">
-            <div>
-              <Label>Tipo *</Label>
-              <Select
-                value={detalheForm.tipo_denomincacao}
-                onValueChange={(v: "nota" | "moeda") =>
-                  setDetalheForm({ ...detalheForm, tipo_denomincacao: v, valor_unitario: "" })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nota">Nota (cédula)</SelectItem>
-                  <SelectItem value="moeda">Moeda</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Valor Unitário (R$) *</Label>
-              <Select
-                value={detalheForm.valor_unitario}
-                onValueChange={(v) => setDetalheForm({ ...detalheForm, valor_unitario: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a denominação" />
-                </SelectTrigger>
-                <SelectContent>
-                  {denominacoesSugeridas.map((d) => (
-                    <SelectItem key={d} value={String(d)}>
-                      {fmtBRL(d)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="Ou digite outro valor"
-                className="mt-2"
-                value={detalheForm.valor_unitario}
-                onChange={(e) => setDetalheForm({ ...detalheForm, valor_unitario: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Quantidade *</Label>
-              <Input
-                type="number"
-                min="0"
-                value={detalheForm.quantidade}
-                onChange={(e) => setDetalheForm({ ...detalheForm, quantidade: e.target.value })}
-              />
-            </div>
-            {detalheForm.valor_unitario && detalheForm.quantidade && (
-              <div className="text-sm text-muted-foreground">
-                Total da linha:{" "}
-                <span className="font-semibold text-foreground font-mono">
-                  {fmtBRL(Number(detalheForm.valor_unitario) * parseInt(detalheForm.quantidade || "0", 10))}
-                </span>
-              </div>
-            )}
-            <div>
-              <Label>Observação</Label>
-              <Textarea
-                rows={2}
-                value={detalheForm.observacao}
-                onChange={(e) => setDetalheForm({ ...detalheForm, observacao: e.target.value })}
-              />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpenDetalhe(null)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={upsertDetalhe.isPending}>
-                {upsertDetalhe.isPending ? "Salvando..." : "Salvar"}
               </Button>
             </DialogFooter>
           </form>
