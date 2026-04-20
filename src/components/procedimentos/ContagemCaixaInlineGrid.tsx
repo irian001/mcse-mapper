@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Banknote, Coins, Plus, Trash2, Zap } from "lucide-react";
+import { Banknote, Coins, Plus, Trash2, Zap, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 const DENOMINACOES_MOEDA = [0.01, 0.05, 0.1, 0.25, 0.5, 1.0];
@@ -20,11 +20,12 @@ interface Row {
   id?: string;
   _localKey: string;
   tipo_denomincacao: Tipo;
-  valor_unitario: string; // string for input control
+  valor_unitario: string;
   quantidade: string;
   observacao: string;
   _dirty?: boolean;
   _saving?: boolean;
+  _flash?: boolean; // visual highlight after merge
 }
 
 interface Props {
@@ -35,6 +36,8 @@ interface Props {
 
 let LOCAL_SEQ = 0;
 const newKey = () => `tmp-${++LOCAL_SEQ}-${Date.now()}`;
+
+const denomKey = (tipo: Tipo, valor: number | string) => `${tipo}:${Number(valor)}`;
 
 function rowFromServer(d: any): Row {
   return {
@@ -64,9 +67,10 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
     const base = (detalhes || []).map(rowFromServer);
     return base.length > 0 ? [...base, emptyRow()] : [emptyRow()];
   });
+  const [hideZero, setHideZero] = useState(false);
   const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // Re-sync when server data changes (after invalidate). Preserve dirty unsaved rows.
+  // Re-sync when server data changes. Preserve unsaved/dirty rows.
   useEffect(() => {
     setRows((prev) => {
       const dirtyPending = prev.filter((r) => !r.id && (r._dirty || r.quantidade || r.valor_unitario));
@@ -130,12 +134,54 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
     onError: (e: any) => toast.error(e.message || "Erro ao remover"),
   });
 
+  /**
+   * Tries to merge a pending row into an existing row of same (tipo,valor).
+   * Returns true if merged.
+   */
+  const tryMergeDuplicate = (key: string): boolean => {
+    const current = rows.find((r) => r._localKey === key);
+    if (!current) return false;
+    const v = Number(current.valor_unitario);
+    if (!v) return false;
+    const q = parseInt(current.quantidade || "0", 10);
+    if (!q) return false;
+
+    const k = denomKey(current.tipo_denomincacao, v);
+    const existing = rows.find(
+      (r) => r._localKey !== key && denomKey(r.tipo_denomincacao, r.valor_unitario) === k && r.valor_unitario,
+    );
+    if (!existing) return false;
+
+    const mergedQtd = (parseInt(existing.quantidade || "0", 10) || 0) + q;
+
+    // Update existing row qty and remove current; persist existing.
+    setRows((prev) => {
+      const next = prev
+        .filter((r) => r._localKey !== key)
+        .map((r) =>
+          r._localKey === existing._localKey
+            ? { ...r, quantidade: String(mergedQtd), _dirty: true, _flash: true }
+            : r,
+        );
+      return next;
+    });
+    toast.success(`Denominação ${fmtBRL(v)} já existia: somada (+${q}).`);
+    setTimeout(() => {
+      // persist the merged row
+      void persistRow(existing._localKey);
+      // remove flash
+      setRows((prev) => prev.map((r) => (r._localKey === existing._localKey ? { ...r, _flash: false } : r)));
+      cellRefs.current[`${existing._localKey}-qtd`]?.focus();
+    }, 400);
+    return true;
+  };
+
   const persistRow = async (key: string) => {
     const row = rows.find((r) => r._localKey === key);
     if (!row) return;
     const valor = Number(row.valor_unitario);
     const qtd = parseInt(row.quantidade || "0", 10);
-    if (!valor || !qtd) return; // skip empty
+    if (!valor || !qtd) return;
     if (!row._dirty) return;
     setRows((prev) => prev.map((r) => (r._localKey === key ? { ...r, _saving: true } : r)));
     try {
@@ -169,9 +215,13 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
   };
 
   const handleEnter = async (key: string) => {
-    await persistRow(key);
-    const idx = rows.findIndex((r) => r._localKey === key);
-    const next = rows[idx + 1];
+    // Try merge first; if merged, focus already moved.
+    const merged = tryMergeDuplicate(key);
+    if (!merged) await persistRow(key);
+
+    const visible = visibleRows();
+    const idx = visible.findIndex((r) => r._localKey === key);
+    const next = visible[idx + 1];
     if (next) {
       cellRefs.current[`${next._localKey}-qtd`]?.focus();
     } else {
@@ -195,21 +245,19 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
     }
   };
 
-  // MODO RÁPIDO: pré-popula todas as denominações
+  // MODO RÁPIDO: pré-popula todas as denominações que ainda não existem
   const carregarModoRapido = () => {
     const existing = new Set(
       rows
         .filter((r) => r.id || (r.valor_unitario && r.quantidade))
-        .map((r) => `${r.tipo_denomincacao}:${Number(r.valor_unitario)}`),
+        .map((r) => denomKey(r.tipo_denomincacao, r.valor_unitario)),
     );
     const novas: Row[] = [];
     for (const v of DENOMINACOES_NOTA) {
-      const k = `nota:${v}`;
-      if (!existing.has(k)) novas.push({ ...emptyRow("nota", String(v)), _localKey: newKey() });
+      if (!existing.has(denomKey("nota", v))) novas.push({ ...emptyRow("nota", String(v)), _localKey: newKey() });
     }
     for (const v of DENOMINACOES_MOEDA) {
-      const k = `moeda:${v}`;
-      if (!existing.has(k)) novas.push({ ...emptyRow("moeda", String(v)), _localKey: newKey() });
+      if (!existing.has(denomKey("moeda", v))) novas.push({ ...emptyRow("moeda", String(v)), _localKey: newKey() });
     }
     if (novas.length === 0) {
       toast.info("Todas as denominações já estão na grade");
@@ -219,11 +267,11 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
       const cleaned = prev.filter((r) => r.id || r.valor_unitario || r.quantidade);
       return [...cleaned, ...novas, emptyRow()];
     });
-    toast.success(`${novas.length} denominações carregadas. Preencha as quantidades.`);
+    toast.success(`${novas.length} denominações carregadas. Foco na primeira quantidade.`);
     setTimeout(() => {
       const first = novas[0];
       if (first) cellRefs.current[`${first._localKey}-qtd`]?.focus();
-    }, 50);
+    }, 80);
   };
 
   const totalGrid = useMemo(() => {
@@ -234,8 +282,24 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
     }, 0);
   }, [rows]);
 
+  const linhasComQtd = useMemo(
+    () => rows.filter((r) => (parseInt(r.quantidade || "0", 10) || 0) > 0).length,
+    [rows],
+  );
+
   const denominacoesPara = (tipo: Tipo) =>
     tipo === "nota" ? DENOMINACOES_NOTA : DENOMINACOES_MOEDA;
+
+  // Visible rows obey the hideZero filter, but always keep the trailing empty entry-row.
+  const visibleRows = (): Row[] => {
+    if (!hideZero) return rows;
+    const last = rows[rows.length - 1];
+    return rows.filter((r, idx) => {
+      if (idx === rows.length - 1) return true; // keep trailing empty
+      const q = parseInt(r.quantidade || "0", 10) || 0;
+      return q > 0 || r._dirty || r._saving;
+    });
+  };
 
   const onKeyDownQtd = (e: KeyboardEvent<HTMLInputElement>, key: string) => {
     if (e.key === "Enter") {
@@ -244,14 +308,38 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
     }
   };
 
+  const onKeyDownValor = (e: KeyboardEvent<HTMLInputElement>, key: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      cellRefs.current[`${key}-qtd`]?.focus();
+    }
+  };
+
+  // Detect duplicate denomination among rows for visual hint
+  const duplicateKeys = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of rows) {
+      if (!r.valor_unitario) continue;
+      const k = denomKey(r.tipo_denomincacao, r.valor_unitario);
+      counts[k] = (counts[k] || 0) + 1;
+    }
+    return new Set(Object.entries(counts).filter(([, c]) => c > 1).map(([k]) => k));
+  }, [rows]);
+
+  const display = visibleRows();
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="text-xs text-muted-foreground">
           Digite direto na tabela. <kbd className="px-1 py-0.5 border rounded text-[10px]">Tab</kbd> navega,{" "}
-          <kbd className="px-1 py-0.5 border rounded text-[10px]">Enter</kbd> salva e vai para próxima linha.
+          <kbd className="px-1 py-0.5 border rounded text-[10px]">Enter</kbd> salva e vai para próxima linha. Denominações repetidas são somadas automaticamente.
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setHideZero((v) => !v)}>
+            {hideZero ? <Eye size={12} className="mr-1" /> : <EyeOff size={12} className="mr-1" />}
+            {hideZero ? "Mostrar zeradas" : "Ocultar zeradas"}
+          </Button>
           <Button size="sm" variant="outline" onClick={carregarModoRapido}>
             <Zap size={12} className="mr-1" /> Modo rápido
           </Button>
@@ -270,19 +358,27 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
               <TableHead className="w-[110px] text-right">Quantidade</TableHead>
               <TableHead className="w-[130px] text-right">Total</TableHead>
               <TableHead>Observação</TableHead>
-              <TableHead className="w-[40px]" />
+              <TableHead className="w-[60px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((r) => {
+            {display.map((r) => {
               const valor = Number(r.valor_unitario) || 0;
               const qtd = parseInt(r.quantidade || "0", 10) || 0;
               const total = valor * qtd;
               const denoms = denominacoesPara(r.tipo_denomincacao);
               const isCustomValor =
                 r.valor_unitario !== "" && !denoms.map(String).includes(String(Number(r.valor_unitario)));
+              const isDup = r.valor_unitario && duplicateKeys.has(denomKey(r.tipo_denomincacao, r.valor_unitario));
+              const rowCls = [
+                r._flash ? "bg-success/15 transition-colors" : "",
+                !r._flash && r._dirty ? "bg-warning/5" : "",
+                !r._flash && !r._dirty && isDup ? "bg-destructive/5" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
               return (
-                <TableRow key={r._localKey} className={r._dirty ? "bg-warning/5" : ""}>
+                <TableRow key={r._localKey} className={rowCls}>
                   <TableCell>
                     <select
                       value={r.tipo_denomincacao}
@@ -310,6 +406,8 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
                             setTimeout(() => cellRefs.current[`${r._localKey}-valor`]?.focus(), 20);
                           } else {
                             updateRow(r._localKey, { valor_unitario: v });
+                            // auto-focus quantidade after picking denom
+                            setTimeout(() => cellRefs.current[`${r._localKey}-qtd`]?.focus(), 20);
                           }
                         }}
                         onBlur={() => persistRow(r._localKey)}
@@ -331,6 +429,7 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
                           value={r.valor_unitario}
                           onChange={(e) => updateRow(r._localKey, { valor_unitario: e.target.value })}
                           onBlur={() => persistRow(r._localKey)}
+                          onKeyDown={(e) => onKeyDownValor(e, r._localKey)}
                           className="h-8 w-20 text-xs font-mono"
                         />
                       )}
@@ -343,7 +442,11 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
                       min="0"
                       value={r.quantidade}
                       onChange={(e) => updateRow(r._localKey, { quantidade: e.target.value })}
-                      onBlur={() => persistRow(r._localKey)}
+                      onBlur={() => {
+                        // On blur: try merge then persist
+                        const merged = tryMergeDuplicate(r._localKey);
+                        if (!merged) persistRow(r._localKey);
+                      }}
                       onKeyDown={(e) => onKeyDownQtd(e, r._localKey)}
                       className="h-8 text-right font-mono text-xs"
                       placeholder="0"
@@ -389,9 +492,14 @@ export default function ContagemCaixaInlineGrid({ itemId, procedimentoId, detalh
         </Table>
       </div>
 
-      <div className="flex items-center justify-end text-xs">
-        <span className="text-muted-foreground mr-2">Total contado nesta grade:</span>
-        <span className="font-mono font-semibold">{fmtBRL(totalGrid)}</span>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">
+          Linhas com quantidade: <strong className="text-foreground">{linhasComQtd}</strong>
+        </span>
+        <div>
+          <span className="text-muted-foreground mr-2">Total contado nesta grade:</span>
+          <span className="font-mono font-semibold">{fmtBRL(totalGrid)}</span>
+        </div>
       </div>
     </div>
   );
