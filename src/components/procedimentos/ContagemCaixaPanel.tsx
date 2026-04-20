@@ -363,80 +363,14 @@ export default function ContagemCaixaPanel({ procedimentoId, procedimento }: Pro
                     <TableRow key={`${item.id}-exp`}>
                       <TableCell colSpan={8} className="bg-muted/30 p-0">
                         <div className="p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Mapa de Contagem — {item.caixa_identificacao}
-                            </div>
-                            <Button size="sm" variant="outline" onClick={() => handleNewDetalhe(item.id)}>
-                              <Plus size={12} className="mr-1" /> Lançar Cédula/Moeda
-                            </Button>
+                          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Mapa de Contagem — {item.caixa_identificacao}
                           </div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead className="text-right">Valor Unitário</TableHead>
-                                <TableHead className="text-right">Quantidade</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
-                                <TableHead>Observação</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {dets.length === 0 && (
-                                <TableRow>
-                                  <TableCell colSpan={6} className="text-center text-muted-foreground py-4 text-sm">
-                                    Nenhum lançamento. Adicione cédulas ou moedas.
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                              {dets.map((d: any) => (
-                                <TableRow key={d.id}>
-                                  <TableCell>
-                                    <span className="inline-flex items-center gap-1 text-xs">
-                                      {d.tipo_denomincacao === "nota" ? (
-                                        <>
-                                          <Banknote size={12} /> Nota
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Coins size={12} /> Moeda
-                                        </>
-                                      )}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-right font-mono text-sm">
-                                    {fmtBRL(d.valor_unitario)}
-                                  </TableCell>
-                                  <TableCell className="text-right font-mono text-sm">{d.quantidade}</TableCell>
-                                  <TableCell className="text-right font-mono text-sm font-semibold">
-                                    {fmtBRL(d.valor_total_linha)}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-muted-foreground">{d.observacao || "—"}</TableCell>
-                                  <TableCell className="text-right">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => handleEditDetalhe(item.id, d)}
-                                    >
-                                      <Pencil size={12} />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 text-destructive"
-                                      onClick={() => {
-                                        if (confirm("Remover este lançamento?")) deleteDetalhe.mutate(d.id);
-                                      }}
-                                    >
-                                      <Trash2 size={12} />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                          <ContagemCaixaInlineGrid
+                            itemId={item.id}
+                            procedimentoId={procedimentoId}
+                            detalhes={dets}
+                          />
                           {item.observacao && (
                             <div className="text-xs text-muted-foreground mt-2">
                               <span className="font-semibold">Observação do caixa:</span> {item.observacao}
