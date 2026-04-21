@@ -109,7 +109,7 @@ export default function PtaVincularLinhasDialog({ ptaId, trabalhoId, clienteId, 
           {contaMcseId && (
             <label className="flex items-center gap-1.5 text-xs cursor-pointer">
               <input type="checkbox" checked={onlyMcse} onChange={e => setOnlyMcse(e.target.checked)} className="rounded" />
-              Apenas mesma conta MCSE
+              Apenas mesmo grupo contábil
             </label>
           )}
         </div>

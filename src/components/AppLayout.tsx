@@ -60,10 +60,10 @@ const menuGroups = [
     label: "Administração",
     defaultOpen: false,
     items: [
-      { to: "/mcse", label: "Base MCSE", icon: Database },
+      { to: "/mcse", label: "Estruturas de Referência", icon: Database },
       { to: "/plano-contas", label: "Plano de Contas", icon: List },
-      { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
-      { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
+      { to: "/mapeamento", label: "Mapeamento de Contas", icon: GitCompare },
+      { to: "/regras", label: "Regras de Auditoria", icon: ShieldCheck },
     ],
   },
 ];

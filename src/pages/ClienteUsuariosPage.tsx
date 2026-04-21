@@ -138,7 +138,7 @@ export default function ClienteUsuariosPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Usuários do Cliente" description="Gerenciar vínculos entre usuários autenticados e clientes" />
+      <PageHeader title="Gestão de Usuários do Cliente" description="Gerenciar vínculos entre usuários autenticados e clientes" />
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">

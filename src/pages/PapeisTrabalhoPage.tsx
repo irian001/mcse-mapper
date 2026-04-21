@@ -215,7 +215,7 @@ export default function PapeisTrabalhoPage() {
 
   return (
     <div>
-      <PageHeader title="Papéis de Trabalho" description="Consolidação analítica por conta MCSE dentro de trabalhos de auditoria" />
+      <PageHeader title="Papéis de Trabalho de Auditoria" description="Consolidação analítica por grupo contábil dentro dos trabalhos de auditoria" />
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 flex-wrap">
@@ -239,7 +239,7 @@ export default function PapeisTrabalhoPage() {
           </Select>
           {grupos.length > 0 && (
             <Select value={filterGrupo} onValueChange={setFilterGrupo}>
-              <SelectTrigger className="h-9 w-40 text-xs"><SelectValue placeholder="Grupo MCSE" /></SelectTrigger>
+              <SelectTrigger className="h-9 w-40 text-xs"><SelectValue placeholder="Grupo contábil" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos grupos</SelectItem>
                 {grupos.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}

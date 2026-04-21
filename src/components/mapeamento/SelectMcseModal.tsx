@@ -68,9 +68,9 @@ export default function SelectMcseModal({ open, onOpenChange, selectedCount, onC
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Mapear {selectedCount} conta(s) para MCSE</DialogTitle>
+          <DialogTitle>Mapear {selectedCount} conta(s) à estrutura de referência</DialogTitle>
           <DialogDescription>
-            Pesquise e selecione uma conta da Base MCSE para aplicar a todas as contas selecionadas.
+            Pesquise e selecione um grupo contábil para aplicar a todas as contas selecionadas.
           </DialogDescription>
         </DialogHeader>
 
@@ -97,7 +97,7 @@ export default function SelectMcseModal({ open, onOpenChange, selectedCount, onC
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-2.5 text-muted-foreground" />
           <Input
-            placeholder="Buscar por código ou descrição MCSE..."
+            placeholder="Buscar por código ou descrição..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-8"
@@ -130,7 +130,7 @@ export default function SelectMcseModal({ open, onOpenChange, selectedCount, onC
               {filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    Nenhuma conta MCSE encontrada
+                    Nenhum grupo contábil encontrado
                   </TableCell>
                 </TableRow>
               )}

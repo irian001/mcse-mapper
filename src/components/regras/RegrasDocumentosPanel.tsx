@@ -101,7 +101,7 @@ export default function RegrasDocumentosPanel({ regras }: Props) {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedRegra) throw new Error("Selecione uma regra MCSE");
+      if (!selectedRegra) throw new Error("Selecione uma regra de auditoria");
       if (!form.tipo_documento.trim()) throw new Error("Informe o tipo de documento");
       if (!form.descricao_documento.trim()) throw new Error("Informe a descrição do documento");
 
@@ -166,9 +166,9 @@ export default function RegrasDocumentosPanel({ regras }: Props) {
       {/* Seletor de regra */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-[280px] max-w-md">
-          <Label>Regra MCSE (conta/grupo)</Label>
+          <Label>Regra de Auditoria (grupo contábil)</Label>
           <Select value={selectedRegraId} onValueChange={(v) => { setSelectedRegraId(v); setShowForm(false); }}>
-            <SelectTrigger><SelectValue placeholder="Selecione uma regra MCSE..." /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Selecione uma regra de auditoria..." /></SelectTrigger>
             <SelectContent>
               {regras.map((r) => (
                 <SelectItem key={r.id} value={r.id}>
@@ -185,7 +185,7 @@ export default function RegrasDocumentosPanel({ regras }: Props) {
       </div>
 
       {!selectedRegraId && (
-        <p className="text-sm text-muted-foreground py-8 text-center">Selecione uma regra MCSE para gerenciar seus documentos.</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">Selecione uma regra de auditoria para gerenciar seus documentos.</p>
       )}
 
       {selectedRegraId && showForm && (

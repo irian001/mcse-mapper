@@ -142,7 +142,7 @@ export default function McsePage() {
 
   return (
     <div>
-      <PageHeader title="Base MCSE" description="Manual de Contabilidade do Setor Elétrico" />
+      <PageHeader title="Estruturas de Referência" description="Estrutura contábil de referência (grupos, subgrupos e contas)" />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="grupos">Grupos</TabsTrigger>
