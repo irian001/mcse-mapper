@@ -130,9 +130,9 @@ function MenuGroup({ group, currentPath }: { group: typeof menuGroups[number]; c
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors">
-        {group.label}
-        <ChevronDown size={14} className={`transition-transform duration-200 ${open ? "" : "-rotate-90"}`} />
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors text-left">
+        <span className="text-left flex-1">{group.label}</span>
+        <ChevronDown size={14} className={`transition-transform duration-200 shrink-0 ${open ? "" : "-rotate-90"}`} />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-0.5 mt-0.5">
         {group.items.map((item) => (
