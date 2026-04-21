@@ -239,7 +239,7 @@ export default function PapeisTrabalhoPage() {
           </Select>
           {grupos.length > 0 && (
             <Select value={filterGrupo} onValueChange={setFilterGrupo}>
-              <SelectTrigger className="h-9 w-40 text-xs"><SelectValue placeholder="Grupo MCSE" /></SelectTrigger>
+              <SelectTrigger className="h-9 w-40 text-xs"><SelectValue placeholder="Grupo contábil" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos grupos</SelectItem>
                 {grupos.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}

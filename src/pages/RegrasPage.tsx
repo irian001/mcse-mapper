@@ -103,7 +103,7 @@ export default function RegrasPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!form.conta_mcse_id) throw new Error("Selecione uma conta MCSE");
+      if (!form.conta_mcse_id) throw new Error("Selecione um grupo contábil");
       const payload = {
         conta_mcse_id: form.conta_mcse_id, codigo_mcse: form.codigo_mcse || null,
         descricao_mcse: form.descricao_mcse || null, conta_critica: form.conta_critica,
@@ -130,7 +130,7 @@ export default function RegrasPage() {
       setShowForm(false);
     },
     onError: (e: any) => {
-      if (e?.message?.includes("unique") || e?.code === "23505") toast.error("Já existe uma regra para esta conta MCSE.");
+      if (e?.message?.includes("unique") || e?.code === "23505") toast.error("Já existe uma regra para este grupo contábil.");
       else toast.error(e?.message || "Erro ao salvar regra");
     },
   });
@@ -168,9 +168,9 @@ export default function RegrasPage() {
               <CardContent className="space-y-5">
                 {!editing && (
                   <div>
-                    <Label>Conta MCSE *</Label>
+                    <Label>Grupo Contábil *</Label>
                     <Select value={form.conta_mcse_id} onValueChange={handleSelectConta}>
-                      <SelectTrigger><SelectValue placeholder="Selecione a conta MCSE" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Selecione o grupo contábil" /></SelectTrigger>
                       <SelectContent>
                         {contas.filter((c: any) => !contasComRegra.has(c.id)).map((c: any) => (
                           <SelectItem key={c.id} value={c.id}>
