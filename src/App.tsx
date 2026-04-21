@@ -29,6 +29,7 @@ import ClienteSolicitacoesPage from "@/pages/cliente/ClienteSolicitacoesPage";
 import ClientePendenciasPage from "@/pages/cliente/ClientePendenciasPage";
 import NotFound from "@/pages/NotFound";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { ThemeProvider } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { LogOut, AlertTriangle } from "lucide-react";
 
@@ -129,15 +130,17 @@ function ProfileRouter() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthGate>
-          <ProfileRouter />
-        </AuthGate>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthGate>
+            <ProfileRouter />
+          </AuthGate>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

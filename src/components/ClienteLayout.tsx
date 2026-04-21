@@ -3,6 +3,7 @@ import { FileText, LogOut, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import logoAudiconsult from "@/assets/logo_audiconsult.jpg";
 
 const menuItems = [
@@ -25,7 +26,10 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
             {profile?.clienteUsuario?.clientes?.razao_social || ""}
           </p>
         </div>
-        <img src={logoAudiconsult} alt="Audiconsult Auditores" className="h-9 object-contain" />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <img src={logoAudiconsult} alt="Audiconsult Auditores" className="h-9 object-contain" />
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
