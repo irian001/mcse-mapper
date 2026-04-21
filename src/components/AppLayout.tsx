@@ -1,39 +1,69 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText, UserPlus, LayoutDashboard, Package, FileSignature, ClipboardCheck } from "lucide-react";
+import { Database, Users, GitCompare, ShieldCheck, List, UserCheck, Briefcase, LogOut, BookOpen, ClipboardList, ChevronDown, FileText, UserPlus, LayoutDashboard, Package, FileSignature, ClipboardCheck, Settings } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 import logoAudiconsult from "@/assets/logo_audiconsult.jpg";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuGroups = [
   {
-    label: "Início",
+    label: "Dashboard",
     defaultOpen: true,
     items: [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/mcse", label: "Base MCSE", icon: Database },
+    ],
+  },
+  {
+    label: "Cadastros",
+    defaultOpen: true,
+    items: [
       { to: "/clientes", label: "Clientes", icon: Users },
-      { to: "/plano-contas", label: "Plano de Contas", icon: List },
-      { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
-      { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
       { to: "/auditores", label: "Auditores", icon: UserCheck },
-      { to: "/cliente-usuarios", label: "Usuários Cliente", icon: UserPlus },
-      { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
-      { to: "/produtos-auditoria", label: "Produtos", icon: Package },
+      { to: "/cliente-usuarios", label: "Usuários do Cliente", icon: UserPlus },
+      { to: "/produtos-auditoria", label: "Produtos de Auditoria", icon: Package },
+    ],
+  },
+  {
+    label: "Contratos e Escopo",
+    defaultOpen: true,
+    items: [
       { to: "/contratos", label: "Contratos", icon: FileSignature },
     ],
   },
   {
-    label: "Auditoria",
+    label: "Trabalhos de Auditoria",
     defaultOpen: true,
     items: [
-      
+      { to: "/trabalhos", label: "Trabalhos", icon: Briefcase },
       { to: "/balancetes", label: "Balancetes", icon: BookOpen },
-      { to: "/solicitacoes", label: "Solicitações", icon: FileText },
-      { to: "/papeis-trabalho", label: "Papéis de Trabalho", icon: ClipboardList },
+      { to: "/papeis-trabalho", label: "Papéis de Trabalho (PTA)", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Procedimentos e Evidências",
+    defaultOpen: true,
+    items: [
       { to: "/procedimentos-auxiliares", label: "Procedimentos Auxiliares", icon: ClipboardCheck },
+    ],
+  },
+  {
+    label: "Solicitações e Portal",
+    defaultOpen: true,
+    items: [
+      { to: "/solicitacoes", label: "Solicitações", icon: FileText },
+    ],
+  },
+  {
+    label: "Administração",
+    defaultOpen: false,
+    items: [
+      { to: "/mcse", label: "Base MCSE", icon: Database },
+      { to: "/plano-contas", label: "Plano de Contas", icon: List },
+      { to: "/mapeamento", label: "Mapeamento", icon: GitCompare },
+      { to: "/regras", label: "Regras MCSE", icon: ShieldCheck },
     ],
   },
 ];
@@ -54,7 +84,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             Audiconsult Auditores S/S.
           </p>
         </div>
-        <img src={logoAudiconsult} alt="Audiconsult Auditores" className="h-9 object-contain" />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <img src={logoAudiconsult} alt="Audiconsult Auditores" className="h-9 object-contain" />
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
