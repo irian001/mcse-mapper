@@ -229,7 +229,7 @@ export default function AuditoresPage() {
   return (
     <div>
       <PageHeader
-        title="Auditores"
+        title="Gestão de Auditores"
         description="Cadastro de auditores e controle de acesso"
         actions={isAdmin ? <Button size="sm" onClick={openNew}><Plus size={16} className="mr-1" />Novo Auditor</Button> : undefined}
       />

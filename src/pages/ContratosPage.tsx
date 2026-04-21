@@ -204,8 +204,8 @@ export default function ContratosPage() {
   return (
     <>
       <PageHeader
-        title="Contratos"
-        description="Gestão de contratos de clientes"
+        title="Gestão de Contratos"
+        description="Contratos vinculados aos clientes"
         actions={
           <Button onClick={() => { setForm(emptyForm); setEditing(null); setOpen(true); }}>
             <Plus size={16} className="mr-2" /> Novo Contrato

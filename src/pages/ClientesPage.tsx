@@ -172,7 +172,7 @@ export default function ClientesPage() {
 
   return (
     <div>
-      <PageHeader title="Clientes" description="Cadastro de empresas permissionárias" actions={<Button size="sm" onClick={openNewCliente}><Plus size={14} className="mr-1" /> Novo Cliente</Button>} />
+      <PageHeader title="Gestão de Clientes" description="Cadastro e manutenção de clientes" actions={<Button size="sm" onClick={openNewCliente}><Plus size={14} className="mr-1" /> Novo Cliente</Button>} />
 
       <div className="grid grid-cols-3 gap-6">
         {/* Lista de clientes */}

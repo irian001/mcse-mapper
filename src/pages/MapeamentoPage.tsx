@@ -264,7 +264,7 @@ export default function MapeamentoPage() {
 
   return (
     <div>
-      <PageHeader title="Mapeamento de Contas" description="Mapear contas do cliente para a base MCSE" />
+      <PageHeader title="Mapeamento de Contas" description="Vincular contas do cliente à estrutura de referência" />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">

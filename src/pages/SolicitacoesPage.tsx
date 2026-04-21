@@ -542,7 +542,7 @@ export default function SolicitacoesPage() {
   // === LISTA DE SOLICITAÇÕES ===
   return (
     <div>
-      <PageHeader title="Solicitações Documentais" description="Solicitações geradas a partir dos balancetes" />
+      <PageHeader title="Solicitações Documentais" description="Solicitações de documentos geradas a partir dos balancetes" />
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">

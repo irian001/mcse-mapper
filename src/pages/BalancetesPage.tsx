@@ -235,7 +235,7 @@ export default function BalancetesPage() {
 
   return (
     <div>
-      <PageHeader title="Balancetes" description="Balancetes importados vinculados aos trabalhos de auditoria" />
+      <PageHeader title="Balancetes de Auditoria" description="Balancetes importados vinculados aos trabalhos de auditoria" />
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">

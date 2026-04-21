@@ -148,7 +148,7 @@ export default function RegrasPage() {
 
   return (
     <div>
-      <PageHeader title="Regras MCSE" description="Regras de auditoria e documentos por conta MCSE" />
+      <PageHeader title="Regras de Auditoria" description="Regras e documentos exigidos por grupo contábil" />
 
       <Tabs defaultValue="regras" className="space-y-4">
         <TabsList>

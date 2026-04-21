@@ -176,7 +176,7 @@ export default function ProdutosAuditoriaPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Produtos de Auditoria" description="Catálogo de serviços da firma" />
+      <PageHeader title="Produtos de Auditoria" description="Catálogo de serviços e produtos de auditoria" />
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-3 items-end">
