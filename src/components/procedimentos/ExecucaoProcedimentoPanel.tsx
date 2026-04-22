@@ -1,5 +1,6 @@
 import { ClipboardList, Construction } from "lucide-react";
 import ContagemCaixaPanel from "./ContagemCaixaPanel";
+import ContagemEstoquePanel from "./ContagemEstoquePanel";
 
 interface Props {
   procedimento: any;
@@ -23,6 +24,8 @@ export default function ExecucaoProcedimentoPanel({ procedimento }: Props) {
       return <ContagemCaixaPanel procedimentoId={procedimento.id} procedimento={procedimento} />;
 
     case "contagem_estoque":
+      return <ContagemEstoquePanel procedimentoId={procedimento.id} procedimento={procedimento} />;
+
     case "faturas_em_aberto":
     case "ordens_compra":
     case "ordens_imobilizacao":
