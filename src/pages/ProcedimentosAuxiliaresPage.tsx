@@ -13,8 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Search, Eye, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
-import ContagemCaixaPanel from "@/components/procedimentos/ContagemCaixaPanel";
-import DocumentosProcedimentoPanel from "@/components/procedimentos/DocumentosProcedimentoPanel";
+import ProcedimentoDetailDialog from "@/components/procedimentos/ProcedimentoDetailDialog";
 
 const TIPOS_PROCEDIMENTO = [
   { value: "contagem_caixa", label: "Contagem de Caixa" },
@@ -478,58 +477,8 @@ export default function ProcedimentosAuxiliaresPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Detail dialog */}
-      <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalhe do Procedimento</DialogTitle>
-          </DialogHeader>
-          {detail && (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Tipo" value={renderTipo(detail.tipo_procedimento)} />
-                <Field label="Status" value={renderStatus(detail.status_procedimento)} />
-                <Field label="Título" value={detail.titulo} className="col-span-2" />
-                <Field label="Cliente" value={detail.clientes?.razao_social || "—"} />
-                <Field label="Trabalho" value={detail.trabalhos_auditoria?.nome_trabalho || "—"} />
-                <Field label="Data do Procedimento" value={detail.data_procedimento ? new Date(detail.data_procedimento + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
-                <Field label="Data Base de Referência" value={detail.data_base_referencia ? new Date(detail.data_base_referencia + "T00:00:00").toLocaleDateString("pt-BR") : "—"} />
-                <Field label="Conta MCSE" value={detail.codigo_mcse ? `${detail.codigo_mcse} — ${detail.descricao_mcse || ""}` : "—"} className="col-span-2" />
-                <Field label="Resp. Execução" value={detail.exec?.nome || "—"} />
-                <Field label="Resp. Revisão" value={detail.rev?.nome || "—"} />
-                <Field label="Descrição" value={detail.descricao || "—"} className="col-span-2" />
-                <Field label="Objetivo" value={detail.objetivo_procedimento || "—"} className="col-span-2" />
-                <Field label="Conclusão Preliminar" value={detail.conclusao_preliminar || "—"} className="col-span-2" />
-                <Field label="Conclusão Final" value={detail.conclusao_final || "—"} className="col-span-2" />
-                <Field label="Observações" value={detail.observacoes || "—"} className="col-span-2" />
-              </div>
-
-              {detail.tipo_procedimento === "contagem_caixa" && (
-                <div className="border-t border-border pt-4">
-                  <ContagemCaixaPanel procedimentoId={detail.id} procedimento={detail} />
-                </div>
-              )}
-
-              <div className="border-t border-border pt-4">
-                <DocumentosProcedimentoPanel
-                  procedimentoId={detail.id}
-                  defaultTipo={detail.tipo_procedimento === "contagem_caixa" ? "termo_contagem_assinado" : "anexo_suporte"}
-                  triggerLabel={detail.tipo_procedimento === "contagem_caixa" ? "Anexar Termo Assinado" : "Anexar Documento"}
-                />
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function Field({ label, value, className = "" }: { label: string; value: any; className?: string }) {
-  return (
-    <div className={className}>
-      <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
-      <div className="mt-0.5">{value}</div>
+      {/* Detail dialog com abas (Dados Gerais / Execução / Evidências / Conclusão) */}
+      <ProcedimentoDetailDialog procedimento={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
