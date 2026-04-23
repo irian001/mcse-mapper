@@ -553,22 +553,25 @@ function ItemRow({
           />
         </div>
       </TableCell>
-      <TableCell className="text-right bg-primary/5">
+      <TableCell className={`text-right ${naoContado ? "bg-warning/5" : "bg-primary/5"}`}>
         <Input
           type="number"
           step="0.0001"
-          className="h-8 text-right font-mono text-xs font-semibold"
+          className={`h-8 text-right font-mono text-xs font-semibold ${
+            naoContado ? "border-warning/40 placeholder:text-warning-foreground/60" : ""
+          }`}
           value={edit.quantidade_contada}
           onChange={(e) => setEdit({ ...edit, quantidade_contada: e.target.value })}
           onBlur={() => dirty && handleSave()}
+          placeholder={naoContado ? "Pendente" : ""}
         />
       </TableCell>
       <TableCell
         className={`text-right font-mono text-sm ${
-          difQ === 0 ? "" : difQ > 0 ? "text-success" : "text-destructive"
+          difQ === null ? "text-muted-foreground/50" : difQ === 0 ? "" : difQ > 0 ? "text-success" : "text-destructive"
         }`}
       >
-        {difQ.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}
+        {difQ === null ? "—" : difQ.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}
       </TableCell>
       <TableCell className="text-right">
         <Input
@@ -582,10 +585,10 @@ function ItemRow({
       </TableCell>
       <TableCell
         className={`text-right font-mono text-sm ${
-          dif === 0 ? "" : dif > 0 ? "text-success" : "text-destructive"
+          dif === null ? "text-muted-foreground/50" : dif === 0 ? "" : dif > 0 ? "text-success" : "text-destructive"
         }`}
       >
-        {fmtBRL(dif)}
+        {dif === null ? "—" : fmtBRL(dif)}
       </TableCell>
       <TableCell>
         <Badge variant="outline" className={status.cls}>
