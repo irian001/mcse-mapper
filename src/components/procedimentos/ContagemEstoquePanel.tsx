@@ -221,11 +221,21 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <SummaryCard label="Blocos" value={String(totaisGerais.blocos)} />
-        <SummaryCard label="Itens contados" value={String(totaisGerais.totalItens)} />
+        <SummaryCard label="Itens importados" value={String(totaisGerais.totalItens)} />
         <SummaryCard
-          label="Itens com divergência"
+          label="Não contados"
+          value={String(totaisGerais.totalNaoContados)}
+          tone={totaisGerais.totalNaoContados > 0 ? "warning" : "neutral"}
+        />
+        <SummaryCard
+          label="Contados"
+          value={String(totaisGerais.totalContados)}
+          tone={totaisGerais.totalContados > 0 ? "positive" : "neutral"}
+        />
+        <SummaryCard
+          label="Com divergência"
           value={String(totaisGerais.totalComDif)}
           tone={totaisGerais.totalComDif > 0 ? "negative" : "neutral"}
         />
