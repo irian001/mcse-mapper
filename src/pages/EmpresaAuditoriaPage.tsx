@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,7 +76,7 @@ export default function EmpresaAuditoriaPage() {
 
   useEffect(() => {
     if (empresa) {
-      const { id, ...rest } = empresa as EmpresaAuditoria & { id: string };
+      const { id: _id, ...rest } = empresa as EmpresaAuditoria & { id: string };
       setForm({ ...empty, ...rest });
     }
   }, [empresa]);
@@ -148,7 +148,6 @@ export default function EmpresaAuditoriaPage() {
       <PageHeader
         title="Empresa de Auditoria"
         description="Cadastro da empresa que utiliza o sistema. Esses dados aparecem no cabeçalho e em relatórios."
-        icon={<Building2 className="h-5 w-5" />}
       />
 
       {!isAdmin && (
