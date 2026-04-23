@@ -206,7 +206,7 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
     updateItem.mutate(
       {
         id: itemEncontrado.id,
-        patch: { quantidade_contada: Number(qtdContadaRapida) },
+        patch: { quantidade_contada: Number(qtdContadaRapida), contado: true },
       },
       {
         onSuccess: () => {
