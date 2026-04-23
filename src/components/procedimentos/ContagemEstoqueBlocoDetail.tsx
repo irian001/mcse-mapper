@@ -15,11 +15,24 @@ const fmtBRL = (v: number | null | undefined) =>
   (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
-  sem_diferenca: { label: "Sem diferença", cls: "bg-muted text-muted-foreground border-border" },
-  sobra: { label: "Sobra", cls: "bg-success/15 text-success border-success/30" },
+  nao_contado: { label: "Não contado", cls: "bg-muted/40 text-muted-foreground border-border" },
+  sem_diferenca: { label: "Sem diferença", cls: "bg-success/15 text-success border-success/30" },
+  sobra: { label: "Sobra", cls: "bg-info/15 text-info border-info/30" },
   falta: { label: "Falta", cls: "bg-destructive/15 text-destructive border-destructive/30" },
   relevante: { label: "Relevante", cls: "bg-warning/15 text-warning-foreground border-warning/30" },
 };
+
+// Helper: determina se um item ainda NÃO foi contado.
+// Compatível com o SQL atual (v1/v2) e com o novo v3 (campo `contado` + status `nao_contado`).
+function isNaoContado(item: any): boolean {
+  if (item?.status_divergencia === "nao_contado") return true;
+  if (item?.contado === false) return true;
+  // Fallback heurístico: item importado sem quantidade contada preenchida
+  const qtdCnt = item?.quantidade_contada;
+  const semContagem = qtdCnt === null || qtdCnt === undefined || Number(qtdCnt) === 0;
+  if (semContagem && item?.origem_item === "importado") return true;
+  return false;
+}
 
 interface NovoItem {
   codigo_item: string;
