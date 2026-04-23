@@ -241,11 +241,17 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <DialogTitle className="text-base">Itens do Bloco — {blocoLabel}</DialogTitle>
-                <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
                   <span>{totais.count} itens</span>
                   {totais.importados > 0 && <span>· {totais.importados} importados</span>}
-                  <span>· Total Sistema: <span className="font-mono text-foreground">{fmtBRL(totais.sis)}</span></span>
-                  <span>· Total Contado: <span className="font-mono text-foreground">{fmtBRL(totais.cnt)}</span></span>
+                  <span className={totais.naoContados > 0 ? "text-warning-foreground" : ""}>
+                    · {totais.naoContados} não contados
+                  </span>
+                  <span className="text-success">
+                    · {totais.contados} contados
+                  </span>
+                  <span>· Sistema (contados): <span className="font-mono text-foreground">{fmtBRL(totais.sis)}</span></span>
+                  <span>· Contado: <span className="font-mono text-foreground">{fmtBRL(totais.cnt)}</span></span>
                   <span className={totais.dif === 0 ? "" : totais.dif > 0 ? "text-success" : "text-destructive"}>
                     · Diferença: <span className="font-mono">{fmtBRL(totais.dif)}</span>
                   </span>
