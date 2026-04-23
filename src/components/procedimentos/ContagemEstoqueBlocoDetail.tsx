@@ -499,18 +499,26 @@ function ItemRow({
 
   const dirty =
     Number(edit.quantidade_sistema || 0) !== Number(item.quantidade_sistema || 0) ||
-    Number(edit.quantidade_contada || 0) !== Number(item.quantidade_contada || 0) ||
+    String(edit.quantidade_contada) !== String(item.quantidade_contada ?? "") ||
     Number(edit.valor_unitario || 0) !== Number(item.valor_unitario || 0);
 
-  const status = STATUS_LABELS[item.status_divergencia] || STATUS_LABELS.sem_diferenca;
-  const dif = Number(item.diferenca_valor) || 0;
-  const difQ = Number(item.diferenca_quantidade) || 0;
+  const naoContado = isNaoContado(item);
+  const status = naoContado
+    ? STATUS_LABELS.nao_contado
+    : STATUS_LABELS[item.status_divergencia] || STATUS_LABELS.sem_diferenca;
+  const dif = item.diferenca_valor === null || item.diferenca_valor === undefined ? null : Number(item.diferenca_valor);
+  const difQ =
+    item.diferenca_quantidade === null || item.diferenca_quantidade === undefined
+      ? null
+      : Number(item.diferenca_quantidade);
 
   const handleSave = () => {
+    const qtdContadaInformada = edit.quantidade_contada !== "";
     onSave({
       quantidade_sistema: Number(edit.quantidade_sistema || 0),
-      quantidade_contada: Number(edit.quantidade_contada || 0),
+      quantidade_contada: qtdContadaInformada ? Number(edit.quantidade_contada) : null,
       valor_unitario: Number(edit.valor_unitario || 0),
+      contado: qtdContadaInformada,
     });
   };
 
