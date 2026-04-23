@@ -136,16 +136,18 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
   const insertItem = useMutation({
     mutationFn: async () => {
       if (!blocoId) throw new Error("Bloco inválido");
-      const payload = {
+      const qtdContadaInformada = novo.quantidade_contada !== "";
+      const payload: any = {
         contagem_estoque_bloco_id: blocoId,
         codigo_item: novo.codigo_item || null,
         descricao_item: novo.descricao_item || null,
         unidade_medida: novo.unidade_medida || null,
         quantidade_sistema: novo.quantidade_sistema === "" ? 0 : Number(novo.quantidade_sistema),
-        quantidade_contada: novo.quantidade_contada === "" ? 0 : Number(novo.quantidade_contada),
+        quantidade_contada: qtdContadaInformada ? Number(novo.quantidade_contada) : null,
         valor_unitario: novo.valor_unitario === "" ? 0 : Number(novo.valor_unitario),
         observacao: novo.observacao || null,
         origem_item: "manual",
+        contado: qtdContadaInformada,
       };
       const { error } = await (supabase as any)
         .from("procedimento_contagem_estoque_itens")
