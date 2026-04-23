@@ -15,8 +15,6 @@ import ContagemEstoqueBlocoDetail from "./ContagemEstoqueBlocoDetail";
 const fmtBRL = (v: number | null | undefined) =>
   (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const fmtNum = (v: number | null | undefined) =>
-  (Number(v) || 0).toLocaleString("pt-BR", { maximumFractionDigits: 4 });
 
 interface Props {
   procedimentoId: string;
@@ -279,7 +277,8 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
               </TableRow>
             )}
             {blocos.map((b: any) => {
-              const r = resumoPorBloco[b.id] || { total: 0, diferenca: 0, comDif: 0 };
+              const r =
+                resumoPorBloco[b.id] || { total: 0, contados: 0, naoContados: 0, diferenca: 0, comDif: 0 };
               return (
                 <TableRow
                   key={b.id}
@@ -291,7 +290,15 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
                   <TableCell className="text-sm">{b.tipo_estoque || "—"}</TableCell>
                   <TableCell className="text-sm">{b.categoria_estoque || "—"}</TableCell>
                   <TableCell className="text-sm">{b.responsavel_local || "—"}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{r.total}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    <span className="text-success">{r.contados}</span>
+                    <span className="text-muted-foreground"> / {r.total}</span>
+                    {r.naoContados > 0 && (
+                      <div className="text-[10px] text-warning-foreground">
+                        {r.naoContados} pendentes
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     {r.comDif > 0 ? (
                       <Badge variant="outline" className="bg-warning/15 text-warning-foreground border-warning/30">
