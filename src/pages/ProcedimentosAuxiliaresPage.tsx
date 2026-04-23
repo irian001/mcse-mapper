@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import PageHeader from "@/components/PageHeader";
@@ -11,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Search, Eye, ClipboardCheck } from "lucide-react";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Plus, Pencil, Search, Eye, ClipboardCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import ProcedimentoDetailDialog from "@/components/procedimentos/ProcedimentoDetailDialog";
 
@@ -56,6 +58,8 @@ const emptyForm = {
 
 export default function ProcedimentosAuxiliaresPage() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tipoFromUrl = searchParams.get("tipo") || "all";
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [detail, setDetail] = useState<any>(null);
@@ -63,11 +67,27 @@ export default function ProcedimentosAuxiliaresPage() {
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
   const [filterTrabalho, setFilterTrabalho] = useState("all");
-  const [filterTipo, setFilterTipo] = useState("all");
+  const [filterTipo, setFilterTipo] = useState(tipoFromUrl);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterMcse, setFilterMcse] = useState("all");
   const [filterDataIni, setFilterDataIni] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
+
+  // Sincroniza filtro quando a URL muda (ex: navegação entre cards do hub)
+  useEffect(() => {
+    setFilterTipo(tipoFromUrl);
+  }, [tipoFromUrl]);
+
+  // Atualiza URL quando o usuário muda o filtro de tipo manualmente
+  const handleTipoChange = (value: string) => {
+    setFilterTipo(value);
+    const next = new URLSearchParams(searchParams);
+    if (value === "all") next.delete("tipo");
+    else next.set("tipo", value);
+    setSearchParams(next, { replace: true });
+  };
+
+  const clearTipoFilter = () => handleTipoChange("all");
 
   const { data: procedimentos = [], isLoading } = useQuery({
     queryKey: ["procedimentos-auxiliares"],
@@ -248,15 +268,42 @@ export default function ProcedimentosAuxiliaresPage() {
 
   const renderTipo = (t: string) => TIPOS_PROCEDIMENTO.find((x) => x.value === t)?.label || t;
 
+  const tipoLabel = TIPOS_PROCEDIMENTO.find((t) => t.value === filterTipo)?.label;
+  const pageTitle = tipoLabel || "Procedimentos Auxiliares";
+  const pageDescription = tipoLabel
+    ? `Lista filtrada por tipo: ${tipoLabel}.`
+    : "Cabeçalhos de procedimentos auxiliares de auditoria (contagem de caixa, estoque, faturas, ordens, etc.)";
+
   return (
     <div>
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/procedimentos">Procedimentos</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{tipoLabel || "Todos"}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <PageHeader
-        title="Procedimentos Auxiliares"
-        description="Cabeçalhos de procedimentos auxiliares de auditoria (contagem de caixa, estoque, faturas, ordens, etc.)"
+        title={pageTitle}
+        description={pageDescription}
         actions={
-          <Button onClick={handleNew}>
-            <Plus size={16} className="mr-1" /> Novo Procedimento
-          </Button>
+          <div className="flex gap-2">
+            {filterTipo !== "all" && (
+              <Button variant="outline" onClick={clearTipoFilter}>
+                <X size={16} className="mr-1" /> Ver todos os procedimentos
+              </Button>
+            )}
+            <Button onClick={handleNew}>
+              <Plus size={16} className="mr-1" /> Novo Procedimento
+            </Button>
+          </div>
         }
       />
 
@@ -280,7 +327,7 @@ export default function ProcedimentosAuxiliaresPage() {
               {trabalhos.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.nome_trabalho}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={filterTipo} onValueChange={setFilterTipo}>
+          <Select value={filterTipo} onValueChange={handleTipoChange}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os tipos</SelectItem>
