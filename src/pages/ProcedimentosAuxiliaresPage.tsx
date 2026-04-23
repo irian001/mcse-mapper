@@ -327,7 +327,7 @@ export default function ProcedimentosAuxiliaresPage() {
               {trabalhos.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.nome_trabalho}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={filterTipo} onValueChange={setFilterTipo}>
+          <Select value={filterTipo} onValueChange={handleTipoChange}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os tipos</SelectItem>
