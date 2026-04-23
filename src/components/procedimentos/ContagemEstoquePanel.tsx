@@ -71,19 +71,38 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
       if (ids.length === 0) return [];
       const { data, error } = await (supabase as any)
         .from("procedimento_contagem_estoque_itens")
-        .select("contagem_estoque_bloco_id, diferenca_valor, status_divergencia")
+        .select(
+          "contagem_estoque_bloco_id, diferenca_valor, status_divergencia, quantidade_contada, origem_item, contado"
+        )
         .in("contagem_estoque_bloco_id", ids);
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Mesma heurística usada no detalhe do bloco
+  const isNaoContadoLocal = (i: any) => {
+    if (i?.status_divergencia === "nao_contado") return true;
+    if (i?.contado === false) return true;
+    const q = i?.quantidade_contada;
+    const semContagem = q === null || q === undefined || Number(q) === 0;
+    return semContagem && i?.origem_item === "importado";
+  };
+
   const resumoPorBloco = useMemo(() => {
-    const map: Record<string, { total: number; diferenca: number; comDif: number }> = {};
+    const map: Record<
+      string,
+      { total: number; contados: number; naoContados: number; diferenca: number; comDif: number }
+    > = {};
     for (const i of itens as any[]) {
       const k = i.contagem_estoque_bloco_id;
-      if (!map[k]) map[k] = { total: 0, diferenca: 0, comDif: 0 };
+      if (!map[k]) map[k] = { total: 0, contados: 0, naoContados: 0, diferenca: 0, comDif: 0 };
       map[k].total += 1;
+      if (isNaoContadoLocal(i)) {
+        map[k].naoContados += 1;
+        continue; // não soma em diferença
+      }
+      map[k].contados += 1;
       map[k].diferenca += Number(i.diferenca_valor) || 0;
       if (i.status_divergencia && i.status_divergencia !== "sem_diferenca") map[k].comDif += 1;
     }
@@ -92,14 +111,18 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
 
   const totaisGerais = useMemo(() => {
     let totalItens = 0;
+    let totalContados = 0;
+    let totalNaoContados = 0;
     let totalDif = 0;
     let totalComDif = 0;
     for (const k of Object.keys(resumoPorBloco)) {
       totalItens += resumoPorBloco[k].total;
+      totalContados += resumoPorBloco[k].contados;
+      totalNaoContados += resumoPorBloco[k].naoContados;
       totalDif += resumoPorBloco[k].diferenca;
       totalComDif += resumoPorBloco[k].comDif;
     }
-    return { totalItens, totalDif, totalComDif, blocos: blocos.length };
+    return { totalItens, totalContados, totalNaoContados, totalDif, totalComDif, blocos: blocos.length };
   }, [resumoPorBloco, blocos.length]);
 
   const upsertBloco = useMutation({
