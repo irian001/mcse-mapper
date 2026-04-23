@@ -58,6 +58,8 @@ const emptyForm = {
 
 export default function ProcedimentosAuxiliaresPage() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tipoFromUrl = searchParams.get("tipo") || "all";
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [detail, setDetail] = useState<any>(null);
@@ -65,11 +67,27 @@ export default function ProcedimentosAuxiliaresPage() {
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
   const [filterTrabalho, setFilterTrabalho] = useState("all");
-  const [filterTipo, setFilterTipo] = useState("all");
+  const [filterTipo, setFilterTipo] = useState(tipoFromUrl);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterMcse, setFilterMcse] = useState("all");
   const [filterDataIni, setFilterDataIni] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
+
+  // Sincroniza filtro quando a URL muda (ex: navegação entre cards do hub)
+  useEffect(() => {
+    setFilterTipo(tipoFromUrl);
+  }, [tipoFromUrl]);
+
+  // Atualiza URL quando o usuário muda o filtro de tipo manualmente
+  const handleTipoChange = (value: string) => {
+    setFilterTipo(value);
+    const next = new URLSearchParams(searchParams);
+    if (value === "all") next.delete("tipo");
+    else next.set("tipo", value);
+    setSearchParams(next, { replace: true });
+  };
+
+  const clearTipoFilter = () => handleTipoChange("all");
 
   const { data: procedimentos = [], isLoading } = useQuery({
     queryKey: ["procedimentos-auxiliares"],
