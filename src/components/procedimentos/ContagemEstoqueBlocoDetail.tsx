@@ -86,19 +86,26 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
   });
 
   const totais = useMemo(() => {
-    let sis = 0;
-    let cnt = 0;
-    let dif = 0;
-    let withDif = 0;
+    let sis = 0;        // total sistema (apenas itens contados)
+    let cnt = 0;        // total contado (apenas itens contados)
+    let dif = 0;        // diferença financeira (apenas itens contados)
+    let withDif = 0;    // itens contados com divergência (sobra/falta/relevante)
     let importados = 0;
+    let naoContados = 0;
+    let contados = 0;
     for (const i of itens as any[]) {
+      if (i.origem_item === "importado") importados += 1;
+      if (isNaoContado(i)) {
+        naoContados += 1;
+        continue; // não soma nos totais financeiros
+      }
+      contados += 1;
       sis += Number(i.valor_total_sistema) || 0;
       cnt += Number(i.valor_total_contado) || 0;
       dif += Number(i.diferenca_valor) || 0;
       if (i.status_divergencia && i.status_divergencia !== "sem_diferenca") withDif += 1;
-      if (i.origem_item === "importado") importados += 1;
     }
-    return { sis, cnt, dif, withDif, count: itens.length, importados };
+    return { sis, cnt, dif, withDif, count: itens.length, importados, naoContados, contados };
   }, [itens]);
 
   // Index por código para busca rápida
