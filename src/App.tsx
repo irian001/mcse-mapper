@@ -27,6 +27,11 @@ import SolicitacoesPage from "@/pages/SolicitacoesPage";
 import ProcedimentosAuxiliaresPage from "@/pages/ProcedimentosAuxiliaresPage";
 import ClienteSolicitacoesPage from "@/pages/cliente/ClienteSolicitacoesPage";
 import ClientePendenciasPage from "@/pages/cliente/ClientePendenciasPage";
+import CadastrosHubPage from "@/pages/hubs/CadastrosHubPage";
+import TrabalhosHubPage from "@/pages/hubs/TrabalhosHubPage";
+import ProcedimentosHubPage from "@/pages/hubs/ProcedimentosHubPage";
+import SolicitacoesHubPage from "@/pages/hubs/SolicitacoesHubPage";
+import AdministracaoHubPage from "@/pages/hubs/AdministracaoHubPage";
 import NotFound from "@/pages/NotFound";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { ThemeProvider } from "@/hooks/useTheme";
@@ -108,6 +113,12 @@ function ProfileRouter() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Hubs */}
+        <Route path="/cadastros" element={<CadastrosHubPage />} />
+        <Route path="/trabalhos-hub" element={<TrabalhosHubPage />} />
+        <Route path="/procedimentos" element={<ProcedimentosHubPage />} />
+        <Route path="/solicitacoes-hub" element={<SolicitacoesHubPage />} />
+        <Route path="/administracao" element={<AdministracaoHubPage />} />
         <Route path="/mcse" element={<McsePage />} />
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/cliente-usuarios" element={<ClienteUsuariosPage />} />
