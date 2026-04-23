@@ -433,13 +433,15 @@ function SummaryCard({
 }: {
   label: string;
   value: string;
-  tone?: "neutral" | "positive" | "negative";
+  tone?: "neutral" | "positive" | "negative" | "warning";
 }) {
   const toneCls =
     tone === "positive"
       ? "text-success border-success/30"
       : tone === "negative"
       ? "text-destructive border-destructive/30"
+      : tone === "warning"
+      ? "text-warning-foreground border-warning/30"
       : "text-foreground border-border";
   return (
     <div className={`bg-card border rounded-lg p-3 ${toneCls}`}>
