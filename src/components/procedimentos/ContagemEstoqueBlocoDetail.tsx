@@ -523,7 +523,7 @@ function ItemRow({
   };
 
   return (
-    <TableRow>
+    <TableRow className={naoContado ? "bg-muted/20" : ""}>
       <TableCell className="text-sm font-mono">
         <div className="flex items-center gap-1">
           {item.codigo_item || "—"}
