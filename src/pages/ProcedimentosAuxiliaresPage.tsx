@@ -268,15 +268,42 @@ export default function ProcedimentosAuxiliaresPage() {
 
   const renderTipo = (t: string) => TIPOS_PROCEDIMENTO.find((x) => x.value === t)?.label || t;
 
+  const tipoLabel = TIPOS_PROCEDIMENTO.find((t) => t.value === filterTipo)?.label;
+  const pageTitle = tipoLabel || "Procedimentos Auxiliares";
+  const pageDescription = tipoLabel
+    ? `Lista filtrada por tipo: ${tipoLabel}.`
+    : "Cabeçalhos de procedimentos auxiliares de auditoria (contagem de caixa, estoque, faturas, ordens, etc.)";
+
   return (
     <div>
+      <Breadcrumb className="mb-3">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/procedimentos">Procedimentos</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{tipoLabel || "Todos"}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <PageHeader
-        title="Procedimentos Auxiliares"
-        description="Cabeçalhos de procedimentos auxiliares de auditoria (contagem de caixa, estoque, faturas, ordens, etc.)"
+        title={pageTitle}
+        description={pageDescription}
         actions={
-          <Button onClick={handleNew}>
-            <Plus size={16} className="mr-1" /> Novo Procedimento
-          </Button>
+          <div className="flex gap-2">
+            {filterTipo !== "all" && (
+              <Button variant="outline" onClick={clearTipoFilter}>
+                <X size={16} className="mr-1" /> Ver todos os procedimentos
+              </Button>
+            )}
+            <Button onClick={handleNew}>
+              <Plus size={16} className="mr-1" /> Novo Procedimento
+            </Button>
+          </div>
         }
       />
 
