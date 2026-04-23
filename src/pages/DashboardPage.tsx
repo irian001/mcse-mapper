@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import PageHeader from "@/components/PageHeader";
+import QuickActions from "@/components/dashboard/QuickActions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserCheck, Briefcase, FileText, AlertTriangle, Clock } from "lucide-react";
@@ -181,6 +182,9 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Quick actions */}
+      <QuickActions />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
