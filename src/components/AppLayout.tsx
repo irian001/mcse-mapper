@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
 import logoAudiconsult from "@/assets/logo_audiconsult.jpg";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useEmpresaAuditoria } from "@/hooks/useEmpresaAuditoria";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
@@ -22,12 +23,14 @@ const menuItems = [
   { to: "/trabalhos-hub", label: "Trabalhos", icon: Briefcase, match: ["/trabalhos-hub", "/trabalhos", "/balancetes", "/papeis-trabalho"] },
   { to: "/procedimentos", label: "Procedimentos", icon: ClipboardCheck, match: ["/procedimentos", "/procedimentos-auxiliares"] },
   { to: "/solicitacoes-hub", label: "Solicitações", icon: FileText, match: ["/solicitacoes-hub", "/solicitacoes"] },
-  { to: "/administracao", label: "Administração", icon: Settings, match: ["/administracao", "/mcse", "/plano-contas", "/mapeamento", "/regras"] },
+  { to: "/administracao", label: "Administração", icon: Settings, match: ["/administracao", "/empresa-auditoria", "/mcse", "/plano-contas", "/mapeamento", "/regras"] },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { data: profile } = useUserProfile();
+  const { data: empresa } = useEmpresaAuditoria();
+  const nomeEmpresa = empresa?.nome_fantasia?.trim() || empresa?.razao_social?.trim() || "Audiconsult Auditores S/S.";
 
   return (
     <div className="flex h-screen overflow-hidden flex-col">
@@ -38,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             Sistema de Auditoria Contábil
           </h2>
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-            Audiconsult Auditores S/S.
+            {nomeEmpresa}
           </p>
         </div>
         <div className="flex items-center gap-3">

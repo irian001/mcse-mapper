@@ -767,6 +767,104 @@ export type Database = {
           },
         ]
       }
+      empresa_auditoria: {
+        Row: {
+          auditor_responsavel_id: string | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string
+          complemento: string | null
+          crc_numero: string | null
+          crc_uf: string | null
+          created_at: string
+          email_contato: string | null
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          logo_url: string | null
+          logradouro: string | null
+          nome_fantasia: string | null
+          numero: string | null
+          observacoes: string | null
+          razao_social: string
+          registro_aneel: string | null
+          registro_bacen: string | null
+          registro_cvm: string | null
+          singleton: boolean
+          telefone: string | null
+          uf: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          auditor_responsavel_id?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string
+          complemento?: string | null
+          crc_numero?: string | null
+          crc_uf?: string | null
+          created_at?: string
+          email_contato?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          logo_url?: string | null
+          logradouro?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          razao_social?: string
+          registro_aneel?: string | null
+          registro_bacen?: string | null
+          registro_cvm?: string | null
+          singleton?: boolean
+          telefone?: string | null
+          uf?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          auditor_responsavel_id?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string
+          complemento?: string | null
+          crc_numero?: string | null
+          crc_uf?: string | null
+          created_at?: string
+          email_contato?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          logo_url?: string | null
+          logradouro?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          observacoes?: string | null
+          razao_social?: string
+          registro_aneel?: string | null
+          registro_bacen?: string | null
+          registro_cvm?: string | null
+          singleton?: boolean
+          telefone?: string | null
+          uf?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empresa_auditoria_auditor_responsavel_id_fkey"
+            columns: ["auditor_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "auditores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercicios: {
         Row: {
           ano_exercicio: number
