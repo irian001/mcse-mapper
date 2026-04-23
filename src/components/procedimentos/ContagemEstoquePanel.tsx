@@ -15,8 +15,6 @@ import ContagemEstoqueBlocoDetail from "./ContagemEstoqueBlocoDetail";
 const fmtBRL = (v: number | null | undefined) =>
   (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const fmtNum = (v: number | null | undefined) =>
-  (Number(v) || 0).toLocaleString("pt-BR", { maximumFractionDigits: 4 });
 
 interface Props {
   procedimentoId: string;
@@ -71,19 +69,38 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
       if (ids.length === 0) return [];
       const { data, error } = await (supabase as any)
         .from("procedimento_contagem_estoque_itens")
-        .select("contagem_estoque_bloco_id, diferenca_valor, status_divergencia")
+        .select(
+          "contagem_estoque_bloco_id, diferenca_valor, status_divergencia, quantidade_contada, origem_item, contado"
+        )
         .in("contagem_estoque_bloco_id", ids);
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Mesma heurística usada no detalhe do bloco
+  const isNaoContadoLocal = (i: any) => {
+    if (i?.status_divergencia === "nao_contado") return true;
+    if (i?.contado === false) return true;
+    const q = i?.quantidade_contada;
+    const semContagem = q === null || q === undefined || Number(q) === 0;
+    return semContagem && i?.origem_item === "importado";
+  };
+
   const resumoPorBloco = useMemo(() => {
-    const map: Record<string, { total: number; diferenca: number; comDif: number }> = {};
+    const map: Record<
+      string,
+      { total: number; contados: number; naoContados: number; diferenca: number; comDif: number }
+    > = {};
     for (const i of itens as any[]) {
       const k = i.contagem_estoque_bloco_id;
-      if (!map[k]) map[k] = { total: 0, diferenca: 0, comDif: 0 };
+      if (!map[k]) map[k] = { total: 0, contados: 0, naoContados: 0, diferenca: 0, comDif: 0 };
       map[k].total += 1;
+      if (isNaoContadoLocal(i)) {
+        map[k].naoContados += 1;
+        continue; // não soma em diferença
+      }
+      map[k].contados += 1;
       map[k].diferenca += Number(i.diferenca_valor) || 0;
       if (i.status_divergencia && i.status_divergencia !== "sem_diferenca") map[k].comDif += 1;
     }
@@ -92,14 +109,18 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
 
   const totaisGerais = useMemo(() => {
     let totalItens = 0;
+    let totalContados = 0;
+    let totalNaoContados = 0;
     let totalDif = 0;
     let totalComDif = 0;
     for (const k of Object.keys(resumoPorBloco)) {
       totalItens += resumoPorBloco[k].total;
+      totalContados += resumoPorBloco[k].contados;
+      totalNaoContados += resumoPorBloco[k].naoContados;
       totalDif += resumoPorBloco[k].diferenca;
       totalComDif += resumoPorBloco[k].comDif;
     }
-    return { totalItens, totalDif, totalComDif, blocos: blocos.length };
+    return { totalItens, totalContados, totalNaoContados, totalDif, totalComDif, blocos: blocos.length };
   }, [resumoPorBloco, blocos.length]);
 
   const upsertBloco = useMutation({
@@ -198,11 +219,21 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <SummaryCard label="Blocos" value={String(totaisGerais.blocos)} />
-        <SummaryCard label="Itens contados" value={String(totaisGerais.totalItens)} />
+        <SummaryCard label="Itens importados" value={String(totaisGerais.totalItens)} />
         <SummaryCard
-          label="Itens com divergência"
+          label="Não contados"
+          value={String(totaisGerais.totalNaoContados)}
+          tone={totaisGerais.totalNaoContados > 0 ? "warning" : "neutral"}
+        />
+        <SummaryCard
+          label="Contados"
+          value={String(totaisGerais.totalContados)}
+          tone={totaisGerais.totalContados > 0 ? "positive" : "neutral"}
+        />
+        <SummaryCard
+          label="Com divergência"
           value={String(totaisGerais.totalComDif)}
           tone={totaisGerais.totalComDif > 0 ? "negative" : "neutral"}
         />
@@ -246,7 +277,8 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
               </TableRow>
             )}
             {blocos.map((b: any) => {
-              const r = resumoPorBloco[b.id] || { total: 0, diferenca: 0, comDif: 0 };
+              const r =
+                resumoPorBloco[b.id] || { total: 0, contados: 0, naoContados: 0, diferenca: 0, comDif: 0 };
               return (
                 <TableRow
                   key={b.id}
@@ -258,7 +290,15 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
                   <TableCell className="text-sm">{b.tipo_estoque || "—"}</TableCell>
                   <TableCell className="text-sm">{b.categoria_estoque || "—"}</TableCell>
                   <TableCell className="text-sm">{b.responsavel_local || "—"}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{r.total}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    <span className="text-success">{r.contados}</span>
+                    <span className="text-muted-foreground"> / {r.total}</span>
+                    {r.naoContados > 0 && (
+                      <div className="text-[10px] text-warning-foreground">
+                        {r.naoContados} pendentes
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     {r.comDif > 0 ? (
                       <Badge variant="outline" className="bg-warning/15 text-warning-foreground border-warning/30">
@@ -400,13 +440,15 @@ function SummaryCard({
 }: {
   label: string;
   value: string;
-  tone?: "neutral" | "positive" | "negative";
+  tone?: "neutral" | "positive" | "negative" | "warning";
 }) {
   const toneCls =
     tone === "positive"
       ? "text-success border-success/30"
       : tone === "negative"
       ? "text-destructive border-destructive/30"
+      : tone === "warning"
+      ? "text-warning-foreground border-warning/30"
       : "text-foreground border-border";
   return (
     <div className={`bg-card border rounded-lg p-3 ${toneCls}`}>

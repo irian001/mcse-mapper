@@ -261,10 +261,11 @@ export default function ImportItensEstoqueDialog({ open, onClose, blocoId, bloco
       descricao_item: p.descricao_item,
       unidade_medida: p.unidade_medida || null,
       quantidade_sistema: p.quantidade_sistema,
-      quantidade_contada: 0,
+      quantidade_contada: null,    // importado nasce como NÃO contado
       valor_unitario: p.valor_unitario,
       observacao: p.observacao || null,
       origem_item: "importado",
+      contado: false,              // explícito: ainda não passou pela contagem física
     }));
     for (let i = 0; i < payload.length; i += 200) {
       const batch = payload.slice(i, i + 200);

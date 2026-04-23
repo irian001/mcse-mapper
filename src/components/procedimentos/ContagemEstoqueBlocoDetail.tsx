@@ -15,11 +15,24 @@ const fmtBRL = (v: number | null | undefined) =>
   (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
-  sem_diferenca: { label: "Sem diferença", cls: "bg-muted text-muted-foreground border-border" },
-  sobra: { label: "Sobra", cls: "bg-success/15 text-success border-success/30" },
+  nao_contado: { label: "Não contado", cls: "bg-muted/40 text-muted-foreground border-border" },
+  sem_diferenca: { label: "Sem diferença", cls: "bg-success/15 text-success border-success/30" },
+  sobra: { label: "Sobra", cls: "bg-info/15 text-info border-info/30" },
   falta: { label: "Falta", cls: "bg-destructive/15 text-destructive border-destructive/30" },
   relevante: { label: "Relevante", cls: "bg-warning/15 text-warning-foreground border-warning/30" },
 };
+
+// Helper: determina se um item ainda NÃO foi contado.
+// Compatível com o SQL atual (v1/v2) e com o novo v3 (campo `contado` + status `nao_contado`).
+function isNaoContado(item: any): boolean {
+  if (item?.status_divergencia === "nao_contado") return true;
+  if (item?.contado === false) return true;
+  // Fallback heurístico: item importado sem quantidade contada preenchida
+  const qtdCnt = item?.quantidade_contada;
+  const semContagem = qtdCnt === null || qtdCnt === undefined || Number(qtdCnt) === 0;
+  if (semContagem && item?.origem_item === "importado") return true;
+  return false;
+}
 
 interface NovoItem {
   codigo_item: string;
@@ -73,19 +86,26 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
   });
 
   const totais = useMemo(() => {
-    let sis = 0;
-    let cnt = 0;
-    let dif = 0;
-    let withDif = 0;
+    let sis = 0;        // total sistema (apenas itens contados)
+    let cnt = 0;        // total contado (apenas itens contados)
+    let dif = 0;        // diferença financeira (apenas itens contados)
+    let withDif = 0;    // itens contados com divergência (sobra/falta/relevante)
     let importados = 0;
+    let naoContados = 0;
+    let contados = 0;
     for (const i of itens as any[]) {
+      if (i.origem_item === "importado") importados += 1;
+      if (isNaoContado(i)) {
+        naoContados += 1;
+        continue; // não soma nos totais financeiros
+      }
+      contados += 1;
       sis += Number(i.valor_total_sistema) || 0;
       cnt += Number(i.valor_total_contado) || 0;
       dif += Number(i.diferenca_valor) || 0;
       if (i.status_divergencia && i.status_divergencia !== "sem_diferenca") withDif += 1;
-      if (i.origem_item === "importado") importados += 1;
     }
-    return { sis, cnt, dif, withDif, count: itens.length, importados };
+    return { sis, cnt, dif, withDif, count: itens.length, importados, naoContados, contados };
   }, [itens]);
 
   // Index por código para busca rápida
@@ -116,16 +136,18 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
   const insertItem = useMutation({
     mutationFn: async () => {
       if (!blocoId) throw new Error("Bloco inválido");
-      const payload = {
+      const qtdContadaInformada = novo.quantidade_contada !== "";
+      const payload: any = {
         contagem_estoque_bloco_id: blocoId,
         codigo_item: novo.codigo_item || null,
         descricao_item: novo.descricao_item || null,
         unidade_medida: novo.unidade_medida || null,
         quantidade_sistema: novo.quantidade_sistema === "" ? 0 : Number(novo.quantidade_sistema),
-        quantidade_contada: novo.quantidade_contada === "" ? 0 : Number(novo.quantidade_contada),
+        quantidade_contada: qtdContadaInformada ? Number(novo.quantidade_contada) : null,
         valor_unitario: novo.valor_unitario === "" ? 0 : Number(novo.valor_unitario),
         observacao: novo.observacao || null,
         origem_item: "manual",
+        contado: qtdContadaInformada,
       };
       const { error } = await (supabase as any)
         .from("procedimento_contagem_estoque_itens")
@@ -184,7 +206,7 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
     updateItem.mutate(
       {
         id: itemEncontrado.id,
-        patch: { quantidade_contada: Number(qtdContadaRapida) },
+        patch: { quantidade_contada: Number(qtdContadaRapida), contado: true },
       },
       {
         onSuccess: () => {
@@ -219,11 +241,17 @@ export default function ContagemEstoqueBlocoDetail({ bloco, open, onClose }: Pro
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <DialogTitle className="text-base">Itens do Bloco — {blocoLabel}</DialogTitle>
-                <div className="flex flex-wrap gap-2 mt-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
                   <span>{totais.count} itens</span>
                   {totais.importados > 0 && <span>· {totais.importados} importados</span>}
-                  <span>· Total Sistema: <span className="font-mono text-foreground">{fmtBRL(totais.sis)}</span></span>
-                  <span>· Total Contado: <span className="font-mono text-foreground">{fmtBRL(totais.cnt)}</span></span>
+                  <span className={totais.naoContados > 0 ? "text-warning-foreground" : ""}>
+                    · {totais.naoContados} não contados
+                  </span>
+                  <span className="text-success">
+                    · {totais.contados} contados
+                  </span>
+                  <span>· Sistema (contados): <span className="font-mono text-foreground">{fmtBRL(totais.sis)}</span></span>
+                  <span>· Contado: <span className="font-mono text-foreground">{fmtBRL(totais.cnt)}</span></span>
                   <span className={totais.dif === 0 ? "" : totais.dif > 0 ? "text-success" : "text-destructive"}>
                     · Diferença: <span className="font-mono">{fmtBRL(totais.dif)}</span>
                   </span>
@@ -471,23 +499,31 @@ function ItemRow({
 
   const dirty =
     Number(edit.quantidade_sistema || 0) !== Number(item.quantidade_sistema || 0) ||
-    Number(edit.quantidade_contada || 0) !== Number(item.quantidade_contada || 0) ||
+    String(edit.quantidade_contada) !== String(item.quantidade_contada ?? "") ||
     Number(edit.valor_unitario || 0) !== Number(item.valor_unitario || 0);
 
-  const status = STATUS_LABELS[item.status_divergencia] || STATUS_LABELS.sem_diferenca;
-  const dif = Number(item.diferenca_valor) || 0;
-  const difQ = Number(item.diferenca_quantidade) || 0;
+  const naoContado = isNaoContado(item);
+  const status = naoContado
+    ? STATUS_LABELS.nao_contado
+    : STATUS_LABELS[item.status_divergencia] || STATUS_LABELS.sem_diferenca;
+  const dif = item.diferenca_valor === null || item.diferenca_valor === undefined ? null : Number(item.diferenca_valor);
+  const difQ =
+    item.diferenca_quantidade === null || item.diferenca_quantidade === undefined
+      ? null
+      : Number(item.diferenca_quantidade);
 
   const handleSave = () => {
+    const qtdContadaInformada = edit.quantidade_contada !== "";
     onSave({
       quantidade_sistema: Number(edit.quantidade_sistema || 0),
-      quantidade_contada: Number(edit.quantidade_contada || 0),
+      quantidade_contada: qtdContadaInformada ? Number(edit.quantidade_contada) : null,
       valor_unitario: Number(edit.valor_unitario || 0),
+      contado: qtdContadaInformada,
     });
   };
 
   return (
-    <TableRow>
+    <TableRow className={naoContado ? "bg-muted/20" : ""}>
       <TableCell className="text-sm font-mono">
         <div className="flex items-center gap-1">
           {item.codigo_item || "—"}
@@ -517,22 +553,25 @@ function ItemRow({
           />
         </div>
       </TableCell>
-      <TableCell className="text-right bg-primary/5">
+      <TableCell className={`text-right ${naoContado ? "bg-warning/5" : "bg-primary/5"}`}>
         <Input
           type="number"
           step="0.0001"
-          className="h-8 text-right font-mono text-xs font-semibold"
+          className={`h-8 text-right font-mono text-xs font-semibold ${
+            naoContado ? "border-warning/40 placeholder:text-warning-foreground/60" : ""
+          }`}
           value={edit.quantidade_contada}
           onChange={(e) => setEdit({ ...edit, quantidade_contada: e.target.value })}
           onBlur={() => dirty && handleSave()}
+          placeholder={naoContado ? "Pendente" : ""}
         />
       </TableCell>
       <TableCell
         className={`text-right font-mono text-sm ${
-          difQ === 0 ? "" : difQ > 0 ? "text-success" : "text-destructive"
+          difQ === null ? "text-muted-foreground/50" : difQ === 0 ? "" : difQ > 0 ? "text-success" : "text-destructive"
         }`}
       >
-        {difQ.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}
+        {difQ === null ? "—" : difQ.toLocaleString("pt-BR", { maximumFractionDigits: 4 })}
       </TableCell>
       <TableCell className="text-right">
         <Input
@@ -546,10 +585,10 @@ function ItemRow({
       </TableCell>
       <TableCell
         className={`text-right font-mono text-sm ${
-          dif === 0 ? "" : dif > 0 ? "text-success" : "text-destructive"
+          dif === null ? "text-muted-foreground/50" : dif === 0 ? "" : dif > 0 ? "text-success" : "text-destructive"
         }`}
       >
-        {fmtBRL(dif)}
+        {dif === null ? "—" : fmtBRL(dif)}
       </TableCell>
       <TableCell>
         <Badge variant="outline" className={status.cls}>
