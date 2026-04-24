@@ -107,7 +107,12 @@ export default function RegrasPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!form.conta_mcse_id) throw new Error("Selecione um grupo contábil");
-      const payload = {
+      // Coerência: a conta selecionada precisa pertencer à estrutura ativa.
+      if (estruturaId) {
+        const contaCoerente = contas.find((c: any) => c.id === form.conta_mcse_id);
+        if (!contaCoerente) throw new Error("A conta selecionada não pertence à estrutura ativa.");
+      }
+      const payload: any = {
         conta_mcse_id: form.conta_mcse_id, codigo_mcse: form.codigo_mcse || null,
         descricao_mcse: form.descricao_mcse || null, conta_critica: form.conta_critica,
         exige_documento_obrigatorio: form.exige_documento_obrigatorio,
@@ -123,6 +128,7 @@ export default function RegrasPage() {
         const { error } = await supabase.from("mcse_regras_conta").update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
+        if (estruturaId) payload.estrutura_id = estruturaId;
         const { error } = await supabase.from("mcse_regras_conta").insert(payload);
         if (error) throw error;
       }
@@ -151,7 +157,25 @@ export default function RegrasPage() {
 
   return (
     <div>
-      <PageHeader title="Regras de Auditoria" description="Regras e documentos exigidos por grupo contábil" />
+      <PageHeader
+        title="Regras de Auditoria"
+        description={
+          estruturaAtiva
+            ? `Regras e documentos exigidos por conta da estrutura ${estruturaAtiva.codigo}`
+            : "Regras e documentos exigidos por grupo contábil"
+        }
+        actions={
+          hasEstruturas ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Estrutura:</span>
+              <EstruturaSelector hideIcon />
+              {estruturaAtiva && (
+                <Badge variant="outline" className="text-xs font-mono">{estruturaAtiva.codigo}</Badge>
+              )}
+            </div>
+          ) : undefined
+        }
+      />
 
       <Tabs defaultValue="regras" className="space-y-4">
         <TabsList>
