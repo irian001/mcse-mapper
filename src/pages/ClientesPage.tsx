@@ -24,6 +24,7 @@ interface ClienteForm {
   nome_fantasia: string;
   cnpj: string;
   status: StatusCliente;
+  segmento_id: string | null;
   cep: string;
   logradouro: string;
   numero: string;
@@ -36,7 +37,7 @@ interface ClienteForm {
 }
 
 const emptyClienteForm: ClienteForm = {
-  razao_social: "", nome_fantasia: "", cnpj: "", status: "ativo",
+  razao_social: "", nome_fantasia: "", cnpj: "", status: "ativo", segmento_id: null,
   cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "",
   nome_contador: "", email_contato: "",
 };
@@ -48,6 +49,7 @@ const UF_LIST = [
 
 export default function ClientesPage() {
   const qc = useQueryClient();
+  const { data: segmentos = [] } = useSegmentos();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: async () => { const { data } = await fetchClientes(); return data || []; } });
 
   const [clienteDialog, setClienteDialog] = useState(false);
@@ -149,6 +151,7 @@ export default function ClientesPage() {
     setEditCliente(c);
     setClienteForm({
       razao_social: c.razao_social, nome_fantasia: c.nome_fantasia || "", cnpj: c.cnpj, status: c.status,
+      segmento_id: c.segmento_id || null,
       cep: c.cep || "", logradouro: c.logradouro || "", numero: c.numero || "", complemento: c.complemento || "",
       bairro: c.bairro || "", cidade: c.cidade || "", uf: c.uf || "",
       nome_contador: c.nome_contador || "", email_contato: c.email_contato || "",
