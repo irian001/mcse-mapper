@@ -4,6 +4,8 @@ import { supabase } from "@/lib/supabase-client";
 import { fetchGrupos, fetchSubgrupos, fetchContas } from "@/lib/supabase-queries";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
+import EstruturaSelector from "@/components/EstruturaSelector";
+import { useEstruturaAtiva } from "@/hooks/useEstruturaAtiva";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Upload, Download } from "lucide-react";
 import ImportMcseDialog from "@/components/mcse/ImportMcseDialog";
@@ -32,8 +35,18 @@ export default function McsePage() {
   const [tab, setTab] = useState("grupos");
   const [importTarget, setImportTarget] = useState<"grupos" | "subgrupos" | "contas" | null>(null);
 
+  // Estrutura ativa (Fase 2): MCSE por padrão; preparado para COSIF e outras.
+  const { estruturaId, estruturaAtiva, hasEstruturas } = useEstruturaAtiva();
+
+  // Helper: anexa estrutura_id ao payload apenas se houver estrutura ativa.
+  const withEstrutura = <T extends Record<string, any>>(payload: T): T =>
+    estruturaId ? ({ ...payload, estrutura_id: estruturaId } as T) : payload;
+
   // Grupos
-  const { data: grupos = [] } = useQuery({ queryKey: ["mcse_grupos"], queryFn: async () => { const { data } = await fetchGrupos(); return data || []; } });
+  const { data: grupos = [] } = useQuery({
+    queryKey: ["mcse_grupos", estruturaId || "legacy"],
+    queryFn: async () => { const { data } = await fetchGrupos(estruturaId); return data || []; },
+  });
   const [grupoDialog, setGrupoDialog] = useState(false);
   const [editGrupo, setEditGrupo] = useState<any>(null);
   const [grupoForm, setGrupoForm] = useState({ codigo_grupo: "", descricao_grupo: "", ordem: 0 });
@@ -43,7 +56,7 @@ export default function McsePage() {
       if (editGrupo) {
         await supabase.from("mcse_grupos").update(grupoForm).eq("id", editGrupo.id);
       } else {
-        await supabase.from("mcse_grupos").insert(grupoForm);
+        await supabase.from("mcse_grupos").insert(withEstrutura(grupoForm) as any);
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["mcse_grupos"] }); setGrupoDialog(false); toast.success("Grupo salvo!"); }
@@ -51,25 +64,37 @@ export default function McsePage() {
 
   // Subgrupos
   const [filtroGrupo, setFiltroGrupo] = useState<string>("");
-  const { data: subgrupos = [] } = useQuery({ queryKey: ["mcse_subgrupos", filtroGrupo], queryFn: async () => { const { data } = await fetchSubgrupos(filtroGrupo || undefined); return data || []; } });
+  const { data: subgrupos = [] } = useQuery({
+    queryKey: ["mcse_subgrupos", filtroGrupo, estruturaId || "legacy"],
+    queryFn: async () => { const { data } = await fetchSubgrupos(filtroGrupo || undefined, estruturaId); return data || []; },
+  });
   const [subgrupoDialog, setSubgrupoDialog] = useState(false);
   const [editSubgrupo, setEditSubgrupo] = useState<any>(null);
   const [subgrupoForm, setSubgrupoForm] = useState({ grupo_id: "", codigo_subgrupo: "", descricao_subgrupo: "", ordem: 0 });
 
   const saveSubgrupo = useMutation({
     mutationFn: async () => {
+      // Coerência: subgrupo deve pertencer a grupo da mesma estrutura.
+      if (estruturaId && subgrupoForm.grupo_id) {
+        const grupoCoerente = grupos.find((g: any) => g.id === subgrupoForm.grupo_id);
+        if (!grupoCoerente) throw new Error("Selecione um grupo da estrutura ativa.");
+      }
       if (editSubgrupo) {
         await supabase.from("mcse_subgrupos").update(subgrupoForm).eq("id", editSubgrupo.id);
       } else {
-        await supabase.from("mcse_subgrupos").insert(subgrupoForm);
+        await supabase.from("mcse_subgrupos").insert(withEstrutura(subgrupoForm) as any);
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mcse_subgrupos"] }); setSubgrupoDialog(false); toast.success("Subgrupo salvo!"); }
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mcse_subgrupos"] }); setSubgrupoDialog(false); toast.success("Subgrupo salvo!"); },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar subgrupo"),
   });
 
   // Contas
   const [filtroGrupoConta, setFiltroGrupoConta] = useState<string>("");
-  const { data: contas = [] } = useQuery({ queryKey: ["mcse_contas", filtroGrupoConta], queryFn: async () => { const { data } = await fetchContas(filtroGrupoConta || undefined); return data || []; } });
+  const { data: contas = [] } = useQuery({
+    queryKey: ["mcse_contas", filtroGrupoConta, estruturaId || "legacy"],
+    queryFn: async () => { const { data } = await fetchContas(filtroGrupoConta || undefined, undefined, estruturaId); return data || []; },
+  });
   const [contaDialog, setContaDialog] = useState(false);
   const [editConta, setEditConta] = useState<any>(null);
   const [contaForm, setContaForm] = useState({
@@ -79,10 +104,10 @@ export default function McsePage() {
 
   // Subgrupos filtered by selected grupo in conta form
   const { data: subgruposForConta = [] } = useQuery({
-    queryKey: ["mcse_subgrupos_for_conta", contaForm.grupo_id],
+    queryKey: ["mcse_subgrupos_for_conta", contaForm.grupo_id, estruturaId || "legacy"],
     queryFn: async () => {
       if (!contaForm.grupo_id) return [];
-      const { data } = await fetchSubgrupos(contaForm.grupo_id);
+      const { data } = await fetchSubgrupos(contaForm.grupo_id, estruturaId);
       return data || [];
     },
     enabled: !!contaForm.grupo_id,
@@ -90,14 +115,20 @@ export default function McsePage() {
 
   const saveConta = useMutation({
     mutationFn: async () => {
+      // Coerência: conta deve pertencer a grupo/subgrupo da mesma estrutura.
+      if (estruturaId && contaForm.grupo_id) {
+        const grupoCoerente = grupos.find((g: any) => g.id === contaForm.grupo_id);
+        if (!grupoCoerente) throw new Error("Grupo selecionado não pertence à estrutura ativa.");
+      }
       const payload = { ...contaForm, subgrupo_id: contaForm.subgrupo_id || null };
       if (editConta) {
         await supabase.from("mcse_contas").update(payload).eq("id", editConta.id);
       } else {
-        await supabase.from("mcse_contas").insert(payload);
+        await supabase.from("mcse_contas").insert(withEstrutura(payload) as any);
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mcse_contas"] }); setContaDialog(false); toast.success("Conta salva!"); }
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["mcse_contas"] }); setContaDialog(false); toast.success("Conta salva!"); },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar conta"),
   });
 
   const openEditGrupo = (g: any) => {
