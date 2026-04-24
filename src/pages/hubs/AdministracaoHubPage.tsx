@@ -4,7 +4,7 @@ import HubGrid, { type HubItem } from "@/components/HubGrid";
 
 const items: HubItem[] = [
   { to: "/empresa-auditoria", label: "Empresa de Auditoria", description: "Dados cadastrais e registros profissionais da empresa.", icon: Building2 },
-  { to: "/mcse", label: "Estruturas de Referência", description: "Base MCSE: grupos, subgrupos e contas.", icon: Database },
+  { to: "/mcse", label: "Estruturas de Auditoria", description: "Estruturas de referência por segmento (MCSE, COSIF, etc.).", icon: Database },
   { to: "/plano-contas", label: "Plano de Contas", description: "Plano de contas dos clientes.", icon: List },
   { to: "/mapeamento", label: "Mapeamento de Contas", description: "Vínculo entre contas do cliente e MCSE.", icon: GitCompare },
   { to: "/regras", label: "Regras de Auditoria", description: "Regras documentais, instruções e ERP.", icon: ShieldCheck },

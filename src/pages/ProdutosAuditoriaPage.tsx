@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Search, Package } from "lucide-react";
 import { toast } from "sonner";
+import { useSegmentos } from "@/hooks/useSegmentos";
 
 const CATEGORIAS = [
   { value: "auditoria_contabil", label: "Auditoria Contábil" },
@@ -83,13 +84,14 @@ const emptyForm = {
 
 export default function ProdutosAuditoriaPage() {
   const qc = useQueryClient();
+  const { data: segmentos = [] } = useSegmentos();
   const [search, setSearch] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("all");
   const [filtroSegmento, setFiltroSegmento] = useState("all");
   const [filtroAtivo, setFiltroAtivo] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<typeof emptyForm & { segmento_id?: string | null }>(emptyForm);
 
   const { data: produtos = [], isLoading } = useQuery({
     queryKey: ["produtos-auditoria"],
@@ -105,7 +107,7 @@ export default function ProdutosAuditoriaPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: typeof form & { id?: string }) => {
-      const payload = {
+      const payload: any = {
         codigo_produto: values.codigo_produto.trim(),
         nome_produto: values.nome_produto.trim(),
         descricao: values.descricao?.trim() || null,
@@ -120,6 +122,10 @@ export default function ProdutosAuditoriaPage() {
         exige_documentacao: values.exige_documentacao,
         ativo: values.ativo,
       };
+      // Inclui segmento_id apenas quando a tabela `segmentos` já existe no banco
+      if (segmentos.length > 0 && values.segmento_id !== undefined) {
+        payload.segmento_id = values.segmento_id || null;
+      }
 
       if (values.id) {
         const { error } = await supabase.from("produtos_auditoria").update(payload).eq("id", values.id);
@@ -138,7 +144,7 @@ export default function ProdutosAuditoriaPage() {
   });
 
   const openNew = () => { setEditingId(null); setForm(emptyForm); setDialogOpen(true); };
-  const openEdit = (p: Produto) => {
+  const openEdit = (p: Produto & { segmento_id?: string | null }) => {
     setEditingId(p.id);
     setForm({
       codigo_produto: p.codigo_produto,
@@ -154,6 +160,7 @@ export default function ProdutosAuditoriaPage() {
       exige_balancete: p.exige_balancete,
       exige_documentacao: p.exige_documentacao,
       ativo: p.ativo,
+      segmento_id: p.segmento_id ?? null,
     });
     setDialogOpen(true);
   };
@@ -292,6 +299,25 @@ export default function ProdutosAuditoriaPage() {
                 </Select>
               </div>
             </div>
+
+            {segmentos.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Segmento (estrutura nova)</Label>
+                <Select
+                  value={form.segmento_id || "none"}
+                  onValueChange={(v) => setForm({ ...form, segmento_id: v === "none" ? null : v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Vincular a um segmento" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— não definido —</SelectItem>
+                    {segmentos.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Vínculo com a nova camada de segmentos (convive com o segmento legado acima).</p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Descrição</Label>

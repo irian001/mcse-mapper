@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import { fetchClientes, fetchExercicios, fetchParametros } from "@/lib/supabase-queries";
+import { useSegmentos } from "@/hooks/useSegmentos";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface ClienteForm {
   nome_fantasia: string;
   cnpj: string;
   status: StatusCliente;
+  segmento_id: string | null;
   cep: string;
   logradouro: string;
   numero: string;
@@ -35,7 +37,7 @@ interface ClienteForm {
 }
 
 const emptyClienteForm: ClienteForm = {
-  razao_social: "", nome_fantasia: "", cnpj: "", status: "ativo",
+  razao_social: "", nome_fantasia: "", cnpj: "", status: "ativo", segmento_id: null,
   cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "",
   nome_contador: "", email_contato: "",
 };
@@ -47,6 +49,7 @@ const UF_LIST = [
 
 export default function ClientesPage() {
   const qc = useQueryClient();
+  const { data: segmentos = [] } = useSegmentos();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: async () => { const { data } = await fetchClientes(); return data || []; } });
 
   const [clienteDialog, setClienteDialog] = useState(false);
@@ -101,7 +104,10 @@ export default function ClientesPage() {
 
   const saveCliente = useMutation({
     mutationFn: async () => {
-      const payload = { ...clienteForm };
+      // Cast: a coluna `segmento_id` ainda não existe nos types até a migration
+      // SQL ser executada no Supabase. O cast preserva a compatibilidade.
+      const payload: any = { ...clienteForm };
+      if (segmentos.length === 0) delete payload.segmento_id;
       if (editCliente) {
         await supabase.from("clientes").update(payload).eq("id", editCliente.id);
       } else {
@@ -148,6 +154,7 @@ export default function ClientesPage() {
     setEditCliente(c);
     setClienteForm({
       razao_social: c.razao_social, nome_fantasia: c.nome_fantasia || "", cnpj: c.cnpj, status: c.status,
+      segmento_id: c.segmento_id || null,
       cep: c.cep || "", logradouro: c.logradouro || "", numero: c.numero || "", complemento: c.complemento || "",
       bairro: c.bairro || "", cidade: c.cidade || "", uf: c.uf || "",
       nome_contador: c.nome_contador || "", email_contato: c.email_contato || "",
@@ -309,6 +316,23 @@ export default function ClientesPage() {
                   </Select>
                 </div>
               </div>
+              {segmentos.length > 0 && (
+                <div>
+                  <Label>Segmento</Label>
+                  <Select
+                    value={clienteForm.segmento_id || "none"}
+                    onValueChange={v => setClienteForm(f => ({ ...f, segmento_id: v === "none" ? null : v }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o segmento" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— não definido —</SelectItem>
+                      {segmentos.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Endereço */}
