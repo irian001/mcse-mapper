@@ -41,6 +41,27 @@ export function useEstruturaAtiva() {
     return localStorage.getItem(STORAGE_KEY);
   });
 
+  // Sincroniza todas as instâncias do hook (mesma aba ou outras abas).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<string | null>).detail;
+      const next = detail !== undefined ? detail : localStorage.getItem(STORAGE_KEY);
+      setEstruturaIdState((prev) => (prev === next ? prev : next));
+    };
+    const storageHandler = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        setEstruturaIdState(e.newValue);
+      }
+    };
+    window.addEventListener(CHANGE_EVENT, handler);
+    window.addEventListener("storage", storageHandler);
+    return () => {
+      window.removeEventListener(CHANGE_EVENT, handler);
+      window.removeEventListener("storage", storageHandler);
+    };
+  }, []);
+
   // Auto-selecionar MCSE (ou primeira disponível) quando lista carregar e
   // não houver seleção válida persistida.
   useEffect(() => {
@@ -51,6 +72,7 @@ export function useEstruturaAtiva() {
     const fallback = mcse?.id || estruturas[0].id;
     setEstruturaIdState(fallback);
     try { localStorage.setItem(STORAGE_KEY, fallback); } catch {}
+    try { window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: fallback })); } catch {}
   }, [estruturas, estruturaId]);
 
   const setEstruturaId = useCallback((id: string | null) => {
@@ -59,6 +81,7 @@ export function useEstruturaAtiva() {
       if (id) localStorage.setItem(STORAGE_KEY, id);
       else localStorage.removeItem(STORAGE_KEY);
     } catch {}
+    try { window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: id })); } catch {}
   }, []);
 
   const estruturaAtiva = useMemo(
