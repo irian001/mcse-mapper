@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import { fetchContas, fetchRegras } from "@/lib/supabase-queries";
 import PageHeader from "@/components/PageHeader";
+import EstruturaSelector from "@/components/EstruturaSelector";
+import { useEstruturaAtiva } from "@/hooks/useEstruturaAtiva";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +59,7 @@ const emptyForm = {
 
 export default function RegrasPage() {
   const qc = useQueryClient();
+  const { estruturaId, estruturaAtiva, hasEstruturas } = useEstruturaAtiva();
   const [editing, setEditing] = useState<RegraRow | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -66,13 +69,13 @@ export default function RegrasPage() {
   const [filterAtivo, setFilterAtivo] = useState<string>("all");
 
   const { data: contas = [] } = useQuery({
-    queryKey: ["mcse_contas_all"],
-    queryFn: async () => { const { data } = await fetchContas(); return data || []; },
+    queryKey: ["mcse_contas_all", estruturaId || "legacy"],
+    queryFn: async () => { const { data } = await fetchContas(undefined, undefined, estruturaId); return data || []; },
   });
 
   const { data: regras = [], isLoading } = useQuery({
-    queryKey: ["regras_all"],
-    queryFn: async () => { const { data } = await fetchRegras(); return (data || []) as RegraRow[]; },
+    queryKey: ["regras_all", estruturaId || "legacy"],
+    queryFn: async () => { const { data } = await fetchRegras(undefined, estruturaId); return (data || []) as RegraRow[]; },
   });
 
   const contasComRegra = new Set(regras.map((r) => r.conta_mcse_id));
