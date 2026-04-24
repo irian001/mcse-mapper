@@ -316,6 +316,23 @@ export default function ClientesPage() {
                   </Select>
                 </div>
               </div>
+              {segmentos.length > 0 && (
+                <div>
+                  <Label>Segmento</Label>
+                  <Select
+                    value={clienteForm.segmento_id || "none"}
+                    onValueChange={v => setClienteForm(f => ({ ...f, segmento_id: v === "none" ? null : v }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o segmento" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— não definido —</SelectItem>
+                      {segmentos.map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Endereço */}
