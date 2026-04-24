@@ -14,6 +14,7 @@ import type { EstruturaAuditoria } from "@/hooks/useSegmentos";
  */
 
 const STORAGE_KEY = "estrutura-ativa-id";
+const CHANGE_EVENT = "estrutura-ativa-changed";
 
 export function useEstruturasDisponiveis() {
   return useQuery({
