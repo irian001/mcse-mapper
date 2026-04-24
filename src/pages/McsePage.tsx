@@ -173,7 +173,25 @@ export default function McsePage() {
 
   return (
     <div>
-      <PageHeader title="Estruturas de Referência" description="Estrutura contábil de referência (grupos, subgrupos e contas)" />
+      <PageHeader
+        title="Estruturas de Referência"
+        description={
+          estruturaAtiva
+            ? `Grupos, subgrupos e contas da estrutura ${estruturaAtiva.codigo} — ${estruturaAtiva.nome}`
+            : "Estrutura contábil de referência (grupos, subgrupos e contas)"
+        }
+        actions={
+          hasEstruturas ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Estrutura:</span>
+              <EstruturaSelector hideIcon />
+              {estruturaAtiva && (
+                <Badge variant="outline" className="text-xs font-mono">{estruturaAtiva.codigo}</Badge>
+              )}
+            </div>
+          ) : undefined
+        }
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="grupos">Grupos</TabsTrigger>
