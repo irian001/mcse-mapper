@@ -7,9 +7,12 @@ import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import RiskBadge from "@/components/RiskBadge";
 import SelectMcseModal from "@/components/mapeamento/SelectMcseModal";
+import EstruturaSelector from "@/components/EstruturaSelector";
+import { useEstruturaAtiva } from "@/hooks/useEstruturaAtiva";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -22,8 +25,12 @@ type TipoContaFilter = "analitica" | "sintetica" | "todas";
 
 export default function MapeamentoPage() {
   const qc = useQueryClient();
+  const { estruturaId, estruturaAtiva, hasEstruturas } = useEstruturaAtiva();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: async () => { const { data } = await fetchClientes(); return data || []; } });
-  const { data: mcseContas = [] } = useQuery({ queryKey: ["mcse_contas_all"], queryFn: async () => { const { data } = await fetchContas(); return data || []; } });
+  const { data: mcseContas = [] } = useQuery({
+    queryKey: ["mcse_contas_all", estruturaId || "legacy"],
+    queryFn: async () => { const { data } = await fetchContas(undefined, undefined, estruturaId); return data || []; },
+  });
 
   const [selectedCliente, setSelectedCliente] = useState("");
   const [search, setSearch] = useState("");
@@ -264,7 +271,25 @@ export default function MapeamentoPage() {
 
   return (
     <div>
-      <PageHeader title="Mapeamento de Contas" description="Vincular contas do cliente à estrutura de referência" />
+      <PageHeader
+        title="Mapeamento de Contas"
+        description={
+          estruturaAtiva
+            ? `Vincular contas do cliente à estrutura ${estruturaAtiva.codigo} — ${estruturaAtiva.nome}`
+            : "Vincular contas do cliente à estrutura de referência"
+        }
+        actions={
+          hasEstruturas ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Estrutura:</span>
+              <EstruturaSelector hideIcon />
+              {estruturaAtiva && (
+                <Badge variant="outline" className="text-xs font-mono">{estruturaAtiva.codigo}</Badge>
+              )}
+            </div>
+          ) : undefined
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
