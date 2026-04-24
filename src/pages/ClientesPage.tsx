@@ -104,7 +104,10 @@ export default function ClientesPage() {
 
   const saveCliente = useMutation({
     mutationFn: async () => {
-      const payload = { ...clienteForm };
+      // Cast: a coluna `segmento_id` ainda não existe nos types até a migration
+      // SQL ser executada no Supabase. O cast preserva a compatibilidade.
+      const payload: any = { ...clienteForm };
+      if (segmentos.length === 0) delete payload.segmento_id;
       if (editCliente) {
         await supabase.from("clientes").update(payload).eq("id", editCliente.id);
       } else {
