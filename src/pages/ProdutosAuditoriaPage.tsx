@@ -300,6 +300,25 @@ export default function ProdutosAuditoriaPage() {
               </div>
             </div>
 
+            {segmentos.length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Segmento (estrutura nova)</Label>
+                <Select
+                  value={form.segmento_id || "none"}
+                  onValueChange={(v) => setForm({ ...form, segmento_id: v === "none" ? null : v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Vincular a um segmento" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— não definido —</SelectItem>
+                    {segmentos.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Vínculo com a nova camada de segmentos (convive com o segmento legado acima).</p>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label>Descrição</Label>
               <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2} />
