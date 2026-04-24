@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchContas } from "@/lib/supabase-queries";
+import { useEstruturaAtiva } from "@/hooks/useEstruturaAtiva";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,11 +29,12 @@ interface SelectMcseModalProps {
 export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm, mappingInfo }: SelectMcseModalProps) {
   const [search, setSearch] = useState("");
   const [selectedMcse, setSelectedMcse] = useState<any>(null);
+  const { estruturaId } = useEstruturaAtiva();
 
   const { data: mcseContas = [] } = useQuery({
-    queryKey: ["mcse_contas_all"],
+    queryKey: ["mcse_contas_all", estruturaId || "legacy"],
     queryFn: async () => {
-      const { data } = await fetchContas();
+      const { data } = await fetchContas(undefined, undefined, estruturaId);
       return data || [];
     },
   });

@@ -1,25 +1,48 @@
 import { supabase } from "@/lib/supabase-client";
 
-// MCSE Grupos
-export const fetchGrupos = () =>
-  supabase.from("mcse_grupos").select("*").order("ordem");
+/**
+ * Filtros por Estrutura de Auditoria (Fase 2 multi-estruturas).
+ *
+ * As tabelas `mcse_*` agora possuem `estrutura_id` (FK para
+ * `estruturas_auditoria`). Quando o caller informar `estruturaId`, a query
+ * filtra por esse vínculo. Se o argumento for omitido (modo legado), o filtro
+ * é desligado e o comportamento permanece idêntico ao anterior.
+ *
+ * Caso a coluna `estrutura_id` ainda não exista no banco (SQL Fase 1 pendente),
+ * o filtro é silenciosamente ignorado pelo PostgREST somente se enviado;
+ * por isso, os helpers que filtram por estrutura aplicam o `.eq` apenas quando
+ * recebem um id real.
+ */
 
-export const fetchSubgrupos = (grupoId?: string) => {
+// MCSE Grupos
+export const fetchGrupos = (estruturaId?: string | null) => {
+  let q = supabase.from("mcse_grupos").select("*").order("ordem");
+  if (estruturaId) q = (q as any).eq("estrutura_id", estruturaId);
+  return q;
+};
+
+export const fetchSubgrupos = (grupoId?: string, estruturaId?: string | null) => {
   let q = supabase.from("mcse_subgrupos").select("*, mcse_grupos(descricao_grupo)").order("ordem");
   if (grupoId && grupoId !== "all") q = q.eq("grupo_id", grupoId);
+  if (estruturaId) q = (q as any).eq("estrutura_id", estruturaId);
   return q;
 };
 
-export const fetchContas = (grupoId?: string, subgrupoId?: string) => {
-  let q = supabase.from("mcse_contas").select("*, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo)").order("codigo_mcse");
+export const fetchContas = (grupoId?: string, subgrupoId?: string, estruturaId?: string | null) => {
+  let q = supabase
+    .from("mcse_contas")
+    .select("*, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo)")
+    .order("codigo_mcse");
   if (grupoId && grupoId !== "all") q = q.eq("grupo_id", grupoId);
   if (subgrupoId && subgrupoId !== "all") q = q.eq("subgrupo_id", subgrupoId);
+  if (estruturaId) q = (q as any).eq("estrutura_id", estruturaId);
   return q;
 };
 
-export const fetchRegras = (contaId?: string) => {
+export const fetchRegras = (contaId?: string, estruturaId?: string | null) => {
   let q = supabase.from("mcse_regras_conta").select("*").order("codigo_mcse");
   if (contaId) q = q.eq("conta_mcse_id", contaId);
+  if (estruturaId) q = (q as any).eq("estrutura_id", estruturaId);
   return q;
 };
 
