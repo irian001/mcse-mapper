@@ -41,7 +41,7 @@ export default function MapeamentoPage() {
     queryFn: async () => { const { data } = await fetchContas(undefined, undefined, estruturaOperacionalId); return data || []; },
   });
 
-  const [selectedCliente, setSelectedCliente] = useState("");
+  // selectedCliente declarado acima (necessário para useEstruturaPorCliente)
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StatusFilter>("todos");
   const [filterGrupo, setFilterGrupo] = useState("all");
