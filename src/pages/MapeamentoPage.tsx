@@ -397,8 +397,8 @@ export default function MapeamentoPage() {
                   <TableHead className="w-14">GRAU</TableHead>
                   <TableHead className="w-24">Risco</TableHead>
                   <TableHead className="w-36">Sugestão</TableHead>
-                  <TableHead className="w-72">Conta MCSE</TableHead>
-                  <TableHead className="w-36">Grupo MCSE</TableHead>
+                  <TableHead className="w-72">Conta da Estrutura</TableHead>
+                  <TableHead className="w-36">Grupo</TableHead>
                   <TableHead className="w-24">Status</TableHead>
                   <TableHead className="w-24">Ações</TableHead>
                 </TableRow>
