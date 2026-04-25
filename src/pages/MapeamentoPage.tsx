@@ -7,12 +7,11 @@ import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import RiskBadge from "@/components/RiskBadge";
 import SelectMcseModal from "@/components/mapeamento/SelectMcseModal";
-import EstruturaSelector from "@/components/EstruturaSelector";
-import { useEstruturaAtiva } from "@/hooks/useEstruturaAtiva";
+import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
+import { useEstruturaPorCliente } from "@/hooks/useEstruturaPorCliente";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -25,14 +24,24 @@ type TipoContaFilter = "analitica" | "sintetica" | "todas";
 
 export default function MapeamentoPage() {
   const qc = useQueryClient();
-  const { estruturaId, estruturaAtiva, hasEstruturas } = useEstruturaAtiva();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: async () => { const { data } = await fetchClientes(); return data || []; } });
-  const { data: mcseContas = [] } = useQuery({
-    queryKey: ["mcse_contas_all", estruturaId || "legacy"],
-    queryFn: async () => { const { data } = await fetchContas(undefined, undefined, estruturaId); return data || []; },
-  });
 
   const [selectedCliente, setSelectedCliente] = useState("");
+
+  // FASE 3B.1 — Estrutura derivada do cliente (em vez do seletor administrativo).
+  // Fluxo: cliente → segmento → estrutura aplicável (com fallback automático para MCSE).
+  const { data: contextoEstrutura } = useEstruturaPorCliente(selectedCliente || null);
+  const estruturaOperacionalId = contextoEstrutura?.estrutura?.id ?? null;
+  const estruturaOperacionalLabel = contextoEstrutura?.estrutura
+    ? `${contextoEstrutura.estrutura.codigo} — ${contextoEstrutura.estrutura.nome}`
+    : null;
+
+  const { data: mcseContas = [] } = useQuery({
+    queryKey: ["mcse_contas_all", "operacional", estruturaOperacionalId || "legacy"],
+    queryFn: async () => { const { data } = await fetchContas(undefined, undefined, estruturaOperacionalId); return data || []; },
+  });
+
+  // selectedCliente declarado acima (necessário para useEstruturaPorCliente)
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StatusFilter>("todos");
   const [filterGrupo, setFilterGrupo] = useState("all");
@@ -272,25 +281,20 @@ export default function MapeamentoPage() {
   return (
     <div>
       <PageHeader
-        title="Mapeamento de Contas"
+        title="Mapeamento para Estrutura de Auditoria"
         description={
-          estruturaAtiva
-            ? `Vincular contas do cliente à estrutura ${estruturaAtiva.codigo} — ${estruturaAtiva.nome}`
-            : "Vincular contas do cliente à estrutura de referência"
-        }
-        actions={
-          hasEstruturas ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Estrutura:</span>
-              <EstruturaSelector hideIcon />
-              {estruturaAtiva && (
-                <Badge variant="outline" className="text-xs font-mono">{estruturaAtiva.codigo}</Badge>
-              )}
-            </div>
-          ) : undefined
+          estruturaOperacionalLabel
+            ? `Vincular contas do cliente à estrutura ${estruturaOperacionalLabel}`
+            : "Vincular contas do cliente à estrutura de referência derivada do segmento"
         }
       />
 
+      {/* Contexto operacional do cliente (segmento + estrutura derivada) */}
+      {selectedCliente && (
+        <div className="mb-4">
+          <ContextoClienteEstrutura clienteId={selectedCliente} variant="block" />
+        </div>
+      )}
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <Select value={selectedCliente} onValueChange={v => { setSelectedCliente(v); setSelectedIds(new Set()); }}>
@@ -365,7 +369,7 @@ export default function MapeamentoPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-sm text-muted-foreground">{selectedIds.size} conta(s) selecionada(s)</span>
                 <Button size="sm" variant="outline" onClick={() => setShowMcseModal(true)} disabled={mapearLote.isPending}>
-                  <Layers size={14} className="mr-1" /> Mapear selecionadas para MCSE
+                  <Layers size={14} className="mr-1" /> Mapear selecionadas para Estrutura
                 </Button>
                 {selectedForHomologation.length > 0 && (
                   <Button size="sm" onClick={() => setShowConfirmDialog(true)} disabled={homologarLote.isPending}>
@@ -393,8 +397,8 @@ export default function MapeamentoPage() {
                   <TableHead className="w-14">GRAU</TableHead>
                   <TableHead className="w-24">Risco</TableHead>
                   <TableHead className="w-36">Sugestão</TableHead>
-                  <TableHead className="w-72">Conta MCSE</TableHead>
-                  <TableHead className="w-36">Grupo MCSE</TableHead>
+                  <TableHead className="w-72">Conta da Estrutura</TableHead>
+                  <TableHead className="w-36">Grupo</TableHead>
                   <TableHead className="w-24">Status</TableHead>
                   <TableHead className="w-24">Ações</TableHead>
                 </TableRow>
@@ -433,7 +437,7 @@ export default function MapeamentoPage() {
                           onValueChange={v => saveMapeamento.mutate({ contaOrigemId: conta.id, contaMcseId: v })}
                         >
                           <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Selecionar conta MCSE..." />
+                            <SelectValue placeholder="Selecionar conta da Estrutura..." />
                           </SelectTrigger>
                           <SelectContent>
                             {mcseContas.map((mc: any) => (
@@ -480,15 +484,16 @@ export default function MapeamentoPage() {
         </div>
       )}
 
-      {/* MCSE batch mapping modal */}
+      {/* Modal de mapeamento em lote — usa estrutura derivada do cliente */}
       <SelectMcseModal
         open={showMcseModal}
         onOpenChange={setShowMcseModal}
         selectedCount={selectedIds.size}
         onConfirm={handleMcseSelected}
         mappingInfo={selectedMappingInfo}
+        estruturaId={estruturaOperacionalId}
+        estruturaLabel={estruturaOperacionalLabel}
       />
-
       {/* Overwrite confirmation */}
       <AlertDialog open={showOverwriteConfirm} onOpenChange={setShowOverwriteConfirm}>
         <AlertDialogContent>

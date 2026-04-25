@@ -6,9 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Info, AlertTriangle } from "lucide-react";
+import { Search, Info, AlertTriangle, Layers } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface MappingInfo {
   allSameMcse: boolean;
@@ -24,12 +25,22 @@ interface SelectMcseModalProps {
   selectedCount: number;
   onConfirm: (contaMcse: any) => void;
   mappingInfo?: MappingInfo;
+  /**
+   * Estrutura derivada do contexto operacional (cliente/trabalho).
+   * Quando informada, sobrescreve a estrutura ativa administrativa
+   * e garante que o modal liste apenas contas da estrutura aplicável.
+   */
+  estruturaId?: string | null;
+  estruturaLabel?: string | null;
 }
 
-export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm, mappingInfo }: SelectMcseModalProps) {
+export default function SelectMcseModal({ open, onOpenChange, selectedCount, onConfirm, mappingInfo, estruturaId: estruturaIdProp, estruturaLabel }: SelectMcseModalProps) {
   const [search, setSearch] = useState("");
   const [selectedMcse, setSelectedMcse] = useState<any>(null);
-  const { estruturaId } = useEstruturaAtiva();
+  const { estruturaId: estruturaIdAdm } = useEstruturaAtiva();
+
+  // Estrutura operacional (do cliente) tem precedência sobre a administrativa
+  const estruturaId = estruturaIdProp !== undefined ? estruturaIdProp : estruturaIdAdm;
 
   const { data: mcseContas = [] } = useQuery({
     queryKey: ["mcse_contas_all", estruturaId || "legacy"],
@@ -70,9 +81,16 @@ export default function SelectMcseModal({ open, onOpenChange, selectedCount, onC
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Mapear {selectedCount} conta(s) à estrutura de referência</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
+            Mapear {selectedCount} conta(s) à estrutura de referência
+            {estruturaLabel && (
+              <Badge variant="outline" className="gap-1 text-xs bg-primary/10 border-primary/30 text-primary">
+                <Layers size={11} /> {estruturaLabel}
+              </Badge>
+            )}
+          </DialogTitle>
           <DialogDescription>
-            Pesquise e selecione um grupo contábil para aplicar a todas as contas selecionadas.
+            Pesquise e selecione uma conta da estrutura de auditoria para aplicar a todas as contas selecionadas.
           </DialogDescription>
         </DialogHeader>
 
