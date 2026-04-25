@@ -257,6 +257,11 @@ export default function BalancetesPage() {
             </AlertDialog>
           </div>
         </div>
+        {bal?.cliente_id && (
+          <div className="mb-4">
+            <ContextoClienteEstrutura clienteId={bal.cliente_id} />
+          </div>
+        )}
         <BalanceteLinhasTable balanceteId={selectedBalancete} />
       </div>
     );
