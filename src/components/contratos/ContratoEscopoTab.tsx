@@ -13,6 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 
+import { useEstruturaPorCliente } from "@/hooks/useEstruturaPorCliente";
+
 const OBRIGATORIEDADE_OPTIONS = [
   { value: "obrigatorio", label: "Obrigatório", className: "bg-destructive/15 text-destructive border-destructive/30" },
   { value: "opcional", label: "Opcional", className: "bg-warning/15 text-warning-foreground border-warning/30" },
@@ -32,9 +34,10 @@ const emptyForm = {
 interface Props {
   contratoId: string;
   tipoContratacao: string;
+  clienteId?: string | null;
 }
 
-export default function ContratoEscopoTab({ contratoId, tipoContratacao }: Props) {
+export default function ContratoEscopoTab({ contratoId, tipoContratacao, clienteId }: Props) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -53,16 +56,42 @@ export default function ContratoEscopoTab({ contratoId, tipoContratacao }: Props
     },
   });
 
+  const { data: ctxEstrutura } = useEstruturaPorCliente(clienteId || null);
+  const segmentoClienteId = ctxEstrutura?.segmento?.id || null;
+  const segmentoLegado = ctxEstrutura?.cliente?.segmento || null;
+
   const { data: produtos = [] } = useQuery({
     queryKey: ["produtos-ativos"],
     queryFn: async () => {
-      const { data } = await supabase.from("produtos_auditoria").select("id, codigo_produto, nome_produto, horas_base_estimadas").eq("ativo", true).order("nome_produto");
+      const { data } = await supabase
+        .from("produtos_auditoria")
+        .select("*")
+        .eq("ativo", true)
+        .order("nome_produto");
       return data || [];
     },
   });
 
+  // Filtrar produtos por segmento do cliente (compatível com produtos legados)
+  const produtosFiltrados = produtos.filter((p: any) => {
+    // Sem cliente conhecido: mostrar tudo (modo legado)
+    if (!clienteId) return true;
+    // Sempre incluir produtos sem qualquer vínculo de segmento (legado)
+    const semSegmentoNovo = !p.segmento_id;
+    const semSegmentoLegado = !p.segmento;
+    if (semSegmentoNovo && semSegmentoLegado) return true;
+    // Bate por segmento_id (nova camada)
+    if (segmentoClienteId && p.segmento_id === segmentoClienteId) return true;
+    // Bate por segmento legado (enum em clientes/produtos)
+    if (segmentoLegado && p.segmento === segmentoLegado) return true;
+    // Produto com segmento_id mas cliente sem segmento_id → permitir se legado bate
+    if (!segmentoClienteId && segmentoLegado && p.segmento === segmentoLegado) return true;
+    // Produto sem segmento_id novo mas com segmento legado: já tratado acima
+    return false;
+  });
+
   const produtosJaVinculados = new Set(itens.map((i: any) => i.produto_auditoria_id));
-  const produtosDisponiveis = produtos.filter((p: any) => !produtosJaVinculados.has(p.id) || (editing && editing.produto_auditoria_id === p.id));
+  const produtosDisponiveis = produtosFiltrados.filter((p: any) => !produtosJaVinculados.has(p.id) || (editing && editing.produto_auditoria_id === p.id));
 
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
