@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Plus, Pencil, Search, Users, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
 
 const STATUS_LIST = ["planejado", "iniciado", "em_execucao", "revisao_1", "revisao_2", "finalizado_para_parecer", "encerrado"] as const;
 type StatusTrabalho = typeof STATUS_LIST[number];
@@ -422,6 +423,10 @@ export default function TrabalhosPage() {
                 </Select>
               </div>
             </div>
+
+            {form.cliente_id && (
+              <ContextoClienteEstrutura clienteId={form.cliente_id} variant="block" />
+            )}
 
             {/* Contrato e Produto */}
             <div className="grid grid-cols-2 gap-4">
