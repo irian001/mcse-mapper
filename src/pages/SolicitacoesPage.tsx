@@ -81,7 +81,7 @@ export default function SolicitacoesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("trabalhos_auditoria")
-        .select("id, nome_trabalho, clientes(razao_social), exercicios(ano_exercicio)")
+        .select("id, nome_trabalho, cliente_id, clientes(id, razao_social), exercicios(ano_exercicio)")
         .order("nome_trabalho");
       return data || [];
     },
