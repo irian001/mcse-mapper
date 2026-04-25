@@ -267,6 +267,9 @@ export default function SolicitacoesPage() {
 
         <Card className="mb-4">
           <CardContent className="pt-4 space-y-3">
+            {genContexto?.clienteId && (
+              <ContextoClienteEstrutura clienteId={genContexto.clienteId} />
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label>Título</Label><Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
               <div><Label>Prazo de Resposta</Label><Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></div>
