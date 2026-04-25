@@ -281,25 +281,20 @@ export default function MapeamentoPage() {
   return (
     <div>
       <PageHeader
-        title="Mapeamento de Contas"
+        title="Mapeamento para Estrutura de Auditoria"
         description={
-          estruturaAtiva
-            ? `Vincular contas do cliente à estrutura ${estruturaAtiva.codigo} — ${estruturaAtiva.nome}`
-            : "Vincular contas do cliente à estrutura de referência"
-        }
-        actions={
-          hasEstruturas ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Estrutura:</span>
-              <EstruturaSelector hideIcon />
-              {estruturaAtiva && (
-                <Badge variant="outline" className="text-xs font-mono">{estruturaAtiva.codigo}</Badge>
-              )}
-            </div>
-          ) : undefined
+          estruturaOperacionalLabel
+            ? `Vincular contas do cliente à estrutura ${estruturaOperacionalLabel}`
+            : "Vincular contas do cliente à estrutura de referência derivada do segmento"
         }
       />
 
+      {/* Contexto operacional do cliente (segmento + estrutura derivada) */}
+      {selectedCliente && (
+        <div className="mb-4">
+          <ContextoClienteEstrutura clienteId={selectedCliente} variant="block" />
+        </div>
+      )}
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <Select value={selectedCliente} onValueChange={v => { setSelectedCliente(v); setSelectedIds(new Set()); }}>
