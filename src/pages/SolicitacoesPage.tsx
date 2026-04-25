@@ -638,6 +638,15 @@ export default function SolicitacoesPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {genTrabalhoId && (() => {
+                const trab = trabalhos.find((t: any) => t.id === genTrabalhoId) as any;
+                const cid = trab?.cliente_id || trab?.clientes?.id;
+                return cid ? (
+                  <div className="mt-2">
+                    <ContextoClienteEstrutura clienteId={cid} />
+                  </div>
+                ) : null;
+              })()}
             </div>
             <div className="space-y-2">
               <Label>Filtros de Geração</Label>
