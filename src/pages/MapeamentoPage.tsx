@@ -437,7 +437,7 @@ export default function MapeamentoPage() {
                           onValueChange={v => saveMapeamento.mutate({ contaOrigemId: conta.id, contaMcseId: v })}
                         >
                           <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Selecionar conta MCSE..." />
+                            <SelectValue placeholder="Selecionar conta da Estrutura..." />
                           </SelectTrigger>
                           <SelectContent>
                             {mcseContas.map((mc: any) => (
