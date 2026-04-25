@@ -13,6 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 
+import { useEstruturaPorCliente } from "@/hooks/useEstruturaPorCliente";
+
 const OBRIGATORIEDADE_OPTIONS = [
   { value: "obrigatorio", label: "Obrigatório", className: "bg-destructive/15 text-destructive border-destructive/30" },
   { value: "opcional", label: "Opcional", className: "bg-warning/15 text-warning-foreground border-warning/30" },
@@ -32,9 +34,10 @@ const emptyForm = {
 interface Props {
   contratoId: string;
   tipoContratacao: string;
+  clienteId?: string | null;
 }
 
-export default function ContratoEscopoTab({ contratoId, tipoContratacao }: Props) {
+export default function ContratoEscopoTab({ contratoId, tipoContratacao, clienteId }: Props) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
