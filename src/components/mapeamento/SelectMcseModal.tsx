@@ -81,9 +81,16 @@ export default function SelectMcseModal({ open, onOpenChange, selectedCount, onC
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Mapear {selectedCount} conta(s) à estrutura de referência</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
+            Mapear {selectedCount} conta(s) à estrutura de referência
+            {estruturaLabel && (
+              <Badge variant="outline" className="gap-1 text-xs bg-primary/10 border-primary/30 text-primary">
+                <Layers size={11} /> {estruturaLabel}
+              </Badge>
+            )}
+          </DialogTitle>
           <DialogDescription>
-            Pesquise e selecione um grupo contábil para aplicar a todas as contas selecionadas.
+            Pesquise e selecione uma conta da estrutura de auditoria para aplicar a todas as contas selecionadas.
           </DialogDescription>
         </DialogHeader>
 
