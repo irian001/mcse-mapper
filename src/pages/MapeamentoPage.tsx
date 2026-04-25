@@ -7,12 +7,11 @@ import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import RiskBadge from "@/components/RiskBadge";
 import SelectMcseModal from "@/components/mapeamento/SelectMcseModal";
-import EstruturaSelector from "@/components/EstruturaSelector";
-import { useEstruturaAtiva } from "@/hooks/useEstruturaAtiva";
+import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
+import { useEstruturaPorCliente } from "@/hooks/useEstruturaPorCliente";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -25,11 +24,21 @@ type TipoContaFilter = "analitica" | "sintetica" | "todas";
 
 export default function MapeamentoPage() {
   const qc = useQueryClient();
-  const { estruturaId, estruturaAtiva, hasEstruturas } = useEstruturaAtiva();
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: async () => { const { data } = await fetchClientes(); return data || []; } });
+
+  const [selectedCliente, setSelectedCliente] = useState("");
+
+  // FASE 3B.1 — Estrutura derivada do cliente (em vez do seletor administrativo).
+  // Fluxo: cliente → segmento → estrutura aplicável (com fallback automático para MCSE).
+  const { data: contextoEstrutura } = useEstruturaPorCliente(selectedCliente || null);
+  const estruturaOperacionalId = contextoEstrutura?.estrutura?.id ?? null;
+  const estruturaOperacionalLabel = contextoEstrutura?.estrutura
+    ? `${contextoEstrutura.estrutura.codigo} — ${contextoEstrutura.estrutura.nome}`
+    : null;
+
   const { data: mcseContas = [] } = useQuery({
-    queryKey: ["mcse_contas_all", estruturaId || "legacy"],
-    queryFn: async () => { const { data } = await fetchContas(undefined, undefined, estruturaId); return data || []; },
+    queryKey: ["mcse_contas_all", "operacional", estruturaOperacionalId || "legacy"],
+    queryFn: async () => { const { data } = await fetchContas(undefined, undefined, estruturaOperacionalId); return data || []; },
   });
 
   const [selectedCliente, setSelectedCliente] = useState("");
