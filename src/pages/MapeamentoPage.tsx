@@ -484,15 +484,16 @@ export default function MapeamentoPage() {
         </div>
       )}
 
-      {/* MCSE batch mapping modal */}
+      {/* Modal de mapeamento em lote — usa estrutura derivada do cliente */}
       <SelectMcseModal
         open={showMcseModal}
         onOpenChange={setShowMcseModal}
         selectedCount={selectedIds.size}
         onConfirm={handleMcseSelected}
         mappingInfo={selectedMappingInfo}
+        estruturaId={estruturaOperacionalId}
+        estruturaLabel={estruturaOperacionalLabel}
       />
-
       {/* Overwrite confirmation */}
       <AlertDialog open={showOverwriteConfirm} onOpenChange={setShowOverwriteConfirm}>
         <AlertDialogContent>
