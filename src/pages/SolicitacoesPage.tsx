@@ -376,6 +376,12 @@ export default function SolicitacoesPage() {
           </div>
         </div>
 
+        {sol?.cliente_id && (
+          <div className="mb-3">
+            <ContextoClienteEstrutura clienteId={sol.cliente_id} />
+          </div>
+        )}
+
         {sol?.observacoes && (
           <Card className="mb-4">
             <CardContent className="py-3 text-sm text-muted-foreground">
