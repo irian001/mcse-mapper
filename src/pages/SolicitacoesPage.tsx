@@ -18,6 +18,7 @@ import { Plus, FileText, Trash2, Save, Filter, Eye, ChevronDown, FileDown, Check
 import { gerarSolicitacao, salvarSolicitacaoRascunho, type ItemGerado, type GeracaoFiltros } from "@/lib/solicitacao-service";
 import { fetchSolicitacaoPdfData, gerarSolicitacaoPdfHtml, downloadPdfViaHtml } from "@/lib/solicitacao-pdf";
 import ItemDocumentosPanel from "@/components/solicitacao/ItemDocumentosPanel";
+import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
 
 const STATUS_LABELS: Record<string, string> = {
   rascunho: "Rascunho",
