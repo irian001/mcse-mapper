@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, FileSpreadsheet, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { localizarConta, resolverMcse, calcStatusValidacao } from "@/lib/balancete-utils";
+import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
 
 export default function BalancetesPage() {
   const [mode, setMode] = useState<"list" | "import">("list");
@@ -112,11 +113,39 @@ export default function BalancetesPage() {
         .select("id, idconta, nome, classificacao, status_mapeamento, codigo_mcse_sugerido")
         .eq("cliente_id", clienteId);
 
-      // Fetch mapeamentos
-      const { data: mapeamentos } = await supabase
+      // Fetch mapeamentos — restritos à estrutura derivada do cliente
+      // (FASE 3B.2): garante que ao reaplicar mapeamentos, só sejam usadas
+      // contas pertencentes à estrutura aplicável ao cliente.
+      const { data: mapeamentosRaw } = await supabase
         .from("cliente_mapeamento_mcse")
-        .select("conta_origem_id, conta_mcse_id, mcse_contas(codigo_mcse, descricao_conta, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo))")
+        .select("conta_origem_id, conta_mcse_id, mcse_contas(estrutura_id, codigo_mcse, descricao_conta, mcse_grupos(descricao_grupo), mcse_subgrupos(descricao_subgrupo))")
         .eq("cliente_id", clienteId);
+
+      // Resolver estrutura aplicável
+      let estruturaAplicavelId: string | null = null;
+      try {
+        const { data: cliente } = await supabase.from("clientes").select("*").eq("id", clienteId).maybeSingle();
+        const segId: string | null = (cliente as any)?.segmento_id ?? null;
+        const { data: ests, error: estErr } = await (supabase.from as any)("estruturas_auditoria")
+          .select("id, codigo, segmento_id, ativo").eq("ativo", true);
+        if (!estErr && ests) {
+          const arr = ests as Array<{ id: string; codigo: string; segmento_id: string }>;
+          const mcse = arr.find((e) => (e.codigo || "").toUpperCase() === "MCSE");
+          if (segId) {
+            const doSeg = arr.filter((e) => e.segmento_id === segId);
+            estruturaAplicavelId = (doSeg.find((e) => (e.codigo || "").toUpperCase() === "MCSE") || doSeg[0])?.id || mcse?.id || null;
+          } else {
+            estruturaAplicavelId = mcse?.id || null;
+          }
+        }
+      } catch { /* modo legado: sem filtro */ }
+
+      const mapeamentos = (mapeamentosRaw || []).filter((m: any) => {
+        if (!estruturaAplicavelId) return true; // legado: aceita tudo
+        const eid = (m as any)?.mcse_contas?.estrutura_id;
+        // Aceita também mapeamentos legados sem estrutura_id (não quebra fluxo atual)
+        return !eid || eid === estruturaAplicavelId;
+      });
 
       let comMapeamento = 0;
       let semMapeamento = 0;
