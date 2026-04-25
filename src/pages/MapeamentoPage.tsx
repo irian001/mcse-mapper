@@ -369,7 +369,7 @@ export default function MapeamentoPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-sm text-muted-foreground">{selectedIds.size} conta(s) selecionada(s)</span>
                 <Button size="sm" variant="outline" onClick={() => setShowMcseModal(true)} disabled={mapearLote.isPending}>
-                  <Layers size={14} className="mr-1" /> Mapear selecionadas para MCSE
+                  <Layers size={14} className="mr-1" /> Mapear selecionadas para Estrutura
                 </Button>
                 {selectedForHomologation.length > 0 && (
                   <Button size="sm" onClick={() => setShowConfirmDialog(true)} disabled={homologarLote.isPending}>
