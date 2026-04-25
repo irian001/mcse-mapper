@@ -18,10 +18,51 @@ export interface ItemGerado {
   ordem: number;
 }
 
+/**
+ * Resolve a estrutura de auditoria aplicável ao cliente do trabalho.
+ *
+ * FASE 3B.2 — fluxo Trabalho → Cliente → Segmento → Estrutura. Quando não há
+ * segmento ou nenhuma estrutura específica, faz fallback para MCSE. Em modo
+ * legado (tabela `estruturas_auditoria` ausente) retorna `null` e o caller
+ * deve operar sem filtro de estrutura.
+ */
+async function resolverEstruturaPorCliente(clienteId: string): Promise<{
+  estruturaId: string | null;
+  isFallback: boolean;
+  modoLegado: boolean;
+}> {
+  // Cliente
+  const { data: cliente } = await supabase
+    .from("clientes")
+    .select("*")
+    .eq("id", clienteId)
+    .maybeSingle();
+  const segmentoId: string | null = (cliente as any)?.segmento_id ?? null;
+
+  // Estruturas (pode falhar se SQL Fase 1 pendente)
+  const { data: ests, error } = await (supabase.from as any)("estruturas_auditoria")
+    .select("id, codigo, segmento_id, ativo")
+    .eq("ativo", true);
+  if (error && (error.code === "42P01" || (error.message || "").includes("not find"))) {
+    return { estruturaId: null, isFallback: true, modoLegado: true };
+  }
+  const estruturas = (ests || []) as Array<{ id: string; codigo: string; segmento_id: string }>;
+  const mcse = estruturas.find((e) => (e.codigo || "").toUpperCase() === "MCSE") || null;
+
+  if (segmentoId) {
+    const doSeg = estruturas.filter((e) => e.segmento_id === segmentoId);
+    if (doSeg.length > 0) {
+      const escolhida = doSeg.find((e) => (e.codigo || "").toUpperCase() === "MCSE") || doSeg[0];
+      return { estruturaId: escolhida.id, isFallback: false, modoLegado: false };
+    }
+  }
+  return { estruturaId: mcse?.id ?? null, isFallback: true, modoLegado: false };
+}
+
 export async function gerarSolicitacao(
   trabalhoId: string,
   filtros: GeracaoFiltros
-): Promise<{ clienteId: string; exercicioId: string; itens: ItemGerado[] }> {
+): Promise<{ clienteId: string; exercicioId: string; itens: ItemGerado[]; estruturaId: string | null; isFallback: boolean }> {
   // 1. Get trabalho info
   const { data: trabalho, error: tErr } = await supabase
     .from("trabalhos_auditoria")
@@ -29,6 +70,9 @@ export async function gerarSolicitacao(
     .eq("id", trabalhoId)
     .single();
   if (tErr || !trabalho) throw new Error("Trabalho não encontrado");
+
+  // 1b. Resolve estrutura aplicável (cliente → segmento → estrutura, fallback MCSE)
+  const { estruturaId, isFallback } = await resolverEstruturaPorCliente(trabalho.cliente_id);
 
   // 2. Get balancete lines with MCSE mapping
   const allLinhas: any[] = [];
@@ -52,13 +96,33 @@ export async function gerarSolicitacao(
   const contaMcseIds = [...new Set(allLinhas.map((l) => l.conta_mcse_id))];
   if (contaMcseIds.length === 0) throw new Error("Nenhuma conta MCSE encontrada no balancete");
 
-  // 4. Fetch regras for these contas
-  const { data: regras, error: rErr } = await supabase
+  // 4. Fetch regras for these contas — restritas à estrutura derivada
+  let regrasQuery: any = supabase
     .from("mcse_regras_conta")
     .select("*")
     .in("conta_mcse_id", contaMcseIds)
     .eq("ativo", true);
-  if (rErr) throw rErr;
+  if (estruturaId) {
+    // Filtro tolerante: se a coluna não existir (modo legado), o catch abaixo
+    // dispara fallback sem filtro.
+    regrasQuery = regrasQuery.eq("estrutura_id", estruturaId);
+  }
+  let { data: regras, error: rErr } = await regrasQuery;
+  if (rErr) {
+    const isMissingCol = rErr.code === "42703" || (rErr.message || "").includes("estrutura_id");
+    if (isMissingCol) {
+      // Modo legado: coluna estrutura_id ausente — refaz sem o filtro
+      const fallback = await supabase
+        .from("mcse_regras_conta")
+        .select("*")
+        .in("conta_mcse_id", contaMcseIds)
+        .eq("ativo", true);
+      if (fallback.error) throw fallback.error;
+      regras = fallback.data;
+    } else {
+      throw rErr;
+    }
+  }
 
   // 5. Apply filters
   let regrasFiltradas = regras || [];
@@ -135,7 +199,13 @@ export async function gerarSolicitacao(
 
   if (itens.length === 0) throw new Error("Nenhum documento configurado para as regras aplicáveis");
 
-  return { clienteId: trabalho.cliente_id, exercicioId: trabalho.exercicio_id, itens };
+  return {
+    clienteId: trabalho.cliente_id,
+    exercicioId: trabalho.exercicio_id,
+    itens,
+    estruturaId,
+    isFallback,
+  };
 }
 
 export async function salvarSolicitacaoRascunho(
