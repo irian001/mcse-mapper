@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { FileSignature, Package } from "lucide-react";
 import ContratoEscopoTab from "./ContratoEscopoTab";
+import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
 
 interface Props {
   contrato: any;
@@ -26,6 +27,12 @@ export default function ContratoDetailDialog({ contrato, open, onClose }: Props)
           </DialogTitle>
         </DialogHeader>
 
+        {contrato.cliente_id && (
+          <div className="mt-2">
+            <ContextoClienteEstrutura clienteId={contrato.cliente_id} variant="inline" />
+          </div>
+        )}
+
         <Tabs defaultValue="escopo" className="mt-2">
           <TabsList>
             <TabsTrigger value="escopo" className="flex items-center gap-1.5">
@@ -35,6 +42,7 @@ export default function ContratoDetailDialog({ contrato, open, onClose }: Props)
           <TabsContent value="escopo" className="mt-4">
             <ContratoEscopoTab
               contratoId={contrato.id}
+              clienteId={contrato.cliente_id}
               tipoContratacao={contrato.tipo_contratacao || "preco_fixo"}
             />
           </TabsContent>
