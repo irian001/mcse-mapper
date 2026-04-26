@@ -16,9 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Upload, Download } from "lucide-react";
-import ImportMcseDialog from "@/components/mcse/ImportMcseDialog";
-import { exportMcseTemplate } from "@/components/mcse/ExportMcseTemplate";
+import { Plus, Pencil, Upload, Download, FileDown } from "lucide-react";
+import ImportEstruturaUnificadaDialog from "@/components/mcse/ImportEstruturaUnificadaDialog";
+import { downloadTemplateUnificado, exportarEstruturaUnificada } from "@/lib/estrutura-csv";
 
 type NaturezaConta = "ativo" | "passivo" | "patrimonio_liquido" | "receita" | "despesa" | "compensacao";
 const naturezaOptions: { value: NaturezaConta; label: string }[] = [
@@ -33,7 +33,20 @@ const naturezaOptions: { value: NaturezaConta; label: string }[] = [
 export default function McsePage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("grupos");
-  const [importTarget, setImportTarget] = useState<"grupos" | "subgrupos" | "contas" | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const handleTemplate = () => {
+    downloadTemplateUnificado(estruturaAtiva?.codigo);
+    toast.success("Template baixado.");
+  };
+  const handleExport = async () => {
+    try {
+      const n = await exportarEstruturaUnificada(estruturaId, estruturaAtiva?.codigo);
+      toast.success(`Estrutura exportada (${n} linhas).`);
+    } catch (e: any) {
+      toast.error(`Falha ao exportar: ${e.message}`);
+    }
+  };
 
   // Estrutura ativa (Fase 2): MCSE por padrão; preparado para COSIF e outras.
   const { estruturaId, estruturaAtiva, hasEstruturas } = useEstruturaAtiva();
@@ -202,9 +215,9 @@ export default function McsePage() {
         <TabsContent value="grupos" className="mt-4">
           <div className="flex justify-end mb-3">
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("grupos", false)}><Download size={14} className="mr-1" /> Template</Button>
-              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("grupos", true)}><Download size={14} className="mr-1" /> Exportar</Button>
-              <Button size="sm" variant="outline" onClick={() => setImportTarget("grupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" variant="outline" onClick={handleTemplate}><FileDown size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={handleExport}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><Upload size={14} className="mr-1" /> Importar CSV</Button>
               <Button size="sm" onClick={openNewGrupo}><Plus size={14} className="mr-1" /> Novo Grupo</Button>
             </div>
           </div>
@@ -239,9 +252,9 @@ export default function McsePage() {
               </SelectContent>
             </Select>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("subgrupos", false)}><Download size={14} className="mr-1" /> Template</Button>
-              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("subgrupos", true)}><Download size={14} className="mr-1" /> Exportar</Button>
-              <Button size="sm" variant="outline" onClick={() => setImportTarget("subgrupos")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" variant="outline" onClick={handleTemplate}><FileDown size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={handleExport}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><Upload size={14} className="mr-1" /> Importar CSV</Button>
               <Button size="sm" onClick={openNewSubgrupo}><Plus size={14} className="mr-1" /> Novo Subgrupo</Button>
             </div>
           </div>
@@ -276,9 +289,9 @@ export default function McsePage() {
               </SelectContent>
             </Select>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("contas", false)}><Download size={14} className="mr-1" /> Template</Button>
-              <Button size="sm" variant="outline" onClick={() => exportMcseTemplate("contas", true)}><Download size={14} className="mr-1" /> Exportar</Button>
-              <Button size="sm" variant="outline" onClick={() => setImportTarget("contas")}><Upload size={14} className="mr-1" /> Importar CSV</Button>
+              <Button size="sm" variant="outline" onClick={handleTemplate}><FileDown size={14} className="mr-1" /> Template</Button>
+              <Button size="sm" variant="outline" onClick={handleExport}><Download size={14} className="mr-1" /> Exportar</Button>
+              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><Upload size={14} className="mr-1" /> Importar CSV</Button>
               <Button size="sm" onClick={openNewConta}><Plus size={14} className="mr-1" /> Nova Conta</Button>
             </div>
           </div>
@@ -387,15 +400,14 @@ export default function McsePage() {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Import Dialog */}
-      {importTarget && (
-        <ImportMcseDialog
-          open={!!importTarget}
-          onOpenChange={(v) => { if (!v) setImportTarget(null); }}
-          target={importTarget}
-          grupoId={importTarget === "subgrupos" ? filtroGrupo : importTarget === "contas" ? filtroGrupoConta : undefined}
-        />
-      )}
+      {/* Import Dialog (Estrutura unificada) */}
+      <ImportEstruturaUnificadaDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        estruturaId={estruturaId}
+        estruturaCodigo={estruturaAtiva?.codigo}
+        estruturaNome={estruturaAtiva?.nome}
+      />
     </div>
   );
 }
