@@ -18,6 +18,7 @@ import { Plus, FileText, Trash2, Save, Filter, Eye, ChevronDown, FileDown, Check
 import { gerarSolicitacao, salvarSolicitacaoRascunho, type ItemGerado, type GeracaoFiltros } from "@/lib/solicitacao-service";
 import { fetchSolicitacaoPdfData, gerarSolicitacaoPdfHtml, downloadPdfViaHtml } from "@/lib/solicitacao-pdf";
 import ItemDocumentosPanel from "@/components/solicitacao/ItemDocumentosPanel";
+import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
 
 const STATUS_LABELS: Record<string, string> = {
   rascunho: "Rascunho",
@@ -80,7 +81,7 @@ export default function SolicitacoesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("trabalhos_auditoria")
-        .select("id, nome_trabalho, clientes(razao_social), exercicios(ano_exercicio)")
+        .select("id, nome_trabalho, cliente_id, clientes(id, razao_social), exercicios(ano_exercicio)")
         .order("nome_trabalho");
       return data || [];
     },
@@ -266,6 +267,9 @@ export default function SolicitacoesPage() {
 
         <Card className="mb-4">
           <CardContent className="pt-4 space-y-3">
+            {genContexto?.clienteId && (
+              <ContextoClienteEstrutura clienteId={genContexto.clienteId} />
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label>Título</Label><Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
               <div><Label>Prazo de Resposta</Label><Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></div>
@@ -371,6 +375,12 @@ export default function SolicitacoesPage() {
             )}
           </div>
         </div>
+
+        {sol?.cliente_id && (
+          <div className="mb-3">
+            <ContextoClienteEstrutura clienteId={sol.cliente_id} />
+          </div>
+        )}
 
         {sol?.observacoes && (
           <Card className="mb-4">
@@ -628,6 +638,15 @@ export default function SolicitacoesPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {genTrabalhoId && (() => {
+                const trab = trabalhos.find((t: any) => t.id === genTrabalhoId) as any;
+                const cid = trab?.cliente_id || trab?.clientes?.id;
+                return cid ? (
+                  <div className="mt-2">
+                    <ContextoClienteEstrutura clienteId={cid} />
+                  </div>
+                ) : null;
+              })()}
             </div>
             <div className="space-y-2">
               <Label>Filtros de Geração</Label>
