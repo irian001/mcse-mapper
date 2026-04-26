@@ -16,9 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Upload, Download } from "lucide-react";
-import ImportMcseDialog from "@/components/mcse/ImportMcseDialog";
-import { exportMcseTemplate } from "@/components/mcse/ExportMcseTemplate";
+import { Plus, Pencil, Upload, Download, FileDown } from "lucide-react";
+import ImportEstruturaUnificadaDialog from "@/components/mcse/ImportEstruturaUnificadaDialog";
+import { downloadTemplateUnificado, exportarEstruturaUnificada } from "@/lib/estrutura-csv";
 
 type NaturezaConta = "ativo" | "passivo" | "patrimonio_liquido" | "receita" | "despesa" | "compensacao";
 const naturezaOptions: { value: NaturezaConta; label: string }[] = [
@@ -33,7 +33,20 @@ const naturezaOptions: { value: NaturezaConta; label: string }[] = [
 export default function McsePage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("grupos");
-  const [importTarget, setImportTarget] = useState<"grupos" | "subgrupos" | "contas" | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const handleTemplate = () => {
+    downloadTemplateUnificado(estruturaAtiva?.codigo);
+    toast.success("Template baixado.");
+  };
+  const handleExport = async () => {
+    try {
+      const n = await exportarEstruturaUnificada(estruturaId, estruturaAtiva?.codigo);
+      toast.success(`Estrutura exportada (${n} linhas).`);
+    } catch (e: any) {
+      toast.error(`Falha ao exportar: ${e.message}`);
+    }
+  };
 
   // Estrutura ativa (Fase 2): MCSE por padrão; preparado para COSIF e outras.
   const { estruturaId, estruturaAtiva, hasEstruturas } = useEstruturaAtiva();
