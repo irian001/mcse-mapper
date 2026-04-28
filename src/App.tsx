@@ -138,6 +138,7 @@ function ProfileRouter() {
         <Route path="/papeis-trabalho" element={<PapeisTrabalhoPage />} />
         <Route path="/solicitacoes" element={<SolicitacoesPage />} />
         <Route path="/procedimentos-auxiliares" element={<ProcedimentosAuxiliaresPage />} />
+        <Route path="/procedimentos/dashboard-estoques" element={<DashboardEstoquesPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
