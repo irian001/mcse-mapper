@@ -25,6 +25,7 @@ import BalancetesPage from "@/pages/BalancetesPage";
 import PapeisTrabalhoPage from "@/pages/PapeisTrabalhoPage";
 import SolicitacoesPage from "@/pages/SolicitacoesPage";
 import ProcedimentosAuxiliaresPage from "@/pages/ProcedimentosAuxiliaresPage";
+import DashboardEstoquesPage from "@/pages/DashboardEstoquesPage";
 import ClienteSolicitacoesPage from "@/pages/cliente/ClienteSolicitacoesPage";
 import ClientePendenciasPage from "@/pages/cliente/ClientePendenciasPage";
 import CadastrosHubPage from "@/pages/hubs/CadastrosHubPage";
