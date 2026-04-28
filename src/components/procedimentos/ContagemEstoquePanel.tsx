@@ -42,7 +42,7 @@ const emptyBloco: BlocoForm = {
   observacao: "",
 };
 
-export default function ContagemEstoquePanel({ procedimentoId }: Props) {
+export default function ContagemEstoquePanel({ procedimentoId, procedimento }: Props) {
   const qc = useQueryClient();
   const [openBloco, setOpenBloco] = useState(false);
   const [editingBloco, setEditingBloco] = useState<any>(null);
