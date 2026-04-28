@@ -214,10 +214,24 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
             Blocos de contagem por filial, setor e tipo de estoque com itens detalhados.
           </p>
         </div>
-        <Button size="sm" onClick={handleNew}>
-          <Plus size={14} className="mr-1" /> Novo Bloco
-        </Button>
-      </div>
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link
+              to={`/procedimentos/dashboard-estoques?${new URLSearchParams(
+                Object.entries({
+                  cliente_id: procedimento?.cliente_id,
+                  trabalho_id: procedimento?.trabalho_id,
+                  procedimento_id: procedimentoId,
+                }).filter(([, v]) => Boolean(v)) as [string, string][]
+              ).toString()}`}
+            >
+              <BarChart3 size={14} className="mr-1" /> Ver Dashboard
+            </Link>
+          </Button>
+          <Button size="sm" onClick={handleNew}>
+            <Plus size={14} className="mr-1" /> Novo Bloco
+          </Button>
+        </div>
 
       {/* Resumo */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
