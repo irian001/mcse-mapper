@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Boxes, Layers } from "lucide-react";
+import { Plus, Pencil, Trash2, Boxes, Layers, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import ContagemEstoqueBlocoDetail from "./ContagemEstoqueBlocoDetail";
 
 const fmtBRL = (v: number | null | undefined) =>
@@ -41,7 +42,7 @@ const emptyBloco: BlocoForm = {
   observacao: "",
 };
 
-export default function ContagemEstoquePanel({ procedimentoId }: Props) {
+export default function ContagemEstoquePanel({ procedimentoId, procedimento }: Props) {
   const qc = useQueryClient();
   const [openBloco, setOpenBloco] = useState(false);
   const [editingBloco, setEditingBloco] = useState<any>(null);
@@ -213,9 +214,24 @@ export default function ContagemEstoquePanel({ procedimentoId }: Props) {
             Blocos de contagem por filial, setor e tipo de estoque com itens detalhados.
           </p>
         </div>
-        <Button size="sm" onClick={handleNew}>
-          <Plus size={14} className="mr-1" /> Novo Bloco
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link
+              to={`/procedimentos/dashboard-estoques?${new URLSearchParams(
+                Object.entries({
+                  cliente_id: procedimento?.cliente_id,
+                  trabalho_id: procedimento?.trabalho_id,
+                  procedimento_id: procedimentoId,
+                }).filter(([, v]) => Boolean(v)) as [string, string][]
+              ).toString()}`}
+            >
+              <BarChart3 size={14} className="mr-1" /> Ver Dashboard
+            </Link>
+          </Button>
+          <Button size="sm" onClick={handleNew}>
+            <Plus size={14} className="mr-1" /> Novo Bloco
+          </Button>
+        </div>
       </div>
 
       {/* Resumo */}
