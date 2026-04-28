@@ -232,6 +232,7 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
             <Plus size={14} className="mr-1" /> Novo Bloco
           </Button>
         </div>
+      </div>
 
       {/* Resumo */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
