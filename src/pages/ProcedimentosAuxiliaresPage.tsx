@@ -13,9 +13,20 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Pencil, Search, Eye, ClipboardCheck, X } from "lucide-react";
+import { Plus, Pencil, Search, Eye, ClipboardCheck, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ProcedimentoDetailDialog from "@/components/procedimentos/ProcedimentoDetailDialog";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const TIPOS_PROCEDIMENTO = [
   { value: "contagem_caixa", label: "Contagem de Caixa" },
@@ -43,6 +54,8 @@ const emptyForm = {
   descricao: "",
   data_procedimento: "",
   data_base_referencia: "",
+  data_inicio_execucao: "",
+  data_fim_execucao: "",
   conta_mcse_id: "",
   codigo_mcse: "",
   descricao_mcse: "",
@@ -58,12 +71,18 @@ const emptyForm = {
 
 export default function ProcedimentosAuxiliaresPage() {
   const queryClient = useQueryClient();
+  const { data: userProfile } = useUserProfile();
+  const isInternal = userProfile?.role === "auditor";
+  const isAdmin = userProfile?.auditor?.perfil_acesso === "admin";
+  const canDelete = isInternal && isAdmin;
   const [searchParams, setSearchParams] = useSearchParams();
   const tipoFromUrl = searchParams.get("tipo") || "all";
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [detail, setDetail] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
+  const [confirmText, setConfirmText] = useState("");
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
   const [filterTrabalho, setFilterTrabalho] = useState("all");
@@ -162,7 +181,13 @@ export default function ProcedimentosAuxiliaresPage() {
         responsavel_revisao_id: payload.responsavel_revisao_id || null,
         data_procedimento: payload.data_procedimento || null,
         data_base_referencia: payload.data_base_referencia || null,
+        data_inicio_execucao: payload.data_inicio_execucao || null,
+        data_fim_execucao: payload.data_fim_execucao || null,
       };
+      // Validação: data fim >= data início
+      if (data.data_inicio_execucao && data.data_fim_execucao && data.data_fim_execucao < data.data_inicio_execucao) {
+        throw new Error("Data fim da execução não pode ser anterior à data início.");
+      }
       if (editing) {
         const { error } = await (supabase as any).from("procedimentos_auxiliares").update(data).eq("id", editing.id);
         if (error) throw error;
@@ -192,6 +217,8 @@ export default function ProcedimentosAuxiliaresPage() {
       descricao: p.descricao || "",
       data_procedimento: p.data_procedimento || "",
       data_base_referencia: p.data_base_referencia || "",
+      data_inicio_execucao: p.data_inicio_execucao || "",
+      data_fim_execucao: p.data_fim_execucao || "",
       conta_mcse_id: p.conta_mcse_id || "",
       codigo_mcse: p.codigo_mcse || "",
       descricao_mcse: p.descricao_mcse || "",
