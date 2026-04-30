@@ -530,13 +530,51 @@ export default function ProcedimentosAuxiliaresPage() {
                 <Label>Descrição</Label>
                 <Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
               </div>
-              <div>
-                <Label>Data do Procedimento</Label>
-                <Input type="date" value={form.data_procedimento} onChange={(e) => setForm({ ...form, data_procedimento: e.target.value })} />
+              <div className="col-span-2">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                  Período de Execução
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Data início da execução</Label>
+                    <Input
+                      type="date"
+                      value={form.data_inicio_execucao}
+                      onChange={(e) => setForm({ ...form, data_inicio_execucao: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Data fim da execução</Label>
+                    <Input
+                      type="date"
+                      value={form.data_fim_execucao}
+                      onChange={(e) => setForm({ ...form, data_fim_execucao: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Data-base geral</Label>
+                    <Input
+                      type="date"
+                      value={form.data_base_referencia}
+                      onChange={(e) => setForm({ ...form, data_base_referencia: e.target.value })}
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Data-base padrão usada como referência para os blocos, quando aplicável.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label>Data Base de Referência</Label>
-                <Input type="date" value={form.data_base_referencia} onChange={(e) => setForm({ ...form, data_base_referencia: e.target.value })} />
+              <div className="col-span-2">
+                <details className="text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">Campo legado: Data do Procedimento</summary>
+                  <div className="mt-2 max-w-xs">
+                    <Input
+                      type="date"
+                      value={form.data_procedimento}
+                      onChange={(e) => setForm({ ...form, data_procedimento: e.target.value })}
+                    />
+                  </div>
+                </details>
               </div>
               <div className="col-span-2">
                 <Label>Conta MCSE (opcional)</Label>
