@@ -423,6 +423,30 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Data de referência</Label>
+                <Input
+                  type="date"
+                  value={form.data_referencia}
+                  onChange={(e) => setForm({ ...form, data_referencia: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Data-base contábil deste bloco. Sugerida a partir da data-base geral do procedimento.
+                </p>
+              </div>
+              <div>
+                <Label>Data de execução</Label>
+                <Input
+                  type="date"
+                  value={form.data_execucao}
+                  onChange={(e) => setForm({ ...form, data_execucao: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Data em que esta contagem foi efetivamente realizada.
+                </p>
+              </div>
+            </div>
             <div>
               <Label>Descrição do Bloco</Label>
               <Input
