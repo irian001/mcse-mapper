@@ -637,6 +637,56 @@ export default function ProcedimentosAuxiliaresPage() {
 
       {/* Detail dialog com abas (Dados Gerais / Execução / Evidências / Conclusão) */}
       <ProcedimentoDetailDialog procedimento={detail} onClose={() => setDetail(null)} />
+
+      {/* Confirmação de exclusão (fase de testes) */}
+      <AlertDialog
+        open={!!confirmDelete}
+        onOpenChange={(v) => { if (!v) { setConfirmDelete(null); setConfirmText(""); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir procedimento auxiliar?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Esta ação <strong>não pode ser desfeita</strong>. Pode remover blocos,
+                  itens e documentos vinculados ao procedimento.
+                </p>
+                {confirmDelete && (
+                  <div className="rounded-md border border-border bg-muted/40 p-2 text-xs">
+                    <div><strong>Título:</strong> {confirmDelete.titulo}</div>
+                    <div><strong>Cliente:</strong> {confirmDelete.clientes?.razao_social || "—"}</div>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-xs">
+                    Digite <span className="font-mono">EXCLUIR</span> para confirmar
+                  </Label>
+                  <Input
+                    autoFocus
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="EXCLUIR"
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={confirmText !== "EXCLUIR" || removeProcedimento.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDelete) removeProcedimento.mutate(confirmDelete.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removeProcedimento.isPending ? "Excluindo..." : "Excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
