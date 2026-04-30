@@ -206,6 +206,32 @@ export default function ProcedimentosAuxiliaresPage() {
     onError: (e: any) => toast.error(e.message || "Erro ao salvar"),
   });
 
+  const removeProcedimento = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("procedimentos_auxiliares")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["procedimentos-auxiliares"] });
+      toast.success("Procedimento excluído");
+      setConfirmDelete(null);
+      setConfirmText("");
+    },
+    onError: (e: any) => {
+      const msg = String(e?.message || "");
+      if (/foreign key|violates|referenced/i.test(msg)) {
+        toast.error("Não foi possível excluir porque existem registros vinculados.");
+      } else if (/row-level security|permission/i.test(msg)) {
+        toast.error("Sem permissão para excluir. Verifique a política de DELETE no banco.");
+      } else {
+        toast.error(msg || "Erro ao excluir procedimento");
+      }
+    },
+  });
+
   const handleEdit = (p: any) => {
     setEditing(p);
     setForm({
