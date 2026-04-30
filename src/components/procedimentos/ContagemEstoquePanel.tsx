@@ -30,6 +30,8 @@ interface BlocoForm {
   descricao_bloco: string;
   responsavel_local: string;
   observacao: string;
+  data_referencia: string;
+  data_execucao: string;
 }
 
 const emptyBloco: BlocoForm = {
@@ -40,6 +42,8 @@ const emptyBloco: BlocoForm = {
   descricao_bloco: "",
   responsavel_local: "",
   observacao: "",
+  data_referencia: "",
+  data_execucao: "",
 };
 
 export default function ContagemEstoquePanel({ procedimentoId, procedimento }: Props) {
@@ -135,6 +139,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
         descricao_bloco: form.descricao_bloco || null,
         responsavel_local: form.responsavel_local || null,
         observacao: form.observacao || null,
+        data_referencia: form.data_referencia || null,
+        data_execucao: form.data_execucao || null,
       };
       if (editingBloco) {
         const { error } = await (supabase as any)
@@ -176,7 +182,12 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
 
   const handleNew = () => {
     setEditingBloco(null);
-    setForm(emptyBloco);
+    const hoje = new Date().toISOString().slice(0, 10);
+    setForm({
+      ...emptyBloco,
+      data_referencia: procedimento?.data_base_referencia || "",
+      data_execucao: hoje,
+    });
     setOpenBloco(true);
   };
 
@@ -190,6 +201,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
       descricao_bloco: b.descricao_bloco || "",
       responsavel_local: b.responsavel_local || "",
       observacao: b.observacao || "",
+      data_referencia: b.data_referencia || "",
+      data_execucao: b.data_execucao || "",
     });
     setOpenBloco(true);
   };
