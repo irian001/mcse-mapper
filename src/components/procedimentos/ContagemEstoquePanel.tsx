@@ -282,6 +282,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
               <TableHead>Setor</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Categoria</TableHead>
+              <TableHead>Referência</TableHead>
+              <TableHead>Execução</TableHead>
               <TableHead>Responsável local</TableHead>
               <TableHead className="text-right">Itens</TableHead>
               <TableHead className="text-right">Divergências</TableHead>
@@ -292,14 +294,14 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                   Carregando...
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && blocos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                   <Layers className="mx-auto mb-2 opacity-50" size={28} />
                   Nenhum bloco de contagem cadastrado. Clique em "Novo Bloco" para iniciar.
                 </TableCell>
@@ -308,6 +310,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
             {blocos.map((b: any) => {
               const r =
                 resumoPorBloco[b.id] || { total: 0, contados: 0, naoContados: 0, diferenca: 0, comDif: 0 };
+              const fmtD = (d?: string | null) =>
+                d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
               return (
                 <TableRow
                   key={b.id}
@@ -318,6 +322,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
                   <TableCell className="text-sm">{b.setor || "—"}</TableCell>
                   <TableCell className="text-sm">{b.tipo_estoque || "—"}</TableCell>
                   <TableCell className="text-sm">{b.categoria_estoque || "—"}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{fmtD(b.data_referencia)}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{fmtD(b.data_execucao)}</TableCell>
                   <TableCell className="text-sm">{b.responsavel_local || "—"}</TableCell>
                   <TableCell className="text-right font-mono text-sm">
                     <span className="text-success">{r.contados}</span>
