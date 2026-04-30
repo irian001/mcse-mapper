@@ -422,7 +422,8 @@ export default function ProcedimentosAuxiliaresPage() {
               <TableHead>Título</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Trabalho</TableHead>
-              <TableHead>Data Base</TableHead>
+              <TableHead>Período de Execução</TableHead>
+              <TableHead>Data-base Geral</TableHead>
               <TableHead>Conta MCSE</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Resp. Execução</TableHead>
@@ -431,29 +432,48 @@ export default function ProcedimentosAuxiliaresPage() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
             )}
             {!isLoading && filtered.length === 0 && (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                 <ClipboardCheck className="mx-auto mb-2 opacity-50" /> Nenhum procedimento encontrado.
               </TableCell></TableRow>
             )}
-            {filtered.map((p: any) => (
-              <TableRow key={p.id}>
-                <TableCell className="text-sm">{renderTipo(p.tipo_procedimento)}</TableCell>
-                <TableCell className="font-medium">{p.titulo}</TableCell>
-                <TableCell className="text-sm">{p.clientes?.nome_fantasia || p.clientes?.razao_social || "—"}</TableCell>
-                <TableCell className="text-sm">{p.trabalhos_auditoria?.nome_trabalho || "—"}</TableCell>
-                <TableCell className="text-sm">{p.data_base_referencia ? new Date(p.data_base_referencia + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
-                <TableCell className="text-sm">{p.codigo_mcse ? `${p.codigo_mcse}` : "—"}</TableCell>
-                <TableCell>{renderStatus(p.status_procedimento)}</TableCell>
-                <TableCell className="text-sm">{p.exec?.nome || "—"}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => setDetail(p)}><Eye size={14} /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Pencil size={14} /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {filtered.map((p: any) => {
+              const fmt = (d?: string | null) =>
+                d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : null;
+              const ini = fmt(p.data_inicio_execucao);
+              const fim = fmt(p.data_fim_execucao);
+              const periodo = ini && fim ? `${ini} – ${fim}` : ini || fim || "—";
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="text-sm">{renderTipo(p.tipo_procedimento)}</TableCell>
+                  <TableCell className="font-medium">{p.titulo}</TableCell>
+                  <TableCell className="text-sm">{p.clientes?.nome_fantasia || p.clientes?.razao_social || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.trabalhos_auditoria?.nome_trabalho || "—"}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{periodo}</TableCell>
+                  <TableCell className="text-sm">{fmt(p.data_base_referencia) || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.codigo_mcse ? `${p.codigo_mcse}` : "—"}</TableCell>
+                  <TableCell>{renderStatus(p.status_procedimento)}</TableCell>
+                  <TableCell className="text-sm">{p.exec?.nome || "—"}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Button variant="ghost" size="icon" onClick={() => setDetail(p)}><Eye size={14} /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Pencil size={14} /></Button>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        title="Excluir procedimento"
+                        onClick={() => { setConfirmDelete(p); setConfirmText(""); }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
