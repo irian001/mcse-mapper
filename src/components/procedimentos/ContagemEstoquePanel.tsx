@@ -30,6 +30,8 @@ interface BlocoForm {
   descricao_bloco: string;
   responsavel_local: string;
   observacao: string;
+  data_referencia: string;
+  data_execucao: string;
 }
 
 const emptyBloco: BlocoForm = {
@@ -40,6 +42,8 @@ const emptyBloco: BlocoForm = {
   descricao_bloco: "",
   responsavel_local: "",
   observacao: "",
+  data_referencia: "",
+  data_execucao: "",
 };
 
 export default function ContagemEstoquePanel({ procedimentoId, procedimento }: Props) {
@@ -135,6 +139,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
         descricao_bloco: form.descricao_bloco || null,
         responsavel_local: form.responsavel_local || null,
         observacao: form.observacao || null,
+        data_referencia: form.data_referencia || null,
+        data_execucao: form.data_execucao || null,
       };
       if (editingBloco) {
         const { error } = await (supabase as any)
@@ -176,7 +182,12 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
 
   const handleNew = () => {
     setEditingBloco(null);
-    setForm(emptyBloco);
+    const hoje = new Date().toISOString().slice(0, 10);
+    setForm({
+      ...emptyBloco,
+      data_referencia: procedimento?.data_base_referencia || "",
+      data_execucao: hoje,
+    });
     setOpenBloco(true);
   };
 
@@ -190,6 +201,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
       descricao_bloco: b.descricao_bloco || "",
       responsavel_local: b.responsavel_local || "",
       observacao: b.observacao || "",
+      data_referencia: b.data_referencia || "",
+      data_execucao: b.data_execucao || "",
     });
     setOpenBloco(true);
   };
@@ -269,6 +282,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
               <TableHead>Setor</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Categoria</TableHead>
+              <TableHead>Referência</TableHead>
+              <TableHead>Execução</TableHead>
               <TableHead>Responsável local</TableHead>
               <TableHead className="text-right">Itens</TableHead>
               <TableHead className="text-right">Divergências</TableHead>
@@ -279,14 +294,14 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                   Carregando...
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && blocos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                   <Layers className="mx-auto mb-2 opacity-50" size={28} />
                   Nenhum bloco de contagem cadastrado. Clique em "Novo Bloco" para iniciar.
                 </TableCell>
@@ -295,6 +310,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
             {blocos.map((b: any) => {
               const r =
                 resumoPorBloco[b.id] || { total: 0, contados: 0, naoContados: 0, diferenca: 0, comDif: 0 };
+              const fmtD = (d?: string | null) =>
+                d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
               return (
                 <TableRow
                   key={b.id}
@@ -305,6 +322,8 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
                   <TableCell className="text-sm">{b.setor || "—"}</TableCell>
                   <TableCell className="text-sm">{b.tipo_estoque || "—"}</TableCell>
                   <TableCell className="text-sm">{b.categoria_estoque || "—"}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{fmtD(b.data_referencia)}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{fmtD(b.data_execucao)}</TableCell>
                   <TableCell className="text-sm">{b.responsavel_local || "—"}</TableCell>
                   <TableCell className="text-right font-mono text-sm">
                     <span className="text-success">{r.contados}</span>
@@ -402,6 +421,30 @@ export default function ContagemEstoquePanel({ procedimentoId, procedimento }: P
                   onChange={(e) => setForm({ ...form, categoria_estoque: e.target.value })}
                   placeholder="Ex: Insumos elétricos"
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Data de referência</Label>
+                <Input
+                  type="date"
+                  value={form.data_referencia}
+                  onChange={(e) => setForm({ ...form, data_referencia: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Data-base contábil deste bloco. Sugerida a partir da data-base geral do procedimento.
+                </p>
+              </div>
+              <div>
+                <Label>Data de execução</Label>
+                <Input
+                  type="date"
+                  value={form.data_execucao}
+                  onChange={(e) => setForm({ ...form, data_execucao: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Data em que esta contagem foi efetivamente realizada.
+                </p>
               </div>
             </div>
             <div>

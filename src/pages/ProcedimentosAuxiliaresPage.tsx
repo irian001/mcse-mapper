@@ -13,9 +13,20 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Plus, Pencil, Search, Eye, ClipboardCheck, X } from "lucide-react";
+import { Plus, Pencil, Search, Eye, ClipboardCheck, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import ProcedimentoDetailDialog from "@/components/procedimentos/ProcedimentoDetailDialog";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const TIPOS_PROCEDIMENTO = [
   { value: "contagem_caixa", label: "Contagem de Caixa" },
@@ -43,6 +54,8 @@ const emptyForm = {
   descricao: "",
   data_procedimento: "",
   data_base_referencia: "",
+  data_inicio_execucao: "",
+  data_fim_execucao: "",
   conta_mcse_id: "",
   codigo_mcse: "",
   descricao_mcse: "",
@@ -58,12 +71,18 @@ const emptyForm = {
 
 export default function ProcedimentosAuxiliaresPage() {
   const queryClient = useQueryClient();
+  const { data: userProfile } = useUserProfile();
+  const isInternal = userProfile?.role === "auditor";
+  const isAdmin = userProfile?.auditor?.perfil_acesso === "admin";
+  const canDelete = isInternal && isAdmin;
   const [searchParams, setSearchParams] = useSearchParams();
   const tipoFromUrl = searchParams.get("tipo") || "all";
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [detail, setDetail] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
+  const [confirmDelete, setConfirmDelete] = useState<any>(null);
+  const [confirmText, setConfirmText] = useState("");
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
   const [filterTrabalho, setFilterTrabalho] = useState("all");
@@ -162,7 +181,13 @@ export default function ProcedimentosAuxiliaresPage() {
         responsavel_revisao_id: payload.responsavel_revisao_id || null,
         data_procedimento: payload.data_procedimento || null,
         data_base_referencia: payload.data_base_referencia || null,
+        data_inicio_execucao: payload.data_inicio_execucao || null,
+        data_fim_execucao: payload.data_fim_execucao || null,
       };
+      // Validação: data fim >= data início
+      if (data.data_inicio_execucao && data.data_fim_execucao && data.data_fim_execucao < data.data_inicio_execucao) {
+        throw new Error("Data fim da execução não pode ser anterior à data início.");
+      }
       if (editing) {
         const { error } = await (supabase as any).from("procedimentos_auxiliares").update(data).eq("id", editing.id);
         if (error) throw error;
@@ -181,6 +206,32 @@ export default function ProcedimentosAuxiliaresPage() {
     onError: (e: any) => toast.error(e.message || "Erro ao salvar"),
   });
 
+  const removeProcedimento = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("procedimentos_auxiliares")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["procedimentos-auxiliares"] });
+      toast.success("Procedimento excluído");
+      setConfirmDelete(null);
+      setConfirmText("");
+    },
+    onError: (e: any) => {
+      const msg = String(e?.message || "");
+      if (/foreign key|violates|referenced/i.test(msg)) {
+        toast.error("Não foi possível excluir porque existem registros vinculados.");
+      } else if (/row-level security|permission/i.test(msg)) {
+        toast.error("Sem permissão para excluir. Verifique a política de DELETE no banco.");
+      } else {
+        toast.error(msg || "Erro ao excluir procedimento");
+      }
+    },
+  });
+
   const handleEdit = (p: any) => {
     setEditing(p);
     setForm({
@@ -192,6 +243,8 @@ export default function ProcedimentosAuxiliaresPage() {
       descricao: p.descricao || "",
       data_procedimento: p.data_procedimento || "",
       data_base_referencia: p.data_base_referencia || "",
+      data_inicio_execucao: p.data_inicio_execucao || "",
+      data_fim_execucao: p.data_fim_execucao || "",
       conta_mcse_id: p.conta_mcse_id || "",
       codigo_mcse: p.codigo_mcse || "",
       descricao_mcse: p.descricao_mcse || "",
@@ -369,7 +422,8 @@ export default function ProcedimentosAuxiliaresPage() {
               <TableHead>Título</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Trabalho</TableHead>
-              <TableHead>Data Base</TableHead>
+              <TableHead>Período de Execução</TableHead>
+              <TableHead>Data-base Geral</TableHead>
               <TableHead>Conta MCSE</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Resp. Execução</TableHead>
@@ -378,29 +432,48 @@ export default function ProcedimentosAuxiliaresPage() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
             )}
             {!isLoading && filtered.length === 0 && (
-              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+              <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                 <ClipboardCheck className="mx-auto mb-2 opacity-50" /> Nenhum procedimento encontrado.
               </TableCell></TableRow>
             )}
-            {filtered.map((p: any) => (
-              <TableRow key={p.id}>
-                <TableCell className="text-sm">{renderTipo(p.tipo_procedimento)}</TableCell>
-                <TableCell className="font-medium">{p.titulo}</TableCell>
-                <TableCell className="text-sm">{p.clientes?.nome_fantasia || p.clientes?.razao_social || "—"}</TableCell>
-                <TableCell className="text-sm">{p.trabalhos_auditoria?.nome_trabalho || "—"}</TableCell>
-                <TableCell className="text-sm">{p.data_base_referencia ? new Date(p.data_base_referencia + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</TableCell>
-                <TableCell className="text-sm">{p.codigo_mcse ? `${p.codigo_mcse}` : "—"}</TableCell>
-                <TableCell>{renderStatus(p.status_procedimento)}</TableCell>
-                <TableCell className="text-sm">{p.exec?.nome || "—"}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => setDetail(p)}><Eye size={14} /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Pencil size={14} /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {filtered.map((p: any) => {
+              const fmt = (d?: string | null) =>
+                d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : null;
+              const ini = fmt(p.data_inicio_execucao);
+              const fim = fmt(p.data_fim_execucao);
+              const periodo = ini && fim ? `${ini} – ${fim}` : ini || fim || "—";
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="text-sm">{renderTipo(p.tipo_procedimento)}</TableCell>
+                  <TableCell className="font-medium">{p.titulo}</TableCell>
+                  <TableCell className="text-sm">{p.clientes?.nome_fantasia || p.clientes?.razao_social || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.trabalhos_auditoria?.nome_trabalho || "—"}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{periodo}</TableCell>
+                  <TableCell className="text-sm">{fmt(p.data_base_referencia) || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.codigo_mcse ? `${p.codigo_mcse}` : "—"}</TableCell>
+                  <TableCell>{renderStatus(p.status_procedimento)}</TableCell>
+                  <TableCell className="text-sm">{p.exec?.nome || "—"}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Button variant="ghost" size="icon" onClick={() => setDetail(p)}><Eye size={14} /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Pencil size={14} /></Button>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        title="Excluir procedimento"
+                        onClick={() => { setConfirmDelete(p); setConfirmText(""); }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -457,13 +530,51 @@ export default function ProcedimentosAuxiliaresPage() {
                 <Label>Descrição</Label>
                 <Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
               </div>
-              <div>
-                <Label>Data do Procedimento</Label>
-                <Input type="date" value={form.data_procedimento} onChange={(e) => setForm({ ...form, data_procedimento: e.target.value })} />
+              <div className="col-span-2">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                  Período de Execução
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Data início da execução</Label>
+                    <Input
+                      type="date"
+                      value={form.data_inicio_execucao}
+                      onChange={(e) => setForm({ ...form, data_inicio_execucao: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Data fim da execução</Label>
+                    <Input
+                      type="date"
+                      value={form.data_fim_execucao}
+                      onChange={(e) => setForm({ ...form, data_fim_execucao: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Data-base geral</Label>
+                    <Input
+                      type="date"
+                      value={form.data_base_referencia}
+                      onChange={(e) => setForm({ ...form, data_base_referencia: e.target.value })}
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Data-base padrão usada como referência para os blocos, quando aplicável.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label>Data Base de Referência</Label>
-                <Input type="date" value={form.data_base_referencia} onChange={(e) => setForm({ ...form, data_base_referencia: e.target.value })} />
+              <div className="col-span-2">
+                <details className="text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">Campo legado: Data do Procedimento</summary>
+                  <div className="mt-2 max-w-xs">
+                    <Input
+                      type="date"
+                      value={form.data_procedimento}
+                      onChange={(e) => setForm({ ...form, data_procedimento: e.target.value })}
+                    />
+                  </div>
+                </details>
               </div>
               <div className="col-span-2">
                 <Label>Conta MCSE (opcional)</Label>
@@ -526,6 +637,56 @@ export default function ProcedimentosAuxiliaresPage() {
 
       {/* Detail dialog com abas (Dados Gerais / Execução / Evidências / Conclusão) */}
       <ProcedimentoDetailDialog procedimento={detail} onClose={() => setDetail(null)} />
+
+      {/* Confirmação de exclusão (fase de testes) */}
+      <AlertDialog
+        open={!!confirmDelete}
+        onOpenChange={(v) => { if (!v) { setConfirmDelete(null); setConfirmText(""); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir procedimento auxiliar?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Esta ação <strong>não pode ser desfeita</strong>. Pode remover blocos,
+                  itens e documentos vinculados ao procedimento.
+                </p>
+                {confirmDelete && (
+                  <div className="rounded-md border border-border bg-muted/40 p-2 text-xs">
+                    <div><strong>Título:</strong> {confirmDelete.titulo}</div>
+                    <div><strong>Cliente:</strong> {confirmDelete.clientes?.razao_social || "—"}</div>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-xs">
+                    Digite <span className="font-mono">EXCLUIR</span> para confirmar
+                  </Label>
+                  <Input
+                    autoFocus
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="EXCLUIR"
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={confirmText !== "EXCLUIR" || removeProcedimento.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDelete) removeProcedimento.mutate(confirmDelete.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removeProcedimento.isPending ? "Excluindo..." : "Excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
