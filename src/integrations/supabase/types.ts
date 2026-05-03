@@ -1888,6 +1888,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_sol_storage_doc: {
+        Args: { p_object_name: string }
+        Returns: boolean
+      }
       can_access_storage_doc: {
         Args: { p_object_name: string }
         Returns: boolean
