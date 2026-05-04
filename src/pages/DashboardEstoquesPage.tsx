@@ -1115,6 +1115,26 @@ export default function DashboardEstoquesPage() {
                             <TableCell className="text-right font-mono text-sm text-foreground">
                               {fmtBRL(b.difAbsoluta)}
                             </TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {b.qtdSobra > 0 ? (
+                                <span className="text-success">{fmtInt(b.qtdSobra)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm text-success">
+                              {fmtBRL(b.valorSobra)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {b.qtdFalta > 0 ? (
+                                <span className="text-destructive">{fmtInt(b.qtdFalta)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm text-destructive">
+                              {fmtBRL(b.valorFalta)}
+                            </TableCell>
                           </TableRow>
                         );
                       })}
