@@ -1050,6 +1050,10 @@ export default function DashboardEstoquesPage() {
                       <TableHead className="text-right">Divergências</TableHead>
                       <TableHead className="text-right">Dif. líquida</TableHead>
                       <TableHead className="text-right">Dif. absoluta</TableHead>
+                      <TableHead className="text-right">Itens sobra</TableHead>
+                      <TableHead className="text-right">Valor sobra</TableHead>
+                      <TableHead className="text-right">Itens falta</TableHead>
+                      <TableHead className="text-right">Valor falta</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
