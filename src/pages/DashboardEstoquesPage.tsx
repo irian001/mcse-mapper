@@ -97,6 +97,10 @@ interface BlocoResumo {
   divergencias: number;
   difLiquida: number;
   difAbsoluta: number;
+  qtdSobra: number;
+  valorSobra: number;
+  qtdFalta: number;
+  valorFalta: number;
   status: BlocoStatus;
 }
 
