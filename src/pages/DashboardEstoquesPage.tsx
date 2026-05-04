@@ -33,6 +33,8 @@ import {
   Scale,
   Info,
   Filter,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
