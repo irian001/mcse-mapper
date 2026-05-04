@@ -33,6 +33,8 @@ import {
   Scale,
   Info,
   Filter,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -95,6 +97,10 @@ interface BlocoResumo {
   divergencias: number;
   difLiquida: number;
   difAbsoluta: number;
+  qtdSobra: number;
+  valorSobra: number;
+  qtdFalta: number;
+  valorFalta: number;
   status: BlocoStatus;
 }
 
@@ -327,6 +333,10 @@ export default function DashboardEstoquesPage() {
       let divergencias = 0;
       let difLiquida = 0;
       let difAbsoluta = 0;
+      let qtdSobra = 0;
+      let valorSobra = 0;
+      let qtdFalta = 0;
+      let valorFalta = 0;
       for (const it of itensDoBloco) {
         if (isNaoContado(it)) continue;
         contados += 1;
@@ -334,6 +344,13 @@ export default function DashboardEstoquesPage() {
         const dv = Number(it.diferenca_valor) || 0;
         difLiquida += dv;
         difAbsoluta += Math.abs(dv);
+        if (it.status_divergencia === "sobra") {
+          qtdSobra += 1;
+          valorSobra += Math.abs(dv);
+        } else if (it.status_divergencia === "falta") {
+          qtdFalta += 1;
+          valorFalta += Math.abs(dv);
+        }
       }
       const naoContados = importados - contados;
       const pctExecucao = importados > 0 ? (contados / importados) * 100 : 0;
@@ -351,6 +368,10 @@ export default function DashboardEstoquesPage() {
         divergencias,
         difLiquida,
         difAbsoluta,
+        qtdSobra,
+        valorSobra,
+        qtdFalta,
+        valorFalta,
         status: calcStatus({ importados, contados, divergencias }),
       };
     });
@@ -363,6 +384,10 @@ export default function DashboardEstoquesPage() {
     let totalDiv = 0;
     let difLiquida = 0;
     let difAbsoluta = 0;
+    let qtdSobra = 0;
+    let valorSobra = 0;
+    let qtdFalta = 0;
+    let valorFalta = 0;
     for (const it of itens) {
       if (isNaoContado(it)) continue;
       totalContados += 1;
@@ -370,10 +395,29 @@ export default function DashboardEstoquesPage() {
       const dv = Number(it.diferenca_valor) || 0;
       difLiquida += dv;
       difAbsoluta += Math.abs(dv);
+      if (it.status_divergencia === "sobra") {
+        qtdSobra += 1;
+        valorSobra += Math.abs(dv);
+      } else if (it.status_divergencia === "falta") {
+        qtdFalta += 1;
+        valorFalta += Math.abs(dv);
+      }
     }
     const naoContados = totalImportados - totalContados;
     const pctExecucao = totalImportados > 0 ? (totalContados / totalImportados) * 100 : 0;
-    return { totalImportados, totalContados, naoContados, pctExecucao, totalDiv, difLiquida, difAbsoluta };
+    return {
+      totalImportados,
+      totalContados,
+      naoContados,
+      pctExecucao,
+      totalDiv,
+      difLiquida,
+      difAbsoluta,
+      qtdSobra,
+      valorSobra,
+      qtdFalta,
+      valorFalta,
+    };
   }, [itens]);
 
   // ===== Opções dos filtros secundários =====
@@ -742,6 +786,22 @@ export default function DashboardEstoquesPage() {
               hint="Soma de |diferença| dos itens contados"
               loading={isLoadingDash}
             />
+            <KpiCard
+              label="Sobras"
+              value={fmtBRL(kpis.valorSobra)}
+              icon={TrendingUp}
+              tone={kpis.qtdSobra > 0 ? "positive" : "neutral"}
+              hint={`${fmtInt(kpis.qtdSobra)} ${kpis.qtdSobra === 1 ? "item" : "itens"} com sobra`}
+              loading={isLoadingDash}
+            />
+            <KpiCard
+              label="Faltas / Perdas"
+              value={fmtBRL(kpis.valorFalta)}
+              icon={TrendingDown}
+              tone={kpis.qtdFalta > 0 ? "negative" : "neutral"}
+              hint={`${fmtInt(kpis.qtdFalta)} ${kpis.qtdFalta === 1 ? "item" : "itens"} com falta`}
+              loading={isLoadingDash}
+            />
           </div>
 
           {/* Filtros secundários */}
@@ -990,19 +1050,23 @@ export default function DashboardEstoquesPage() {
                       <TableHead className="text-right">Divergências</TableHead>
                       <TableHead className="text-right">Dif. líquida</TableHead>
                       <TableHead className="text-right">Dif. absoluta</TableHead>
+                      <TableHead className="text-right">Itens sobra</TableHead>
+                      <TableHead className="text-right">Valor sobra</TableHead>
+                      <TableHead className="text-right">Itens falta</TableHead>
+                      <TableHead className="text-right">Valor falta</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoadingDash && (
                       <TableRow>
-                        <TableCell colSpan={13} className="text-center text-muted-foreground py-6">
+                        <TableCell colSpan={17} className="text-center text-muted-foreground py-6">
                           Carregando...
                         </TableCell>
                       </TableRow>
                     )}
                     {!isLoadingDash && blocosFiltrados.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={17} className="text-center text-muted-foreground py-8">
                           {resumoPorBloco.length === 0
                             ? "Nenhum bloco de contagem encontrado para este procedimento."
                             : "Nenhum bloco corresponde aos filtros aplicados."}
@@ -1050,6 +1114,26 @@ export default function DashboardEstoquesPage() {
                             </TableCell>
                             <TableCell className="text-right font-mono text-sm text-foreground">
                               {fmtBRL(b.difAbsoluta)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {b.qtdSobra > 0 ? (
+                                <span className="text-success">{fmtInt(b.qtdSobra)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm text-success">
+                              {fmtBRL(b.valorSobra)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {b.qtdFalta > 0 ? (
+                                <span className="text-destructive">{fmtInt(b.qtdFalta)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">0</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm text-destructive">
+                              {fmtBRL(b.valorFalta)}
                             </TableCell>
                           </TableRow>
                         );
