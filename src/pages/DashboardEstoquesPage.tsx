@@ -221,9 +221,9 @@ export default function DashboardEstoquesPage() {
       const { data, error } = await (supabase as any)
         .from("procedimentos_auxiliares")
         .select(
-          "id, titulo, descricao, tipo_procedimento, data_procedimento, data_base_referencia, status_procedimento, trabalho_id"
+          "id, titulo, descricao, tipo_procedimento, data_procedimento, data_base_referencia, status_procedimento, trabalho_auditoria_id"
         )
-        .eq("trabalho_id", trabalhoId)
+        .eq("trabalho_auditoria_id", trabalhoId)
         .eq("tipo_procedimento", "contagem_estoque")
         .order("created_at", { ascending: false });
       if (error) throw error;
