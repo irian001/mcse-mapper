@@ -333,6 +333,10 @@ export default function DashboardEstoquesPage() {
       let divergencias = 0;
       let difLiquida = 0;
       let difAbsoluta = 0;
+      let qtdSobra = 0;
+      let valorSobra = 0;
+      let qtdFalta = 0;
+      let valorFalta = 0;
       for (const it of itensDoBloco) {
         if (isNaoContado(it)) continue;
         contados += 1;
@@ -340,6 +344,13 @@ export default function DashboardEstoquesPage() {
         const dv = Number(it.diferenca_valor) || 0;
         difLiquida += dv;
         difAbsoluta += Math.abs(dv);
+        if (it.status_divergencia === "sobra") {
+          qtdSobra += 1;
+          valorSobra += Math.abs(dv);
+        } else if (it.status_divergencia === "falta") {
+          qtdFalta += 1;
+          valorFalta += Math.abs(dv);
+        }
       }
       const naoContados = importados - contados;
       const pctExecucao = importados > 0 ? (contados / importados) * 100 : 0;
@@ -357,6 +368,10 @@ export default function DashboardEstoquesPage() {
         divergencias,
         difLiquida,
         difAbsoluta,
+        qtdSobra,
+        valorSobra,
+        qtdFalta,
+        valorFalta,
         status: calcStatus({ importados, contados, divergencias }),
       };
     });
