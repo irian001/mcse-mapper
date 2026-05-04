@@ -1066,7 +1066,7 @@ export default function DashboardEstoquesPage() {
                     )}
                     {!isLoadingDash && blocosFiltrados.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={17} className="text-center text-muted-foreground py-8">
                           {resumoPorBloco.length === 0
                             ? "Nenhum bloco de contagem encontrado para este procedimento."
                             : "Nenhum bloco corresponde aos filtros aplicados."}
