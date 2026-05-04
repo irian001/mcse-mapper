@@ -384,6 +384,10 @@ export default function DashboardEstoquesPage() {
     let totalDiv = 0;
     let difLiquida = 0;
     let difAbsoluta = 0;
+    let qtdSobra = 0;
+    let valorSobra = 0;
+    let qtdFalta = 0;
+    let valorFalta = 0;
     for (const it of itens) {
       if (isNaoContado(it)) continue;
       totalContados += 1;
@@ -391,10 +395,29 @@ export default function DashboardEstoquesPage() {
       const dv = Number(it.diferenca_valor) || 0;
       difLiquida += dv;
       difAbsoluta += Math.abs(dv);
+      if (it.status_divergencia === "sobra") {
+        qtdSobra += 1;
+        valorSobra += Math.abs(dv);
+      } else if (it.status_divergencia === "falta") {
+        qtdFalta += 1;
+        valorFalta += Math.abs(dv);
+      }
     }
     const naoContados = totalImportados - totalContados;
     const pctExecucao = totalImportados > 0 ? (totalContados / totalImportados) * 100 : 0;
-    return { totalImportados, totalContados, naoContados, pctExecucao, totalDiv, difLiquida, difAbsoluta };
+    return {
+      totalImportados,
+      totalContados,
+      naoContados,
+      pctExecucao,
+      totalDiv,
+      difLiquida,
+      difAbsoluta,
+      qtdSobra,
+      valorSobra,
+      qtdFalta,
+      valorFalta,
+    };
   }, [itens]);
 
   // ===== Opções dos filtros secundários =====
