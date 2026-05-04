@@ -786,6 +786,22 @@ export default function DashboardEstoquesPage() {
               hint="Soma de |diferença| dos itens contados"
               loading={isLoadingDash}
             />
+            <KpiCard
+              label="Sobras"
+              value={fmtBRL(kpis.valorSobra)}
+              icon={TrendingUp}
+              tone={kpis.qtdSobra > 0 ? "positive" : "neutral"}
+              hint={`${fmtInt(kpis.qtdSobra)} ${kpis.qtdSobra === 1 ? "item" : "itens"} com sobra`}
+              loading={isLoadingDash}
+            />
+            <KpiCard
+              label="Faltas / Perdas"
+              value={fmtBRL(kpis.valorFalta)}
+              icon={TrendingDown}
+              tone={kpis.qtdFalta > 0 ? "negative" : "neutral"}
+              hint={`${fmtInt(kpis.qtdFalta)} ${kpis.qtdFalta === 1 ? "item" : "itens"} com falta`}
+              loading={isLoadingDash}
+            />
           </div>
 
           {/* Filtros secundários */}
