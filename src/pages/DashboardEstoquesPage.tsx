@@ -1059,7 +1059,7 @@ export default function DashboardEstoquesPage() {
                   <TableBody>
                     {isLoadingDash && (
                       <TableRow>
-                        <TableCell colSpan={13} className="text-center text-muted-foreground py-6">
+                        <TableCell colSpan={17} className="text-center text-muted-foreground py-6">
                           Carregando...
                         </TableCell>
                       </TableRow>
