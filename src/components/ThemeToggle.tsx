@@ -1,4 +1,4 @@
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun, Monitor, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,11 +11,19 @@ import { useTheme, ThemeMode } from "@/hooks/useTheme";
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
-  const Icon = theme === "system" ? Monitor : resolvedTheme === "dark" ? Moon : Sun;
+  const Icon =
+    theme === "system"
+      ? Monitor
+      : resolvedTheme === "dark"
+        ? Moon
+        : resolvedTheme === "retro"
+          ? Terminal
+          : Sun;
 
   const items: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
     { value: "light", label: "Claro", icon: Sun },
     { value: "dark", label: "Escuro", icon: Moon },
+    { value: "retro", label: "Retrô Clipper", icon: Terminal },
     { value: "system", label: "Automático", icon: Monitor },
   ];
 
