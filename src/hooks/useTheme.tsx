@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-export type ThemeMode = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark" | "system" | "retro";
 
 interface ThemeContextValue {
   theme: ThemeMode;
-  resolvedTheme: "light" | "dark";
+  resolvedTheme: "light" | "dark" | "retro";
   setTheme: (theme: ThemeMode) => void;
 }
 
@@ -17,27 +17,25 @@ function getSystemTheme(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyTheme(resolved: "light" | "dark") {
+function applyTheme(resolved: "light" | "dark" | "retro") {
   const root = document.documentElement;
-  if (resolved === "dark") {
-    root.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
-  }
+  root.classList.remove("dark", "retro");
+  if (resolved === "dark") root.classList.add("dark");
+  if (resolved === "retro") root.classList.add("retro");
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") return "dark";
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    return stored && ["light", "dark", "system"].includes(stored) ? stored : "dark";
+    return stored && ["light", "dark", "system", "retro"].includes(stored) ? stored : "dark";
   });
 
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => {
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark" | "retro">(() => {
     if (typeof window === "undefined") return "dark";
     const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-    const t = stored && ["light", "dark", "system"].includes(stored) ? stored : "dark";
-    return t === "system" ? getSystemTheme() : t;
+    const t = stored && ["light", "dark", "system", "retro"].includes(stored) ? stored : "dark";
+    return t === "system" ? getSystemTheme() : (t as "light" | "dark" | "retro");
   });
 
   useEffect(() => {
@@ -47,7 +45,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  // React to OS preference changes only when in system mode
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
