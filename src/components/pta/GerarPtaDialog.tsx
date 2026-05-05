@@ -10,6 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ClipboardList } from "lucide-react";
 
+function getMensagemErroPta(err: any) {
+  const code = err?.code;
+  const message = String(err?.message || "");
+
+  if (code === "23505" || /duplicate key|unique constraint|violates unique/i.test(message)) {
+    return "Registro duplicado: já existe um PTA para esta conta MCSE neste trabalho.";
+  }
+
+  return message || "Não foi possível concluir a operação de PTA.";
+}
+
 export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("auto");
@@ -57,6 +68,18 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       if (!autoTrabalhoId || !autoContaMcseId) throw new Error("Selecione trabalho e conta MCSE");
       const trabalho = trabalhos.find((t: any) => t.id === autoTrabalhoId) as any;
       const conta = contasMcse.find((c: any) => c.conta_mcse_id === autoContaMcseId);
+
+      // Prevent duplicate auto PTA for the same trabalho + conta MCSE
+      const { data: existenteAuto, error: existenteAutoError } = await supabase
+        .from("papeis_trabalho")
+        .select("id")
+        .eq("trabalho_auditoria_id", autoTrabalhoId)
+        .eq("conta_mcse_id", autoContaMcseId)
+        .limit(1)
+        .maybeSingle();
+
+      if (existenteAutoError) throw existenteAutoError;
+      if (existenteAuto) throw new Error("Já existe um PTA para esta conta MCSE neste trabalho");
 
       // Fetch MCSE details
       const { data: mcse } = await supabase.from("mcse_contas")
@@ -134,19 +157,32 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
       onClose();
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(getMensagemErroPta(err)),
   });
 
   const gerarManualMutation = useMutation({
     mutationFn: async () => {
       if (!manTrabalhoId || !manTitulo.trim()) throw new Error("Selecione trabalho e informe título");
       const trabalho = trabalhos.find((t: any) => t.id === manTrabalhoId) as any;
+      const tituloNormalizado = manTitulo.trim();
+
+      // Prevent duplicate manual PTA title in the same trabalho
+      const { data: existenteManual, error: existenteManualError } = await supabase
+        .from("papeis_trabalho")
+        .select("id")
+        .eq("trabalho_auditoria_id", manTrabalhoId)
+        .ilike("titulo_pta", tituloNormalizado)
+        .limit(1)
+        .maybeSingle();
+
+      if (existenteManualError) throw existenteManualError;
+      if (existenteManual) throw new Error("Já existe um PTA com este título neste trabalho");
 
       const { error } = await supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: manTrabalhoId,
         cliente_id: trabalho.cliente_id,
         exercicio_id: trabalho.exercicio_id,
-        titulo_pta: manTitulo.trim(),
+        titulo_pta: tituloNormalizado,
       });
       if (error) throw error;
     },
@@ -155,7 +191,7 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
       onClose();
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(getMensagemErroPta(err)),
   });
 
   return (
