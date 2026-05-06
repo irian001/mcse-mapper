@@ -14,7 +14,7 @@ const items: HubItem[] = [
 export default function AdministracaoHubPage() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Administração" description="Configurações e bases estruturais do sistema." />
+      <PageHeader title="Parâmetros" description="Configurações e bases estruturais do sistema." />
       <HubGrid items={items} columns={2} />
     </div>
   );
