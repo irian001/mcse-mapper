@@ -23,7 +23,7 @@ const menuItems = [
   { to: "/trabalhos-hub", label: "Trabalhos", icon: Briefcase, match: ["/trabalhos-hub", "/trabalhos", "/balancetes", "/papeis-trabalho"] },
   { to: "/procedimentos", label: "Procedimentos", icon: ClipboardCheck, match: ["/procedimentos", "/procedimentos-auxiliares"] },
   { to: "/solicitacoes-hub", label: "Solicitações", icon: FileText, match: ["/solicitacoes-hub", "/solicitacoes"] },
-  { to: "/administracao", label: "Administração", icon: Settings, match: ["/administracao", "/empresa-auditoria", "/mcse", "/plano-contas", "/mapeamento", "/regras"] },
+  { to: "/administracao", label: "Parâmetros", icon: Settings, match: ["/administracao", "/empresa-auditoria", "/mcse", "/plano-contas", "/mapeamento", "/regras"] },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
