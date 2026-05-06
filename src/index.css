@@ -180,4 +180,73 @@
     background: hsl(135 100% 50%);
     color: hsl(0 0% 0%);
   }
+
+  .norton {
+    /* Norton Commander / Turbo Vision — azul DOS + amarelo + cinza */
+    --background: 240 100% 33%;
+    --foreground: 0 0% 100%;
+
+    --card: 240 100% 27%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 67%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 60 100% 67%;
+    --primary-foreground: 240 100% 25%;
+
+    --secondary: 0 0% 67%;
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 240 60% 22%;
+    --muted-foreground: 60 60% 80%;
+
+    --accent: 60 100% 67%;
+    --accent-foreground: 240 100% 25%;
+
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 67%;
+    --input: 240 60% 22%;
+    --ring: 60 100% 67%;
+
+    --radius: 0rem;
+
+    --warning: 60 100% 67%;
+    --warning-foreground: 0 0% 0%;
+    --success: 120 100% 60%;
+    --success-foreground: 0 0% 0%;
+    --info: 195 100% 70%;
+    --info-foreground: 0 0% 0%;
+
+    --sidebar-background: 240 100% 27%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 60 100% 67%;
+    --sidebar-primary-foreground: 240 100% 25%;
+    --sidebar-accent: 240 60% 22%;
+    --sidebar-accent-foreground: 60 100% 67%;
+    --sidebar-border: 0 0% 67%;
+    --sidebar-ring: 60 100% 67%;
+  }
+
+  .norton body {
+    font-family: 'IBM Plex Mono', 'VT323', monospace;
+  }
+
+  .norton * {
+    border-radius: 0 !important;
+  }
+
+  .norton input,
+  .norton textarea,
+  .norton select,
+  .norton button {
+    font-family: 'IBM Plex Mono', 'VT323', monospace;
+  }
+
+  .norton ::selection {
+    background: hsl(60 100% 67%);
+    color: hsl(240 100% 25%);
+  }
 }

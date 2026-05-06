@@ -1,4 +1,4 @@
-import { Moon, Sun, Monitor, Terminal } from "lucide-react";
+import { Moon, Sun, Monitor, Terminal, SquareTerminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,12 +18,15 @@ export function ThemeToggle() {
         ? Moon
         : resolvedTheme === "retro"
           ? Terminal
-          : Sun;
+          : resolvedTheme === "norton"
+            ? SquareTerminal
+            : Sun;
 
   const items: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
     { value: "light", label: "Claro", icon: Sun },
     { value: "dark", label: "Escuro", icon: Moon },
     { value: "retro", label: "Retrô Clipper", icon: Terminal },
+    { value: "norton", label: "Norton DOS", icon: SquareTerminal },
     { value: "system", label: "Automático", icon: Monitor },
   ];
 
