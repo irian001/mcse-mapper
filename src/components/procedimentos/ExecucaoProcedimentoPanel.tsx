@@ -28,6 +28,8 @@ export default function ExecucaoProcedimentoPanel({ procedimento }: Props) {
       return <ContagemEstoquePanel procedimentoId={procedimento.id} procedimento={procedimento} />;
 
     case "faturas_em_aberto":
+      return <FaturasEmAbertoPanel procedimento={procedimento} />;
+
     case "ordens_compra":
     case "ordens_imobilizacao":
       return <PlaceholderExecucao tipo={tipo} />;
