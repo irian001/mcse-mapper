@@ -1,6 +1,7 @@
 import { ClipboardList, Construction } from "lucide-react";
 import ContagemCaixaPanel from "./ContagemCaixaPanel";
 import ContagemEstoquePanel from "./ContagemEstoquePanel";
+import FaturasEmAbertoPanel from "./FaturasEmAbertoPanel";
 
 interface Props {
   procedimento: any;
