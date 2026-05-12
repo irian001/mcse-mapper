@@ -107,6 +107,22 @@ export default function CadastroClassesFaturamento({ clienteId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportCadastroAuxiliarDialog
+        open={openImport}
+        onClose={() => setOpenImport(false)}
+        clienteId={clienteId}
+        table="cliente_classes_faturamento"
+        uniqueKey="codigo_classe"
+        title="Importar Classes de Faturamento"
+        invalidateKey={["classes-fat", clienteId]}
+        fields={[
+          { key: "codigo_classe", label: "Código", required: true, hints: ["codigo", "código", "cod"] },
+          { key: "descricao_classe", label: "Descrição", required: true, hints: ["descric", "nome"] },
+          { key: "grupo_classe", label: "Grupo", hints: ["grupo"] },
+          { key: "ativo", label: "Ativo", hints: ["ativo", "status"] },
+        ]}
+      />
     </div>
   );
 }
