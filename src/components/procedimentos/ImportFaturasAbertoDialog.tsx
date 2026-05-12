@@ -31,19 +31,14 @@ const FIELDS = [
   { key: "nome_consumidor", label: "Nome Consumidor", hints: ["consumidor", "cliente", "nome"] },
   { key: "cpf_cnpj", label: "CPF/CNPJ", hints: ["cpf", "cnpj"] },
   { key: "ano_mes_faturamento", label: "Ano/Mês Faturamento", hints: ["referenc", "ano/mes", "anomes", "competen"] },
-  { key: "data_emissao", label: "Data Emissão", hints: ["emiss"] },
-  { key: "valor_original", label: "Valor Original", hints: ["original", "valor original"] },
-  { key: "valor_juros", label: "Valor Juros", hints: ["juros"] },
-  { key: "valor_multa", label: "Valor Multa", hints: ["multa"] },
-  { key: "valor_atualizado", label: "Valor Atualizado", hints: ["atualizado"] },
+  { key: "data_emissao", label: "Data Emissão (opcional — se ausente, usa Data padrão)", hints: ["emiss"] },
   { key: "situacao_uc_codigo", label: "Situação UC (código)", hints: ["situacao uc", "situação uc"] },
+  { key: "situacao_uc_descricao_snapshot", label: "Situação UC (descrição)", hints: ["descricao situacao", "descrição situação"] },
   { key: "situacao_fornecimento", label: "Situação Fornecimento", hints: ["fornec"] },
   { key: "classe_codigo", label: "Classe (código)", hints: ["classe"] },
   { key: "subclasse_codigo", label: "Subclasse (código)", hints: ["subclasse"] },
   { key: "municipio_codigo", label: "Município (código)", hints: ["municip", "cod mun"] },
   { key: "conta_contabil_codigo", label: "Conta Contábil (código)", hints: ["conta contab", "conta cont"] },
-  { key: "numero_instalacao", label: "Nº Instalação", hints: ["instala"] },
-  { key: "numero_contrato", label: "Nº Contrato", hints: ["contrato"] },
   { key: "codigo_consumidor", label: "Código Consumidor", hints: ["cod consumidor", "código consumidor"] },
 ] as const;
 
@@ -51,7 +46,7 @@ type Mapping = Record<string, number>; // -1 = não mapeado
 
 const REQUIRED = ["uc", "data_vencimento", "valor_em_aberto"];
 const RECOMMENDED = [
-  "nome_consumidor", "ano_mes_faturamento", "valor_original",
+  "nome_consumidor", "ano_mes_faturamento",
   "situacao_uc_codigo", "situacao_fornecimento", "classe_codigo",
   "municipio_codigo", "conta_contabil_codigo",
 ];
@@ -96,6 +91,7 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<any[][]>([]);
   const [mapping, setMapping] = useState<Mapping>({});
+  const [dataEmissaoPadrao, setDataEmissaoPadrao] = useState<string>("");
   const [parsed, setParsed] = useState<any[]>([]);
   const [errors, setErrors] = useState<{ line: number; message: string }[]>([]);
   const [warnings, setWarnings] = useState<{ line: number; message: string }[]>([]);
@@ -103,7 +99,7 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
 
   const reset = () => {
     setStep("upload"); setFileName(""); setFileSize(0); setHeaders([]); setRawRows([]);
-    setMapping({}); setParsed([]); setErrors([]); setWarnings([]); setResult(null);
+    setMapping({}); setDataEmissaoPadrao(""); setParsed([]); setErrors([]); setWarnings([]); setResult(null);
   };
   const handleClose = () => { reset(); onClose(); };
 
@@ -189,7 +185,8 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
       if (seenDup.has(dupKey)) warns.push({ line: lineNum, message: "Possível duplicidade no arquivo" });
       seenDup.add(dupKey);
 
-      const dEmissao = parseDate(get("data_emissao"));
+      const dEmissaoArquivo = parseDate(get("data_emissao"));
+      const dEmissao = dEmissaoArquivo || (dataEmissaoPadrao || null);
       const classeCod = String(get("classe_codigo") ?? "").trim();
       const munCod = String(get("municipio_codigo") ?? "").trim();
       const classeReg: any = classeCod ? classMap.get(classeCod) : null;
@@ -214,17 +211,14 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
         trabalho_auditoria_id: procedimento.trabalho_auditoria_id,
         uc, numero_fatura: numFatura || null, numero_documento: numDoc || null,
         data_vencimento: dVenc, data_emissao: dEmissao,
-        valor_em_aberto: vAberto, valor_original: parseNum(get("valor_original")),
-        valor_juros: parseNum(get("valor_juros")), valor_multa: parseNum(get("valor_multa")),
-        valor_atualizado: parseNum(get("valor_atualizado")),
+        valor_em_aberto: vAberto,
         nome_consumidor: String(get("nome_consumidor") ?? "").trim() || null,
         cpf_cnpj: String(get("cpf_cnpj") ?? "").trim() || null,
         codigo_consumidor: String(get("codigo_consumidor") ?? "").trim() || null,
-        numero_instalacao: String(get("numero_instalacao") ?? "").trim() || null,
-        numero_contrato: String(get("numero_contrato") ?? "").trim() || null,
         ano_mes_faturamento: anoMes || null, ano_faturamento: anoFat, mes_faturamento: mesFat,
         ano_vencimento: anoVenc, dias_em_atraso: diasAtraso,
         situacao_uc_codigo: String(get("situacao_uc_codigo") ?? "").trim() || null,
+        situacao_uc_descricao_snapshot: String(get("situacao_uc_descricao_snapshot") ?? "").trim() || null,
         situacao_fornecimento: String(get("situacao_fornecimento") ?? "").trim() || null,
         classe_codigo: classeCod || null,
         classe_descricao_snapshot: classeReg?.descricao_classe || null,
@@ -266,6 +260,7 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
           trabalho_auditoria_id: procedimento.trabalho_auditoria_id,
           nome_arquivo: fileName, tipo_arquivo: fileName.split(".").pop()?.toLowerCase(),
           tamanho_arquivo: fileSize,
+          data_emissao_padrao: dataEmissaoPadrao || null,
           quantidade_linhas_lidas: rawRows.length,
           quantidade_linhas_importadas: validItems.length,
           quantidade_linhas_com_erro: errors.length,
@@ -345,6 +340,15 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
               Arquivo: <strong>{fileName}</strong> — {rawRows.length} linha(s).
               Mapeie as colunas (* = obrigatórias).
             </p>
+            <div className="border rounded p-3 bg-muted/30 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Data de emissão padrão</Label>
+                <Input type="date" value={dataEmissaoPadrao} onChange={(e) => setDataEmissaoPadrao(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Usada quando a coluna "Data Emissão" não estiver mapeada ou estiver vazia. Pode ficar em branco.
+                </p>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[55vh] overflow-y-auto pr-2">
               {FIELDS.map((f) => (
                 <div key={f.key} className="space-y-1">

@@ -7,14 +7,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import ImportCadastroAuxiliarDialog from "./ImportCadastroAuxiliarDialog";
 
 interface Props { clienteId: string; }
 
 export default function CadastroClassesFaturamento({ clienteId }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [openImport, setOpenImport] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ codigo_classe: "", descricao_classe: "", grupo_classe: "", ativo: true });
 
@@ -63,9 +65,14 @@ export default function CadastroClassesFaturamento({ clienteId }: Props) {
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{data.length} classe(s) cadastrada(s)</p>
-        <Button size="sm" onClick={() => { setEditing(null); setForm({ codigo_classe: "", descricao_classe: "", grupo_classe: "", ativo: true }); setOpen(true); }}>
-          <Plus size={14} /> Nova classe
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setOpenImport(true)}>
+            <Upload size={14} /> Importar Classes
+          </Button>
+          <Button size="sm" onClick={() => { setEditing(null); setForm({ codigo_classe: "", descricao_classe: "", grupo_classe: "", ativo: true }); setOpen(true); }}>
+            <Plus size={14} /> Nova classe
+          </Button>
+        </div>
       </div>
       <Table>
         <TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Descrição</TableHead><TableHead>Grupo</TableHead><TableHead>Ativo</TableHead><TableHead></TableHead></TableRow></TableHeader>
@@ -100,6 +107,22 @@ export default function CadastroClassesFaturamento({ clienteId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportCadastroAuxiliarDialog
+        open={openImport}
+        onClose={() => setOpenImport(false)}
+        clienteId={clienteId}
+        table="cliente_classes_faturamento"
+        uniqueKey="codigo_classe"
+        title="Importar Classes de Faturamento"
+        invalidateKey={["classes-fat", clienteId]}
+        fields={[
+          { key: "codigo_classe", label: "Código", required: true, hints: ["codigo", "código", "cod"] },
+          { key: "descricao_classe", label: "Descrição", required: true, hints: ["descric", "nome"] },
+          { key: "grupo_classe", label: "Grupo", hints: ["grupo"] },
+          { key: "ativo", label: "Ativo", hints: ["ativo", "status"] },
+        ]}
+      />
     </div>
   );
 }

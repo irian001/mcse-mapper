@@ -10,18 +10,38 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
--- 0) ENUM tipo_procedimento_auxiliar (se existir)
+-- 0) ENUM do tipo de procedimento (se a coluna usar enum)
 -- ------------------------------------------------------------
--- Se o tipo é controlado por enum próprio, garantir o valor
--- 'faturas_em_aberto'. Se for apenas TEXT no schema, este bloco
--- não fará nada (DO/EXCEPTION).
+-- A coluna procedimentos_auxiliares.tipo_procedimento pode ser
+-- TEXT ou um ENUM. Detectamos dinamicamente o tipo real da coluna
+-- e, se for enum, adicionamos 'faturas_em_aberto'. Se for TEXT, o
+-- bloco apenas não faz nada. Não falha se o valor já existir.
 DO $$
+DECLARE
+  v_udt_name text;
+  v_udt_schema text;
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_procedimento_auxiliar') THEN
+  SELECT udt_schema, udt_name
+    INTO v_udt_schema, v_udt_name
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'procedimentos_auxiliares'
+    AND column_name = 'tipo_procedimento';
+
+  IF v_udt_name IS NULL THEN
+    RAISE NOTICE 'Coluna procedimentos_auxiliares.tipo_procedimento não encontrada. Pulando ajuste de enum.';
+  ELSIF EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = v_udt_name AND n.nspname = v_udt_schema AND t.typtype = 'e'
+  ) THEN
     BEGIN
-      ALTER TYPE public.tipo_procedimento_auxiliar ADD VALUE IF NOT EXISTS 'faturas_em_aberto';
+      EXECUTE format('ALTER TYPE %I.%I ADD VALUE IF NOT EXISTS %L',
+                     v_udt_schema, v_udt_name, 'faturas_em_aberto');
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
+  ELSE
+    RAISE NOTICE 'Coluna tipo_procedimento não é enum (tipo=%). Nenhuma ação necessária.', v_udt_name;
   END IF;
 END$$;
 
@@ -87,6 +107,7 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_lotes (
   tamanho_arquivo             bigint,
 
   data_importacao             timestamptz NOT NULL DEFAULT now(),
+  data_emissao_padrao         date,
   usuario_importacao_id       uuid,
 
   quantidade_linhas_lidas     integer NOT NULL DEFAULT 0,
@@ -129,8 +150,6 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   codigo_consumidor   text,
   nome_consumidor     text,
   cpf_cnpj            text,
-  numero_instalacao   text,
-  numero_contrato     text,
 
   -- Identificação fatura
   numero_fatura       text,
@@ -149,14 +168,10 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   ano_vencimento      integer,
   dias_em_atraso      integer,
 
-  -- Valores
-  valor_original     numeric(18,2),
+  -- Valores (etapa 1: foco em valor_em_aberto)
   valor_em_aberto    numeric(18,2),
-  valor_juros        numeric(18,2),
-  valor_multa        numeric(18,2),
   valor_correcao     numeric(18,2),
   valor_desconto     numeric(18,2),
-  valor_atualizado   numeric(18,2),
   valor_pago         numeric(18,2),
   saldo_remanescente numeric(18,2),
 
@@ -225,18 +240,21 @@ CREATE TRIGGER trg_upd_pfai BEFORE UPDATE ON public.procedimento_faturas_aberto_
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ------------------------------------------------------------
--- 5) RLS — alinhado ao padrão do projeto
+-- 5) RLS — restritiva: cliente_usuario NÃO acessa nesta etapa
 -- ------------------------------------------------------------
+-- Etapa 1 do procedimento de Faturas em Aberto não expõe dados a
+-- usuários do portal cliente. Apenas auditores/admin têm acesso.
 ALTER TABLE public.cliente_classes_faturamento        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cliente_municipios_faturamento     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.procedimento_faturas_aberto_lotes  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.procedimento_faturas_aberto_itens  ENABLE ROW LEVEL SECURITY;
 
--- Classes (cadastro auxiliar do cliente — auditores internos)
+-- Classes (cadastro auxiliar) — auditores internos somente
 CREATE POLICY select_ccf ON public.cliente_classes_faturamento
   FOR SELECT TO authenticated
   USING ( (NOT public.is_cliente_usuario())
-          OR cliente_id = public.get_cliente_usuario_cliente_id() );
+          AND (public.is_admin()
+               OR cliente_id IN (SELECT public.get_accessible_cliente_ids())) );
 CREATE POLICY insert_ccf ON public.cliente_classes_faturamento
   FOR INSERT TO authenticated
   WITH CHECK ( public.is_admin() OR ((NOT public.is_cliente_usuario())
@@ -250,11 +268,12 @@ CREATE POLICY update_ccf ON public.cliente_classes_faturamento
 CREATE POLICY delete_ccf ON public.cliente_classes_faturamento
   FOR DELETE TO authenticated USING ( public.is_admin() );
 
--- Municípios
+-- Municípios — auditores internos somente
 CREATE POLICY select_cmf ON public.cliente_municipios_faturamento
   FOR SELECT TO authenticated
   USING ( (NOT public.is_cliente_usuario())
-          OR cliente_id = public.get_cliente_usuario_cliente_id() );
+          AND (public.is_admin()
+               OR cliente_id IN (SELECT public.get_accessible_cliente_ids())) );
 CREATE POLICY insert_cmf ON public.cliente_municipios_faturamento
   FOR INSERT TO authenticated
   WITH CHECK ( public.is_admin() OR ((NOT public.is_cliente_usuario())
@@ -268,10 +287,13 @@ CREATE POLICY update_cmf ON public.cliente_municipios_faturamento
 CREATE POLICY delete_cmf ON public.cliente_municipios_faturamento
   FOR DELETE TO authenticated USING ( public.is_admin() );
 
--- Lotes
+-- Lotes — auditores internos somente
 CREATE POLICY select_pfal ON public.procedimento_faturas_aberto_lotes
   FOR SELECT TO authenticated
-  USING ( (NOT public.is_cliente_usuario()) OR cliente_id = public.get_cliente_usuario_cliente_id() );
+  USING ( (NOT public.is_cliente_usuario())
+          AND (public.is_admin()
+               OR trabalho_auditoria_id IS NULL
+               OR trabalho_auditoria_id IN (SELECT public.get_accessible_trabalho_ids())) );
 CREATE POLICY insert_pfal ON public.procedimento_faturas_aberto_lotes
   FOR INSERT TO authenticated
   WITH CHECK ( public.is_admin() OR ((NOT public.is_cliente_usuario())
@@ -288,10 +310,13 @@ CREATE POLICY update_pfal ON public.procedimento_faturas_aberto_lotes
 CREATE POLICY delete_pfal ON public.procedimento_faturas_aberto_lotes
   FOR DELETE TO authenticated USING ( public.is_admin() );
 
--- Itens
+-- Itens — auditores internos somente
 CREATE POLICY select_pfai ON public.procedimento_faturas_aberto_itens
   FOR SELECT TO authenticated
-  USING ( (NOT public.is_cliente_usuario()) OR cliente_id = public.get_cliente_usuario_cliente_id() );
+  USING ( (NOT public.is_cliente_usuario())
+          AND (public.is_admin()
+               OR trabalho_auditoria_id IS NULL
+               OR trabalho_auditoria_id IN (SELECT public.get_accessible_trabalho_ids())) );
 CREATE POLICY insert_pfai ON public.procedimento_faturas_aberto_itens
   FOR INSERT TO authenticated
   WITH CHECK ( public.is_admin() OR ((NOT public.is_cliente_usuario())
