@@ -32,13 +32,10 @@ const FIELDS = [
   { key: "cpf_cnpj", label: "CPF/CNPJ", hints: ["cpf", "cnpj"] },
   { key: "ano_mes_faturamento", label: "Ano/Mês Faturamento", hints: ["referenc", "ano/mes", "anomes", "competen"] },
   { key: "data_emissao", label: "Data Emissão (opcional — se ausente, usa Data padrão)", hints: ["emiss"] },
-  { key: "situacao_uc_codigo", label: "Situação UC (código)", hints: ["situacao uc", "situação uc"] },
-  { key: "situacao_uc_descricao_snapshot", label: "Situação UC (descrição)", hints: ["descricao situacao", "descrição situação"] },
   { key: "situacao_fornecimento", label: "Situação Fornecimento", hints: ["fornec"] },
   { key: "classe_codigo", label: "Classe (código)", hints: ["classe"] },
   { key: "subclasse_codigo", label: "Subclasse (código)", hints: ["subclasse"] },
   { key: "municipio_codigo", label: "Município (código)", hints: ["municip", "cod mun"] },
-  { key: "conta_contabil_codigo", label: "Conta Contábil (código)", hints: ["conta contab", "conta cont"] },
   { key: "codigo_consumidor", label: "Código Consumidor", hints: ["cod consumidor", "código consumidor"] },
 ] as const;
 
@@ -47,8 +44,8 @@ type Mapping = Record<string, number>; // -1 = não mapeado
 const REQUIRED = ["uc", "data_vencimento", "valor_em_aberto"];
 const RECOMMENDED = [
   "nome_consumidor", "ano_mes_faturamento",
-  "situacao_uc_codigo", "situacao_fornecimento", "classe_codigo",
-  "municipio_codigo", "conta_contabil_codigo",
+  "situacao_fornecimento", "classe_codigo",
+  "municipio_codigo", "data_emissao",
 ];
 
 const parseNum = (v: any): number | null => {
@@ -217,8 +214,6 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
         codigo_consumidor: String(get("codigo_consumidor") ?? "").trim() || null,
         ano_mes_faturamento: anoMes || null, ano_faturamento: anoFat, mes_faturamento: mesFat,
         ano_vencimento: anoVenc, dias_em_atraso: diasAtraso,
-        situacao_uc_codigo: String(get("situacao_uc_codigo") ?? "").trim() || null,
-        situacao_uc_descricao_snapshot: String(get("situacao_uc_descricao_snapshot") ?? "").trim() || null,
         situacao_fornecimento: String(get("situacao_fornecimento") ?? "").trim() || null,
         classe_codigo: classeCod || null,
         classe_descricao_snapshot: classeReg?.descricao_classe || null,
@@ -230,7 +225,6 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
         codigo_ibge: munReg?.codigo_ibge || null,
         regional_codigo: munReg?.regional_codigo || null,
         regional_nome_snapshot: munReg?.regional_nome || null,
-        conta_contabil_codigo: String(get("conta_contabil_codigo") ?? "").trim() || null,
         linha_arquivo: lineNum,
         linha_original: row,
       });

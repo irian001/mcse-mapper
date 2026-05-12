@@ -183,9 +183,7 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   numero_parcela     integer,
   quantidade_parcelas integer,
 
-  -- Situação UC
-  situacao_uc_codigo             text,
-  situacao_uc_descricao_snapshot text,
+  -- Situação UC (apenas situacao_fornecimento usada nesta etapa)
   situacao_fornecimento          text,
   data_situacao_uc               date,
 
@@ -206,10 +204,7 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   localidade_codigo              text,
   localidade_nome_snapshot       text,
 
-  -- Conta contábil
-  conta_contabil_codigo            text,
-  conta_contabil_descricao_snapshot text,
-  grupo_contabil                   text,
+  -- (Conta contábil removida nesta etapa)
 
   -- Rastreabilidade
   linha_arquivo  integer,
@@ -233,7 +228,6 @@ CREATE INDEX IF NOT EXISTS idx_pfai_anomes      ON public.procedimento_faturas_a
 CREATE INDEX IF NOT EXISTS idx_pfai_classe      ON public.procedimento_faturas_aberto_itens(classe_codigo);
 CREATE INDEX IF NOT EXISTS idx_pfai_municipio   ON public.procedimento_faturas_aberto_itens(municipio_codigo);
 CREATE INDEX IF NOT EXISTS idx_pfai_situacao    ON public.procedimento_faturas_aberto_itens(situacao_fornecimento);
-CREATE INDEX IF NOT EXISTS idx_pfai_contacont   ON public.procedimento_faturas_aberto_itens(conta_contabil_codigo);
 
 DROP TRIGGER IF EXISTS trg_upd_pfai ON public.procedimento_faturas_aberto_itens;
 CREATE TRIGGER trg_upd_pfai BEFORE UPDATE ON public.procedimento_faturas_aberto_itens
