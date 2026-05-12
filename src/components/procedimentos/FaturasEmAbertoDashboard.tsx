@@ -67,12 +67,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   const itens = itensQ.data || [];
 
   const getDiasAtraso = (i: any): number | null => {
-    if (i.dias_em_atraso !== null && i.dias_em_atraso !== undefined) return Number(i.dias_em_atraso);
+    // Sempre recalcula a partir da data-base do procedimento (AME) vs data de vencimento,
+    // para garantir consistência quando dias_em_atraso importado estiver desatualizado.
     if (dataBase && i.data_vencimento) {
       const a = new Date(dataBase).getTime();
       const b = new Date(i.data_vencimento).getTime();
       if (!isNaN(a) && !isNaN(b)) return Math.floor((a - b) / 86400000);
     }
+    if (i.dias_em_atraso !== null && i.dias_em_atraso !== undefined) return Number(i.dias_em_atraso);
     return null;
   };
 
