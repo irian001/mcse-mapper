@@ -150,7 +150,7 @@ export default function FaturasEmAbertoPanel({ procedimento }: Props) {
                   <TableHead className="text-right">Atraso</TableHead>
                   <TableHead className="text-right">Valor Aberto</TableHead>
                   <TableHead>Situação</TableHead><TableHead>Classe</TableHead>
-                  <TableHead>Município</TableHead><TableHead>Conta Cont.</TableHead>
+                  <TableHead>Município</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -163,10 +163,9 @@ export default function FaturasEmAbertoPanel({ procedimento }: Props) {
                     <TableCell>{i.data_vencimento || "-"}</TableCell>
                     <TableCell className="text-right">{i.dias_em_atraso ?? "-"}</TableCell>
                     <TableCell className="text-right">{fmtBRL(i.valor_em_aberto)}</TableCell>
-                    <TableCell>{i.situacao_fornecimento || i.situacao_uc_codigo || "-"}</TableCell>
+                    <TableCell>{i.situacao_fornecimento || "-"}</TableCell>
                     <TableCell>{i.classe_descricao_snapshot || i.classe_codigo || "-"}</TableCell>
                     <TableCell>{i.municipio_nome_snapshot || i.municipio_codigo || "-"}</TableCell>
-                    <TableCell>{i.conta_contabil_codigo || "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
