@@ -139,17 +139,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   };
 
   // Ano da data-base do procedimento (com fallbacks)
+  // Ano/Mês de Faturamento — usar EXCLUSIVAMENTE ano_mes_faturamento.
+  // Não aplicar fallback para data_vencimento, data_emissao ou ano_vencimento.
   const getAnoMesFromItem = (i: any): string | null => {
-    if (i.ano_mes_faturamento) {
-      const s = String(i.ano_mes_faturamento);
-      if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
-      if (/^\d{4}\/\d{2}/.test(s)) return s.slice(0, 4) + "-" + s.slice(5, 7);
-      if (/^\d{6}$/.test(s)) return s.slice(0, 4) + "-" + s.slice(4, 6);
-    }
-    if (i.data_vencimento) {
-      const d = new Date(i.data_vencimento);
-      if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    }
+    if (!i.ano_mes_faturamento) return null;
+    const s = String(i.ano_mes_faturamento).trim();
+    if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+    if (/^\d{4}\/\d{2}/.test(s)) return s.slice(0, 4) + "-" + s.slice(5, 7);
+    if (/^\d{6}$/.test(s)) return s.slice(0, 4) + "-" + s.slice(4, 6);
     return null;
   };
   const getAnoFromItem = (i: any): string | null => {
