@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Play, Paperclip, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Play, Paperclip, CheckCircle2, Maximize2, Minimize2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import ExecucaoProcedimentoPanel from "./ExecucaoProcedimentoPanel";
 import DocumentosProcedimentoPanel from "./DocumentosProcedimentoPanel";
 import ConclusaoProcedimentoPanel from "./ConclusaoProcedimentoPanel";
@@ -29,6 +32,7 @@ interface Props {
 }
 
 export default function ProcedimentoDetailDialog({ procedimento, onClose }: Props) {
+  const [maximized, setMaximized] = useState(false);
   if (!procedimento) return null;
 
   const tipoLabel = TIPOS_PROCEDIMENTO[procedimento.tipo_procedimento] || procedimento.tipo_procedimento;
@@ -44,7 +48,14 @@ export default function ProcedimentoDetailDialog({ procedimento, onClose }: Prop
 
   return (
     <Dialog open={!!procedimento} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-5xl max-h-[92vh] overflow-hidden flex flex-col p-0">
+      <DialogContent
+        className={cn(
+          "overflow-hidden flex flex-col p-0 transition-all",
+          maximized
+            ? "max-w-[98vw] w-[98vw] h-[96vh] max-h-[96vh]"
+            : "max-w-5xl max-h-[92vh]",
+        )}
+      >
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-border">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
@@ -64,6 +75,15 @@ export default function ProcedimentoDetailDialog({ procedimento, onClose }: Prop
                 </span>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 mr-8 shrink-0"
+              onClick={() => setMaximized((m) => !m)}
+              title={maximized ? "Restaurar" : "Maximizar"}
+            >
+              {maximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </Button>
           </div>
         </DialogHeader>
 
