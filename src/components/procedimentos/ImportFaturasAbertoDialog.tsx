@@ -185,7 +185,8 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
       if (seenDup.has(dupKey)) warns.push({ line: lineNum, message: "Possível duplicidade no arquivo" });
       seenDup.add(dupKey);
 
-      const dEmissao = parseDate(get("data_emissao"));
+      const dEmissaoArquivo = parseDate(get("data_emissao"));
+      const dEmissao = dEmissaoArquivo || (dataEmissaoPadrao || null);
       const classeCod = String(get("classe_codigo") ?? "").trim();
       const munCod = String(get("municipio_codigo") ?? "").trim();
       const classeReg: any = classeCod ? classMap.get(classeCod) : null;
@@ -210,17 +211,14 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
         trabalho_auditoria_id: procedimento.trabalho_auditoria_id,
         uc, numero_fatura: numFatura || null, numero_documento: numDoc || null,
         data_vencimento: dVenc, data_emissao: dEmissao,
-        valor_em_aberto: vAberto, valor_original: parseNum(get("valor_original")),
-        valor_juros: parseNum(get("valor_juros")), valor_multa: parseNum(get("valor_multa")),
-        valor_atualizado: parseNum(get("valor_atualizado")),
+        valor_em_aberto: vAberto,
         nome_consumidor: String(get("nome_consumidor") ?? "").trim() || null,
         cpf_cnpj: String(get("cpf_cnpj") ?? "").trim() || null,
         codigo_consumidor: String(get("codigo_consumidor") ?? "").trim() || null,
-        numero_instalacao: String(get("numero_instalacao") ?? "").trim() || null,
-        numero_contrato: String(get("numero_contrato") ?? "").trim() || null,
         ano_mes_faturamento: anoMes || null, ano_faturamento: anoFat, mes_faturamento: mesFat,
         ano_vencimento: anoVenc, dias_em_atraso: diasAtraso,
         situacao_uc_codigo: String(get("situacao_uc_codigo") ?? "").trim() || null,
+        situacao_uc_descricao_snapshot: String(get("situacao_uc_descricao_snapshot") ?? "").trim() || null,
         situacao_fornecimento: String(get("situacao_fornecimento") ?? "").trim() || null,
         classe_codigo: classeCod || null,
         classe_descricao_snapshot: classeReg?.descricao_classe || null,
