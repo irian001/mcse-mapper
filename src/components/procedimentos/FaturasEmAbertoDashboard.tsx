@@ -245,6 +245,94 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     }));
   }, [filteredBase, dataBase]);
 
+  // ===== Agregações para gráficos (respeitam TODOS os filtros, inclusive aging) =====
+  type Agg = { label: string; valor: number; qtd: number; ucs: Set<string> };
+  const aggToArr = (m: Map<string, Agg>) =>
+    Array.from(m.values()).map((a) => ({ label: a.label, valor: a.valor, qtd: a.qtd, qtdUcs: a.ucs.size }));
+
+  const totalFiltrado = useMemo(
+    () => filtered.reduce((s: number, i: any) => s + (Number(i.valor_em_aberto) || 0), 0),
+    [filtered]
+  );
+
+  const chartAging = useMemo(() => {
+    const m = new Map<string, Agg>();
+    AGING_FAIXAS.forEach((f) => m.set(f.label, { label: f.label, valor: 0, qtd: 0, ucs: new Set() }));
+    filtered.forEach((i: any) => {
+      const f = classificarAging(getDiasAtraso(i));
+      const a = m.get(f.label)!;
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m);
+  }, [filtered, dataBase]);
+
+  const aggBy = (keyFn: (i: any) => string) => {
+    const m = new Map<string, Agg>();
+    filtered.forEach((i: any) => {
+      const k = keyFn(i);
+      let a = m.get(k);
+      if (!a) { a = { label: k, valor: 0, qtd: 0, ucs: new Set() }; m.set(k, a); }
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return m;
+  };
+
+  const chartSituacao = useMemo(
+    () => aggToArr(aggBy((i) => i.situacao_fornecimento || "Sem informação"))
+      .sort((a, b) => b.valor - a.valor),
+    [filtered]
+  );
+
+  const chartClasse = useMemo(() => {
+    const arr = aggToArr(aggBy((i) =>
+      i.classe_descricao_snapshot || i.classe_codigo || "Classe não informada"
+    )).sort((a, b) => b.valor - a.valor);
+    if (arr.length <= 10) return arr;
+    const top = arr.slice(0, 10);
+    const outras = arr.slice(10).reduce(
+      (acc, x) => ({ label: "Outras", valor: acc.valor + x.valor, qtd: acc.qtd + x.qtd, qtdUcs: acc.qtdUcs + x.qtdUcs }),
+      { label: "Outras", valor: 0, qtd: 0, qtdUcs: 0 }
+    );
+    return [...top, outras];
+  }, [filtered]);
+
+  const chartVencidoXAVencer = useMemo(() => {
+    const m = new Map<string, Agg>([
+      ["A vencer",       { label: "A vencer", valor: 0, qtd: 0, ucs: new Set() }],
+      ["Vencido",        { label: "Vencido",  valor: 0, qtd: 0, ucs: new Set() }],
+      ["Sem informação", { label: "Sem informação", valor: 0, qtd: 0, ucs: new Set() }],
+    ]);
+    filtered.forEach((i: any) => {
+      const d = getDiasAtraso(i);
+      const k = d === null ? "Sem informação" : d > 0 ? "Vencido" : "A vencer";
+      const a = m.get(k)!;
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m).filter((x) => x.qtd > 0);
+  }, [filtered, dataBase]);
+
+  const chartAnoMes = useMemo(() => {
+    const arr = aggToArr(aggBy((i) => {
+      if (i.ano_mes_faturamento) return String(i.ano_mes_faturamento);
+      if (i.data_vencimento) {
+        const d = new Date(i.data_vencimento);
+        if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      }
+      return "Sem informação";
+    }));
+    return arr.sort((a, b) => {
+      if (a.label === "Sem informação") return 1;
+      if (b.label === "Sem informação") return -1;
+      return a.label.localeCompare(b.label);
+    });
+  }, [filtered]);
+
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
     setFilterAnoVenc("all"); setFilterAnoMes("all"); setFilterStatus("all");
