@@ -213,7 +213,10 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
       if (filterSit !== "all" && (i.situacao_fornecimento || "Sem informação") !== filterSit) return false;
       if (filterClasse !== "all" && (i.classe_descricao_snapshot || i.classe_codigo || "Classe não informada") !== filterClasse) return false;
       if (filterAnoVenc !== "all" && getAnoVenc(i) !== filterAnoVenc) return false;
-      if (filterAnoMes !== "all" && i.ano_mes_faturamento !== filterAnoMes) return false;
+      if (filterAnoMes !== "all") {
+        const am = getAnoMesFromItem(i);
+        if (am !== filterAnoMes) return false;
+      }
       if (filterStatus !== "all") {
         const d = getDiasAtraso(i);
         if (filterStatus === "vencido" && !(d !== null && d > 0)) return false;
