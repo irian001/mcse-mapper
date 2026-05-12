@@ -31,6 +31,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   const [filterClasse, setFilterClasse] = useState("all");
   const [filterAnoVenc, setFilterAnoVenc] = useState("all");
   const [filterAnoMes, setFilterAnoMes] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [search, setSearch] = useState("");
 
   const lotesQ = useQuery({
