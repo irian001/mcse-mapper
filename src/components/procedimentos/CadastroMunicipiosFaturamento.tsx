@@ -113,6 +113,25 @@ export default function CadastroMunicipiosFaturamento({ clienteId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportCadastroAuxiliarDialog
+        open={openImport}
+        onClose={() => setOpenImport(false)}
+        clienteId={clienteId}
+        table="cliente_municipios_faturamento"
+        uniqueKey="codigo_municipio"
+        title="Importar Municípios de Faturamento"
+        invalidateKey={["mun-fat", clienteId]}
+        fields={[
+          { key: "codigo_municipio", label: "Código", required: true, hints: ["codigo", "código", "cod"] },
+          { key: "nome_municipio", label: "Nome", required: true, hints: ["nome", "municip"] },
+          { key: "uf", label: "UF", hints: ["uf", "estado"] },
+          { key: "codigo_ibge", label: "IBGE", hints: ["ibge"] },
+          { key: "regional_codigo", label: "Regional (cód.)", hints: ["regional cod", "cod regional"] },
+          { key: "regional_nome", label: "Regional (nome)", hints: ["regional nome", "nome regional", "regional"] },
+          { key: "ativo", label: "Ativo", hints: ["ativo", "status"] },
+        ]}
+      />
     </div>
   );
 }
