@@ -146,12 +146,13 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
       ticket: qtdUcs > 0 ? total / qtdUcs : 0,
       vencido, aVencer,
       pctVencido: total > 0 ? (vencido / total) * 100 : 0,
+      pctAVencer: total > 0 ? (aVencer / total) * 100 : 0,
     };
   }, [filtered, dataBase]);
 
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
-    setFilterAnoVenc("all"); setFilterAnoMes("all"); setSearch("");
+    setFilterAnoVenc("all"); setFilterAnoMes("all"); setFilterStatus("all"); setSearch("");
   };
 
   const isLoading = lotesQ.isLoading || itensQ.isLoading;
