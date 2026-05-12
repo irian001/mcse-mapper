@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Play, Paperclip, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Play, Paperclip, CheckCircle2, Maximize2, Minimize2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import ExecucaoProcedimentoPanel from "./ExecucaoProcedimentoPanel";
 import DocumentosProcedimentoPanel from "./DocumentosProcedimentoPanel";
 import ConclusaoProcedimentoPanel from "./ConclusaoProcedimentoPanel";
