@@ -558,3 +558,115 @@ function FilterSel({ value, onChange, options }: { value: string; onChange: (v: 
     </Select>
   );
 }
+
+function ChartCard({ title, children, full }: { title: string; children: React.ReactNode; full?: boolean }) {
+  return (
+    <Card className={full ? "lg:col-span-2" : ""}>
+      <CardContent className="p-3 space-y-2">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+const EmptyChart = () => (
+  <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground border border-dashed rounded">
+    Nenhum dado disponível para os filtros selecionados.
+  </div>
+);
+
+function BarsHorizontal({ data, totalGeral }: { data: any[]; totalGeral: number }) {
+  if (!data.length || data.every((d) => !d.valor)) return <EmptyChart />;
+  return (
+    <div style={{ width: "100%", height: Math.max(220, data.length * 32 + 40) }}>
+      <ResponsiveContainer>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis type="number" tickFormatter={fmtBRLCompact} stroke="hsl(var(--muted-foreground))" fontSize={10} />
+          <YAxis type="category" dataKey="label" width={140} stroke="hsl(var(--muted-foreground))" fontSize={10} interval={0} />
+          <RTooltip content={<ChartTooltip totalGeral={totalGeral} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
+          <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+            {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function BarsVertical({ data, totalGeral }: { data: any[]; totalGeral: number }) {
+  if (!data.length || data.every((d) => !d.valor)) return <EmptyChart />;
+  return (
+    <div style={{ width: "100%", height: 280 }}>
+      <ResponsiveContainer>
+        <BarChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 40 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={10} angle={-35} textAnchor="end" interval={0} height={60} />
+          <YAxis tickFormatter={fmtBRLCompact} stroke="hsl(var(--muted-foreground))" fontSize={10} />
+          <RTooltip content={<ChartTooltip totalGeral={totalGeral} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
+          <Bar dataKey="valor" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function DonutChart({ data, totalGeral }: { data: any[]; totalGeral: number }) {
+  if (!data.length || data.every((d) => !d.valor)) return <EmptyChart />;
+  return (
+    <div style={{ width: "100%", height: 260 }}>
+      <ResponsiveContainer>
+        <PieChart>
+          <RTooltip content={<ChartTooltip totalGeral={totalGeral} />} />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Pie data={data} dataKey="valor" nameKey="label" innerRadius={50} outerRadius={90} paddingAngle={2}>
+            {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ResumoTable({ titulo, colLabel, rows, totalGeral, hidePct }: { titulo: string; colLabel: string; rows: any[]; totalGeral: number; hidePct?: boolean }) {
+  return (
+    <Card>
+      <CardContent className="p-3 space-y-2">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{titulo}</h4>
+        {rows.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">Nenhum dado para exibir.</p>
+        ) : (
+          <div className="border rounded overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted">
+                <TableRow>
+                  <TableHead>{colLabel}</TableHead>
+                  <TableHead className="text-right">Faturas</TableHead>
+                  <TableHead className="text-right">UCs</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  {!hidePct && <TableHead className="text-center">%</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{r.label}</TableCell>
+                    <TableCell className="text-right tabular-nums">{(Number(r.qtd) || 0).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-right tabular-nums">{(Number(r.qtdUcs) || 0).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-right tabular-nums">{(Number(r.valor) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
+                    {!hidePct && (
+                      <TableCell className="text-center tabular-nums">
+                        {totalGeral > 0 ? ((r.valor / totalGeral) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + "%" : "—"}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
