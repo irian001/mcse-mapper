@@ -138,6 +138,43 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     return null;
   };
 
+  // Ano da data-base do procedimento (com fallbacks)
+  const getAnoMesFromItem = (i: any): string | null => {
+    if (i.ano_mes_faturamento) {
+      const s = String(i.ano_mes_faturamento);
+      if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+      if (/^\d{4}\/\d{2}/.test(s)) return s.slice(0, 4) + "-" + s.slice(5, 7);
+      if (/^\d{6}$/.test(s)) return s.slice(0, 4) + "-" + s.slice(4, 6);
+    }
+    if (i.data_vencimento) {
+      const d = new Date(i.data_vencimento);
+      if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+    return null;
+  };
+  const getAnoFromItem = (i: any): string | null => {
+    const am = getAnoMesFromItem(i);
+    if (am) return am.slice(0, 4);
+    return null;
+  };
+
+  const { anoDataBase, anoDataBaseFallback } = useMemo(() => {
+    if (dataBase) {
+      const d = new Date(dataBase);
+      if (!isNaN(d.getTime())) return { anoDataBase: d.getFullYear(), anoDataBaseFallback: false };
+    }
+    // fallback: ano mais recente nos dados, ou ano atual
+    let maxAno: number | null = null;
+    itens.forEach((i: any) => {
+      const a = getAnoFromItem(i);
+      if (a) {
+        const n = Number(a);
+        if (!isNaN(n) && (maxAno === null || n > maxAno)) maxAno = n;
+      }
+    });
+    return { anoDataBase: maxAno ?? new Date().getFullYear(), anoDataBaseFallback: true };
+  }, [dataBase, itens]);
+
   const getAnoVenc = (i: any): string => {
     if (i.ano_vencimento) return String(i.ano_vencimento);
     if (i.data_vencimento) {
@@ -162,10 +199,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     () => Array.from(new Set(itens.map(getAnoVenc).filter(Boolean))).sort(),
     [itens]
   );
-  const anoMesOpts = useMemo(
-    () => Array.from(new Set(itens.map((i: any) => i.ano_mes_faturamento).filter(Boolean))).sort(),
-    [itens]
-  );
+  const anoMesOpts = useMemo(() => {
+    const s = new Set<string>();
+    itens.forEach((i: any) => {
+      const am = getAnoMesFromItem(i);
+      if (am && am.slice(0, 4) === String(anoDataBase)) s.add(am);
+    });
+    return Array.from(s).sort();
+  }, [itens, anoDataBase]);
 
   // Filtros base (sem aging) — usado pelo Resumo por Aging
   const filteredBase = useMemo(() => {
@@ -317,21 +358,38 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     return aggToArr(m).filter((x) => x.qtd > 0);
   }, [filtered, dataBase]);
 
-  const chartAnoMes = useMemo(() => {
-    const arr = aggToArr(aggBy((i) => {
-      if (i.ano_mes_faturamento) return String(i.ano_mes_faturamento);
-      if (i.data_vencimento) {
-        const d = new Date(i.data_vencimento);
-        if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      }
-      return "Sem informação";
-    }));
-    return arr.sort((a, b) => {
+  const chartAno = useMemo(() => {
+    const m = new Map<string, Agg>();
+    filtered.forEach((i: any) => {
+      const ano = getAnoFromItem(i);
+      const k = ano ?? "Sem informação";
+      let a = m.get(k);
+      if (!a) { a = { label: k, valor: 0, qtd: 0, ucs: new Set() }; m.set(k, a); }
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m).sort((a, b) => {
       if (a.label === "Sem informação") return 1;
       if (b.label === "Sem informação") return -1;
       return a.label.localeCompare(b.label);
     });
   }, [filtered]);
+
+  const chartAnoMes = useMemo(() => {
+    const anoStr = String(anoDataBase);
+    const m = new Map<string, Agg>();
+    filtered.forEach((i: any) => {
+      const am = getAnoMesFromItem(i);
+      if (!am || am.slice(0, 4) !== anoStr) return;
+      let a = m.get(am);
+      if (!a) { a = { label: am, valor: 0, qtd: 0, ucs: new Set() }; m.set(am, a); }
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m).sort((a, b) => a.label.localeCompare(b.label));
+  }, [filtered, anoDataBase]);
 
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
@@ -382,7 +440,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <FilterSel value={filterSit} onChange={setFilterSit} options={[{ v: "all", l: "Todas situações" }, ...sitOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterClasse} onChange={setFilterClasse} options={[{ v: "all", l: "Todas classes" }, ...classeOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterAnoVenc} onChange={setFilterAnoVenc} options={[{ v: "all", l: "Todos anos venc." }, ...anoVencOpts.map((c) => ({ v: c, l: c }))]} />
-        <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: "Todos ano/mês fat." }, ...anoMesOpts.map((c) => ({ v: c, l: c }))]} />
+        <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: `Todos meses ${anoDataBase}` }, ...anoMesOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterStatus} onChange={setFilterStatus} options={[
           { v: "all", l: "Todos status" },
           { v: "vencido", l: "Vencidos" },
@@ -465,8 +523,17 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
           <ChartCard title="Top 10 classes (+ Outras)">
             <BarsHorizontal data={chartClasse} totalGeral={totalFiltrado} />
           </ChartCard>
-          <ChartCard title="Ano/mês de faturamento" full>
-            <BarsVertical data={chartAnoMes} totalGeral={totalFiltrado} />
+          <ChartCard title="Faturas em Aberto por Ano">
+            <BarsVertical data={chartAno} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title={`Ano/Mês de Faturamento — ${anoDataBase}${anoDataBaseFallback ? " (sem data-base definida)" : ""}`}>
+            {chartAnoMes.length === 0 ? (
+              <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground border border-dashed rounded text-center px-4">
+                Nenhuma fatura encontrada no ano da data-base para a visão mensal.
+              </div>
+            ) : (
+              <BarsVertical data={chartAnoMes} totalGeral={totalFiltrado} />
+            )}
           </ChartCard>
         </div>
       </div>
@@ -478,7 +545,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
           <ResumoTable titulo="Resumo Vencido x A vencer" colLabel="Grupo" rows={chartVencidoXAVencer} totalGeral={totalFiltrado} />
           <ResumoTable titulo="Resumo por Situação"        colLabel="Situação" rows={chartSituacao}        totalGeral={totalFiltrado} />
           <ResumoTable titulo="Resumo por Classe"          colLabel="Classe"   rows={chartClasse}          totalGeral={totalFiltrado} />
-          <ResumoTable titulo="Resumo por Ano/Mês"         colLabel="Ano/Mês"  rows={chartAnoMes}          totalGeral={totalFiltrado} hidePct />
+          <ResumoTable titulo="Resumo por Ano"             colLabel="Ano"      rows={chartAno}             totalGeral={totalFiltrado} />
+          <ResumoTable
+            titulo={`Resumo por Ano/Mês — ${anoDataBase}`}
+            colLabel="Ano/Mês"
+            rows={chartAnoMes}
+            totalGeral={totalFiltrado}
+            emptyMessage="Nenhuma fatura encontrada no ano da data-base para a visão mensal."
+          />
         </div>
       </div>
 
@@ -629,13 +703,13 @@ function DonutChart({ data, totalGeral }: { data: any[]; totalGeral: number }) {
   );
 }
 
-function ResumoTable({ titulo, colLabel, rows, totalGeral, hidePct }: { titulo: string; colLabel: string; rows: any[]; totalGeral: number; hidePct?: boolean }) {
+function ResumoTable({ titulo, colLabel, rows, totalGeral, hidePct, emptyMessage }: { titulo: string; colLabel: string; rows: any[]; totalGeral: number; hidePct?: boolean; emptyMessage?: string }) {
   return (
     <Card>
       <CardContent className="p-3 space-y-2">
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{titulo}</h4>
         {rows.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-4 text-center">Nenhum dado para exibir.</p>
+          <p className="text-xs text-muted-foreground py-4 text-center">{emptyMessage || "Nenhum dado para exibir."}</p>
         ) : (
           <div className="border rounded overflow-x-auto">
             <Table>
