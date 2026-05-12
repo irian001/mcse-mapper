@@ -115,13 +115,19 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
       if (filterClasse !== "all" && (i.classe_descricao_snapshot || i.classe_codigo || "Classe não informada") !== filterClasse) return false;
       if (filterAnoVenc !== "all" && getAnoVenc(i) !== filterAnoVenc) return false;
       if (filterAnoMes !== "all" && i.ano_mes_faturamento !== filterAnoMes) return false;
+      if (filterStatus !== "all") {
+        const d = getDiasAtraso(i);
+        if (filterStatus === "vencido" && !(d !== null && d > 0)) return false;
+        if (filterStatus === "a_vencer" && !(d !== null && d <= 0)) return false;
+        if (filterStatus === "sem_data" && d !== null) return false;
+      }
       if (s) {
         const blob = `${i.uc || ""} ${i.nome_consumidor || ""} ${i.numero_fatura || ""} ${i.numero_documento || ""}`.toLowerCase();
         if (!blob.includes(s)) return false;
       }
       return true;
     });
-  }, [itens, filterLote, filterSit, filterClasse, filterAnoVenc, filterAnoMes, search, dataBase]);
+  }, [itens, filterLote, filterSit, filterClasse, filterAnoVenc, filterAnoMes, filterStatus, search, dataBase]);
 
   const kpis = useMemo(() => {
     const ucs = new Set<string>();
