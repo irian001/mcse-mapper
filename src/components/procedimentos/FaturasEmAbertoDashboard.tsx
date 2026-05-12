@@ -7,6 +7,47 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, RotateCcw } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from "recharts";
+
+const CHART_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--destructive))",
+  "hsl(var(--warning, 38 92% 50%))",
+  "hsl(var(--accent))",
+  "hsl(var(--secondary))",
+  "hsl(var(--muted-foreground))",
+  "hsl(217 91% 60%)",
+  "hsl(142 71% 45%)",
+  "hsl(280 65% 60%)",
+  "hsl(24 95% 53%)",
+  "hsl(190 80% 50%)",
+];
+
+function ChartTooltip({ active, payload, totalGeral }: any) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  return (
+    <div className="rounded border bg-background p-2 text-xs shadow-md space-y-0.5 min-w-[180px]">
+      <div className="font-semibold">{p.label}</div>
+      <div className="flex justify-between gap-4"><span className="text-muted-foreground">Valor</span><span className="tabular-nums">{(Number(p.valor) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span></div>
+      <div className="flex justify-between gap-4"><span className="text-muted-foreground">Faturas</span><span className="tabular-nums">{(Number(p.qtd) || 0).toLocaleString("pt-BR")}</span></div>
+      <div className="flex justify-between gap-4"><span className="text-muted-foreground">UCs</span><span className="tabular-nums">{(Number(p.qtdUcs) || 0).toLocaleString("pt-BR")}</span></div>
+      {totalGeral > 0 && (
+        <div className="flex justify-between gap-4"><span className="text-muted-foreground">% do total</span><span className="tabular-nums">{((p.valor / totalGeral) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%</span></div>
+      )}
+    </div>
+  );
+}
+
+const fmtBRLCompact = (v: number) => {
+  const n = Number(v) || 0;
+  if (Math.abs(n) >= 1_000_000) return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M`;
+  if (Math.abs(n) >= 1_000) return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k`;
+  return `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+};
 
 interface Props { procedimento: any; }
 
