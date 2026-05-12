@@ -12,6 +12,7 @@ import { Upload, FileSpreadsheet, Search } from "lucide-react";
 import ImportFaturasAbertoDialog from "./ImportFaturasAbertoDialog";
 import CadastroClassesFaturamento from "./CadastroClassesFaturamento";
 import CadastroMunicipiosFaturamento from "./CadastroMunicipiosFaturamento";
+import FaturasEmAbertoDashboard from "./FaturasEmAbertoDashboard";
 
 interface Props { procedimento: any; }
 
