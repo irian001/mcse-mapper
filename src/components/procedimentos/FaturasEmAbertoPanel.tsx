@@ -125,6 +125,8 @@ export default function FaturasEmAbertoPanel({ procedimento }: Props) {
           <TabsTrigger value="municipios">Municípios</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard"><FaturasEmAbertoDashboard procedimento={procedimento} /></TabsContent>
+
         <TabsContent value="itens" className="space-y-3">
           <div className="flex flex-wrap gap-2 items-end">
             <div className="flex-1 min-w-[200px]">
