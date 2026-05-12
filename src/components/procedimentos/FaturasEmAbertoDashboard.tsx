@@ -709,7 +709,7 @@ function ResumoTable({ titulo, colLabel, rows, totalGeral, hidePct, emptyMessage
       <CardContent className="p-3 space-y-2">
         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{titulo}</h4>
         {rows.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-4 text-center">Nenhum dado para exibir.</p>
+          <p className="text-xs text-muted-foreground py-4 text-center">{emptyMessage || "Nenhum dado para exibir."}</p>
         ) : (
           <div className="border rounded overflow-x-auto">
             <Table>
