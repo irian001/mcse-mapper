@@ -216,14 +216,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-        <Kpi label="Valor total em aberto" value={fmtBRL(kpis.total)} />
-        <Kpi label="Faturas" value={fmtInt(kpis.qtd)} />
-        <Kpi label="UCs devedoras" value={fmtInt(kpis.qtdUcs)} />
-        <Kpi label="Ticket médio / UC" value={fmtBRL(kpis.ticket)} />
-        <Kpi label="Valor vencido" value={fmtBRL(kpis.vencido)} />
-        <Kpi label="Valor a vencer" value={fmtBRL(kpis.aVencer)} />
-        <Kpi label="% Vencido" value={fmtPct(kpis.pctVencido)} />
-        <Kpi label="% A vencer" value={fmtPct(kpis.pctAVencer)} />
+        <Kpi label="Valor total em aberto" value={fmtBRL(kpis.total)} align="right" />
+        <Kpi label="Faturas" value={fmtInt(kpis.qtd)} align="right" />
+        <Kpi label="UCs devedoras" value={fmtInt(kpis.qtdUcs)} align="right" />
+        <Kpi label="Ticket médio / UC" value={fmtBRL(kpis.ticket)} align="right" />
+        <Kpi label="Valor vencido" value={fmtBRL(kpis.vencido)} align="right" />
+        <Kpi label="Valor a vencer" value={fmtBRL(kpis.aVencer)} align="right" />
+        <Kpi label="% Vencido" value={fmtPct(kpis.pctVencido)} align="center" />
+        <Kpi label="% A vencer" value={fmtPct(kpis.pctAVencer)} align="center" />
       </div>
 
       {/* Tabela */}
@@ -281,11 +281,12 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, align = "left" }: { label: string; value: string; align?: "left" | "right" | "center" }) {
+  const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
   return (
-    <Card><CardContent className="p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <Card><CardContent className="p-2">
+      <div className={`text-[10px] uppercase tracking-wide text-muted-foreground ${alignCls}`}>{label}</div>
+      <div className={`text-sm font-semibold tabular-nums ${alignCls}`}>{value}</div>
     </CardContent></Card>
   );
 }
