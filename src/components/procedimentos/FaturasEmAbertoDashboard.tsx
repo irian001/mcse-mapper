@@ -31,6 +31,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   const [filterClasse, setFilterClasse] = useState("all");
   const [filterAnoVenc, setFilterAnoVenc] = useState("all");
   const [filterAnoMes, setFilterAnoMes] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [search, setSearch] = useState("");
 
   const lotesQ = useQuery({
@@ -66,12 +67,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   const itens = itensQ.data || [];
 
   const getDiasAtraso = (i: any): number | null => {
-    if (i.dias_em_atraso !== null && i.dias_em_atraso !== undefined) return Number(i.dias_em_atraso);
+    // Sempre recalcula a partir da data-base do procedimento (AME) vs data de vencimento,
+    // para garantir consistência quando dias_em_atraso importado estiver desatualizado.
     if (dataBase && i.data_vencimento) {
       const a = new Date(dataBase).getTime();
       const b = new Date(i.data_vencimento).getTime();
       if (!isNaN(a) && !isNaN(b)) return Math.floor((a - b) / 86400000);
     }
+    if (i.dias_em_atraso !== null && i.dias_em_atraso !== undefined) return Number(i.dias_em_atraso);
     return null;
   };
 
@@ -112,13 +115,19 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
       if (filterClasse !== "all" && (i.classe_descricao_snapshot || i.classe_codigo || "Classe não informada") !== filterClasse) return false;
       if (filterAnoVenc !== "all" && getAnoVenc(i) !== filterAnoVenc) return false;
       if (filterAnoMes !== "all" && i.ano_mes_faturamento !== filterAnoMes) return false;
+      if (filterStatus !== "all") {
+        const d = getDiasAtraso(i);
+        if (filterStatus === "vencido" && !(d !== null && d > 0)) return false;
+        if (filterStatus === "a_vencer" && !(d !== null && d <= 0)) return false;
+        if (filterStatus === "sem_data" && d !== null) return false;
+      }
       if (s) {
         const blob = `${i.uc || ""} ${i.nome_consumidor || ""} ${i.numero_fatura || ""} ${i.numero_documento || ""}`.toLowerCase();
         if (!blob.includes(s)) return false;
       }
       return true;
     });
-  }, [itens, filterLote, filterSit, filterClasse, filterAnoVenc, filterAnoMes, search, dataBase]);
+  }, [itens, filterLote, filterSit, filterClasse, filterAnoVenc, filterAnoMes, filterStatus, search, dataBase]);
 
   const kpis = useMemo(() => {
     const ucs = new Set<string>();
@@ -137,12 +146,13 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
       ticket: qtdUcs > 0 ? total / qtdUcs : 0,
       vencido, aVencer,
       pctVencido: total > 0 ? (vencido / total) * 100 : 0,
+      pctAVencer: total > 0 ? (aVencer / total) * 100 : 0,
     };
   }, [filtered, dataBase]);
 
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
-    setFilterAnoVenc("all"); setFilterAnoMes("all"); setSearch("");
+    setFilterAnoVenc("all"); setFilterAnoMes("all"); setFilterStatus("all"); setSearch("");
   };
 
   const isLoading = lotesQ.isLoading || itensQ.isLoading;
@@ -189,11 +199,23 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <FilterSel value={filterClasse} onChange={setFilterClasse} options={[{ v: "all", l: "Todas classes" }, ...classeOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterAnoVenc} onChange={setFilterAnoVenc} options={[{ v: "all", l: "Todos anos venc." }, ...anoVencOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: "Todos ano/mês fat." }, ...anoMesOpts.map((c) => ({ v: c, l: c }))]} />
+        <FilterSel value={filterStatus} onChange={setFilterStatus} options={[
+          { v: "all", l: "Todos status" },
+          { v: "vencido", l: "Vencidos" },
+          { v: "a_vencer", l: "A vencer" },
+          { v: "sem_data", l: "Sem data venc." },
+        ]} />
         <Button variant="outline" size="sm" onClick={limparFiltros}><RotateCcw size={14} /> Limpar</Button>
       </div>
 
+      {dataBase && (
+        <p className="text-xs text-muted-foreground">
+          Data-base de referência (AME): <strong>{fmtDate(dataBase)}</strong>. Vencimento calculado em relação a esta data.
+        </p>
+      )}
+
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
         <Kpi label="Valor total em aberto" value={fmtBRL(kpis.total)} />
         <Kpi label="Faturas" value={fmtInt(kpis.qtd)} />
         <Kpi label="UCs devedoras" value={fmtInt(kpis.qtdUcs)} />
@@ -201,6 +223,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <Kpi label="Valor vencido" value={fmtBRL(kpis.vencido)} />
         <Kpi label="Valor a vencer" value={fmtBRL(kpis.aVencer)} />
         <Kpi label="% Vencido" value={fmtPct(kpis.pctVencido)} />
+        <Kpi label="% A vencer" value={fmtPct(kpis.pctAVencer)} />
       </div>
 
       {/* Tabela */}
