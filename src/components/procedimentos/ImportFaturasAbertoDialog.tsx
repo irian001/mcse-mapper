@@ -340,6 +340,15 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
               Arquivo: <strong>{fileName}</strong> — {rawRows.length} linha(s).
               Mapeie as colunas (* = obrigatórias).
             </p>
+            <div className="border rounded p-3 bg-muted/30 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Data de emissão padrão</Label>
+                <Input type="date" value={dataEmissaoPadrao} onChange={(e) => setDataEmissaoPadrao(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Usada quando a coluna "Data Emissão" não estiver mapeada ou estiver vazia. Pode ficar em branco.
+                </p>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[55vh] overflow-y-auto pr-2">
               {FIELDS.map((f) => (
                 <div key={f.key} className="space-y-1">
