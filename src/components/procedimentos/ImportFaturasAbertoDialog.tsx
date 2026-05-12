@@ -91,6 +91,7 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
   const [headers, setHeaders] = useState<string[]>([]);
   const [rawRows, setRawRows] = useState<any[][]>([]);
   const [mapping, setMapping] = useState<Mapping>({});
+  const [dataEmissaoPadrao, setDataEmissaoPadrao] = useState<string>("");
   const [parsed, setParsed] = useState<any[]>([]);
   const [errors, setErrors] = useState<{ line: number; message: string }[]>([]);
   const [warnings, setWarnings] = useState<{ line: number; message: string }[]>([]);
@@ -98,7 +99,7 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
 
   const reset = () => {
     setStep("upload"); setFileName(""); setFileSize(0); setHeaders([]); setRawRows([]);
-    setMapping({}); setParsed([]); setErrors([]); setWarnings([]); setResult(null);
+    setMapping({}); setDataEmissaoPadrao(""); setParsed([]); setErrors([]); setWarnings([]); setResult(null);
   };
   const handleClose = () => { reset(); onClose(); };
 
