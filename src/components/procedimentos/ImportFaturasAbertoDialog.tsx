@@ -31,19 +31,14 @@ const FIELDS = [
   { key: "nome_consumidor", label: "Nome Consumidor", hints: ["consumidor", "cliente", "nome"] },
   { key: "cpf_cnpj", label: "CPF/CNPJ", hints: ["cpf", "cnpj"] },
   { key: "ano_mes_faturamento", label: "Ano/Mês Faturamento", hints: ["referenc", "ano/mes", "anomes", "competen"] },
-  { key: "data_emissao", label: "Data Emissão", hints: ["emiss"] },
-  { key: "valor_original", label: "Valor Original", hints: ["original", "valor original"] },
-  { key: "valor_juros", label: "Valor Juros", hints: ["juros"] },
-  { key: "valor_multa", label: "Valor Multa", hints: ["multa"] },
-  { key: "valor_atualizado", label: "Valor Atualizado", hints: ["atualizado"] },
+  { key: "data_emissao", label: "Data Emissão (opcional — se ausente, usa Data padrão)", hints: ["emiss"] },
   { key: "situacao_uc_codigo", label: "Situação UC (código)", hints: ["situacao uc", "situação uc"] },
+  { key: "situacao_uc_descricao_snapshot", label: "Situação UC (descrição)", hints: ["descricao situacao", "descrição situação"] },
   { key: "situacao_fornecimento", label: "Situação Fornecimento", hints: ["fornec"] },
   { key: "classe_codigo", label: "Classe (código)", hints: ["classe"] },
   { key: "subclasse_codigo", label: "Subclasse (código)", hints: ["subclasse"] },
   { key: "municipio_codigo", label: "Município (código)", hints: ["municip", "cod mun"] },
   { key: "conta_contabil_codigo", label: "Conta Contábil (código)", hints: ["conta contab", "conta cont"] },
-  { key: "numero_instalacao", label: "Nº Instalação", hints: ["instala"] },
-  { key: "numero_contrato", label: "Nº Contrato", hints: ["contrato"] },
   { key: "codigo_consumidor", label: "Código Consumidor", hints: ["cod consumidor", "código consumidor"] },
 ] as const;
 
@@ -51,7 +46,7 @@ type Mapping = Record<string, number>; // -1 = não mapeado
 
 const REQUIRED = ["uc", "data_vencimento", "valor_em_aberto"];
 const RECOMMENDED = [
-  "nome_consumidor", "ano_mes_faturamento", "valor_original",
+  "nome_consumidor", "ano_mes_faturamento",
   "situacao_uc_codigo", "situacao_fornecimento", "classe_codigo",
   "municipio_codigo", "conta_contabil_codigo",
 ];
