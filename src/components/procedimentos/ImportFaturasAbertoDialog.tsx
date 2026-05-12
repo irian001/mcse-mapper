@@ -214,8 +214,6 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
         codigo_consumidor: String(get("codigo_consumidor") ?? "").trim() || null,
         ano_mes_faturamento: anoMes || null, ano_faturamento: anoFat, mes_faturamento: mesFat,
         ano_vencimento: anoVenc, dias_em_atraso: diasAtraso,
-        situacao_uc_codigo: String(get("situacao_uc_codigo") ?? "").trim() || null,
-        situacao_uc_descricao_snapshot: String(get("situacao_uc_descricao_snapshot") ?? "").trim() || null,
         situacao_fornecimento: String(get("situacao_fornecimento") ?? "").trim() || null,
         classe_codigo: classeCod || null,
         classe_descricao_snapshot: classeReg?.descricao_classe || null,
@@ -227,7 +225,6 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
         codigo_ibge: munReg?.codigo_ibge || null,
         regional_codigo: munReg?.regional_codigo || null,
         regional_nome_snapshot: munReg?.regional_nome || null,
-        conta_contabil_codigo: String(get("conta_contabil_codigo") ?? "").trim() || null,
         linha_arquivo: lineNum,
         linha_original: row,
       });
