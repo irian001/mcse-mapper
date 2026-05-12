@@ -150,8 +150,6 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   codigo_consumidor   text,
   nome_consumidor     text,
   cpf_cnpj            text,
-  numero_instalacao   text,
-  numero_contrato     text,
 
   -- Identificação fatura
   numero_fatura       text,
@@ -170,14 +168,10 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   ano_vencimento      integer,
   dias_em_atraso      integer,
 
-  -- Valores
-  valor_original     numeric(18,2),
+  -- Valores (etapa 1: foco em valor_em_aberto)
   valor_em_aberto    numeric(18,2),
-  valor_juros        numeric(18,2),
-  valor_multa        numeric(18,2),
   valor_correcao     numeric(18,2),
   valor_desconto     numeric(18,2),
-  valor_atualizado   numeric(18,2),
   valor_pago         numeric(18,2),
   saldo_remanescente numeric(18,2),
 
