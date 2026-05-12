@@ -146,7 +146,8 @@ export default function FaturasEmAbertoPanel({ procedimento }: Props) {
               <TableHeader className="sticky top-0 bg-muted">
                 <TableRow>
                   <TableHead>UC</TableHead><TableHead>Consumidor</TableHead><TableHead>Fatura/Doc</TableHead>
-                  <TableHead>Vencimento</TableHead><TableHead className="text-right">Atraso</TableHead>
+                  <TableHead>Emissão</TableHead><TableHead>Vencimento</TableHead>
+                  <TableHead className="text-right">Atraso</TableHead>
                   <TableHead className="text-right">Valor Aberto</TableHead>
                   <TableHead>Situação</TableHead><TableHead>Classe</TableHead>
                   <TableHead>Município</TableHead><TableHead>Conta Cont.</TableHead>
@@ -158,6 +159,7 @@ export default function FaturasEmAbertoPanel({ procedimento }: Props) {
                     <TableCell>{i.uc}</TableCell>
                     <TableCell>{i.nome_consumidor || "-"}</TableCell>
                     <TableCell>{i.numero_fatura || i.numero_documento || "-"}</TableCell>
+                    <TableCell>{i.data_emissao || "-"}</TableCell>
                     <TableCell>{i.data_vencimento || "-"}</TableCell>
                     <TableCell className="text-right">{i.dias_em_atraso ?? "-"}</TableCell>
                     <TableCell className="text-right">{fmtBRL(i.valor_em_aberto)}</TableCell>
