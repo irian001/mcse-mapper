@@ -16,6 +16,7 @@ interface Props { clienteId: string; }
 export default function CadastroClassesFaturamento({ clienteId }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [openImport, setOpenImport] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ codigo_classe: "", descricao_classe: "", grupo_classe: "", ativo: true });
 
@@ -64,9 +65,14 @@ export default function CadastroClassesFaturamento({ clienteId }: Props) {
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{data.length} classe(s) cadastrada(s)</p>
-        <Button size="sm" onClick={() => { setEditing(null); setForm({ codigo_classe: "", descricao_classe: "", grupo_classe: "", ativo: true }); setOpen(true); }}>
-          <Plus size={14} /> Nova classe
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setOpenImport(true)}>
+            <Upload size={14} /> Importar Classes
+          </Button>
+          <Button size="sm" onClick={() => { setEditing(null); setForm({ codigo_classe: "", descricao_classe: "", grupo_classe: "", ativo: true }); setOpen(true); }}>
+            <Plus size={14} /> Nova classe
+          </Button>
+        </div>
       </div>
       <Table>
         <TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Descrição</TableHead><TableHead>Grupo</TableHead><TableHead>Ativo</TableHead><TableHead></TableHead></TableRow></TableHeader>
