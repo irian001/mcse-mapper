@@ -358,21 +358,38 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     return aggToArr(m).filter((x) => x.qtd > 0);
   }, [filtered, dataBase]);
 
-  const chartAnoMes = useMemo(() => {
-    const arr = aggToArr(aggBy((i) => {
-      if (i.ano_mes_faturamento) return String(i.ano_mes_faturamento);
-      if (i.data_vencimento) {
-        const d = new Date(i.data_vencimento);
-        if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      }
-      return "Sem informação";
-    }));
-    return arr.sort((a, b) => {
+  const chartAno = useMemo(() => {
+    const m = new Map<string, Agg>();
+    filtered.forEach((i: any) => {
+      const ano = getAnoFromItem(i);
+      const k = ano ?? "Sem informação";
+      let a = m.get(k);
+      if (!a) { a = { label: k, valor: 0, qtd: 0, ucs: new Set() }; m.set(k, a); }
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m).sort((a, b) => {
       if (a.label === "Sem informação") return 1;
       if (b.label === "Sem informação") return -1;
       return a.label.localeCompare(b.label);
     });
   }, [filtered]);
+
+  const chartAnoMes = useMemo(() => {
+    const anoStr = String(anoDataBase);
+    const m = new Map<string, Agg>();
+    filtered.forEach((i: any) => {
+      const am = getAnoMesFromItem(i);
+      if (!am || am.slice(0, 4) !== anoStr) return;
+      let a = m.get(am);
+      if (!a) { a = { label: am, valor: 0, qtd: 0, ucs: new Set() }; m.set(am, a); }
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m).sort((a, b) => a.label.localeCompare(b.label));
+  }, [filtered, anoDataBase]);
 
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
