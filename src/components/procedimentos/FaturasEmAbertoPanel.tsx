@@ -12,6 +12,7 @@ import { Upload, FileSpreadsheet, Search } from "lucide-react";
 import ImportFaturasAbertoDialog from "./ImportFaturasAbertoDialog";
 import CadastroClassesFaturamento from "./CadastroClassesFaturamento";
 import CadastroMunicipiosFaturamento from "./CadastroMunicipiosFaturamento";
+import FaturasEmAbertoDashboard from "./FaturasEmAbertoDashboard";
 
 interface Props { procedimento: any; }
 
@@ -115,13 +116,16 @@ export default function FaturasEmAbertoPanel({ procedimento }: Props) {
         <Kpi label="Linhas c/ erro" value={String(resumo.linhasComErro)} warn={resumo.linhasComErro > 0} />
       </div>
 
-      <Tabs defaultValue="itens">
+      <Tabs defaultValue="dashboard">
         <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="itens">Itens</TabsTrigger>
           <TabsTrigger value="lotes">Lotes</TabsTrigger>
           <TabsTrigger value="classes">Classes</TabsTrigger>
           <TabsTrigger value="municipios">Municípios</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard"><FaturasEmAbertoDashboard procedimento={procedimento} /></TabsContent>
 
         <TabsContent value="itens" className="space-y-3">
           <div className="flex flex-wrap gap-2 items-end">
