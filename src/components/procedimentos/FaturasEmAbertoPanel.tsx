@@ -116,8 +116,9 @@ export default function FaturasEmAbertoPanel({ procedimento }: Props) {
         <Kpi label="Linhas c/ erro" value={String(resumo.linhasComErro)} warn={resumo.linhasComErro > 0} />
       </div>
 
-      <Tabs defaultValue="itens">
+      <Tabs defaultValue="dashboard">
         <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="itens">Itens</TabsTrigger>
           <TabsTrigger value="lotes">Lotes</TabsTrigger>
           <TabsTrigger value="classes">Classes</TabsTrigger>
