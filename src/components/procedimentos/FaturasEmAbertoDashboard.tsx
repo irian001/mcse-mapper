@@ -523,8 +523,17 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
           <ChartCard title="Top 10 classes (+ Outras)">
             <BarsHorizontal data={chartClasse} totalGeral={totalFiltrado} />
           </ChartCard>
-          <ChartCard title="Ano/mês de faturamento" full>
-            <BarsVertical data={chartAnoMes} totalGeral={totalFiltrado} />
+          <ChartCard title="Faturas em Aberto por Ano">
+            <BarsVertical data={chartAno} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title={`Ano/Mês de Faturamento — ${anoDataBase}${anoDataBaseFallback ? " (sem data-base definida)" : ""}`}>
+            {chartAnoMes.length === 0 ? (
+              <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground border border-dashed rounded text-center px-4">
+                Nenhuma fatura encontrada no ano da data-base para a visão mensal.
+              </div>
+            ) : (
+              <BarsVertical data={chartAnoMes} totalGeral={totalFiltrado} />
+            )}
           </ChartCard>
         </div>
       </div>
@@ -536,7 +545,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
           <ResumoTable titulo="Resumo Vencido x A vencer" colLabel="Grupo" rows={chartVencidoXAVencer} totalGeral={totalFiltrado} />
           <ResumoTable titulo="Resumo por Situação"        colLabel="Situação" rows={chartSituacao}        totalGeral={totalFiltrado} />
           <ResumoTable titulo="Resumo por Classe"          colLabel="Classe"   rows={chartClasse}          totalGeral={totalFiltrado} />
-          <ResumoTable titulo="Resumo por Ano/Mês"         colLabel="Ano/Mês"  rows={chartAnoMes}          totalGeral={totalFiltrado} hidePct />
+          <ResumoTable titulo="Resumo por Ano"             colLabel="Ano"      rows={chartAno}             totalGeral={totalFiltrado} />
+          <ResumoTable
+            titulo={`Resumo por Ano/Mês — ${anoDataBase}`}
+            colLabel="Ano/Mês"
+            rows={chartAnoMes}
+            totalGeral={totalFiltrado}
+            emptyMessage="Nenhuma fatura encontrada no ano da data-base para a visão mensal."
+          />
         </div>
       </div>
 
