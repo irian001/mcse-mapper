@@ -228,7 +228,6 @@ CREATE INDEX IF NOT EXISTS idx_pfai_anomes      ON public.procedimento_faturas_a
 CREATE INDEX IF NOT EXISTS idx_pfai_classe      ON public.procedimento_faturas_aberto_itens(classe_codigo);
 CREATE INDEX IF NOT EXISTS idx_pfai_municipio   ON public.procedimento_faturas_aberto_itens(municipio_codigo);
 CREATE INDEX IF NOT EXISTS idx_pfai_situacao    ON public.procedimento_faturas_aberto_itens(situacao_fornecimento);
-CREATE INDEX IF NOT EXISTS idx_pfai_contacont   ON public.procedimento_faturas_aberto_itens(conta_contabil_codigo);
 
 DROP TRIGGER IF EXISTS trg_upd_pfai ON public.procedimento_faturas_aberto_itens;
 CREATE TRIGGER trg_upd_pfai BEFORE UPDATE ON public.procedimento_faturas_aberto_itens
