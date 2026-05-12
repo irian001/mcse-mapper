@@ -138,6 +138,43 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     return null;
   };
 
+  // Ano da data-base do procedimento (com fallbacks)
+  const getAnoMesFromItem = (i: any): string | null => {
+    if (i.ano_mes_faturamento) {
+      const s = String(i.ano_mes_faturamento);
+      if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
+      if (/^\d{4}\/\d{2}/.test(s)) return s.slice(0, 4) + "-" + s.slice(5, 7);
+      if (/^\d{6}$/.test(s)) return s.slice(0, 4) + "-" + s.slice(4, 6);
+    }
+    if (i.data_vencimento) {
+      const d = new Date(i.data_vencimento);
+      if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+    return null;
+  };
+  const getAnoFromItem = (i: any): string | null => {
+    const am = getAnoMesFromItem(i);
+    if (am) return am.slice(0, 4);
+    return null;
+  };
+
+  const { anoDataBase, anoDataBaseFallback } = useMemo(() => {
+    if (dataBase) {
+      const d = new Date(dataBase);
+      if (!isNaN(d.getTime())) return { anoDataBase: d.getFullYear(), anoDataBaseFallback: false };
+    }
+    // fallback: ano mais recente nos dados, ou ano atual
+    let maxAno: number | null = null;
+    itens.forEach((i: any) => {
+      const a = getAnoFromItem(i);
+      if (a) {
+        const n = Number(a);
+        if (!isNaN(n) && (maxAno === null || n > maxAno)) maxAno = n;
+      }
+    });
+    return { anoDataBase: maxAno ?? new Date().getFullYear(), anoDataBaseFallback: true };
+  }, [dataBase, itens]);
+
   const getAnoVenc = (i: any): string => {
     if (i.ano_vencimento) return String(i.ano_vencimento);
     if (i.data_vencimento) {
