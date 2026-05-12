@@ -7,6 +7,47 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, RotateCcw } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from "recharts";
+
+const CHART_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--destructive))",
+  "hsl(var(--warning, 38 92% 50%))",
+  "hsl(var(--accent))",
+  "hsl(var(--secondary))",
+  "hsl(var(--muted-foreground))",
+  "hsl(217 91% 60%)",
+  "hsl(142 71% 45%)",
+  "hsl(280 65% 60%)",
+  "hsl(24 95% 53%)",
+  "hsl(190 80% 50%)",
+];
+
+function ChartTooltip({ active, payload, totalGeral }: any) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  return (
+    <div className="rounded border bg-background p-2 text-xs shadow-md space-y-0.5 min-w-[180px]">
+      <div className="font-semibold">{p.label}</div>
+      <div className="flex justify-between gap-4"><span className="text-muted-foreground">Valor</span><span className="tabular-nums">{(Number(p.valor) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span></div>
+      <div className="flex justify-between gap-4"><span className="text-muted-foreground">Faturas</span><span className="tabular-nums">{(Number(p.qtd) || 0).toLocaleString("pt-BR")}</span></div>
+      <div className="flex justify-between gap-4"><span className="text-muted-foreground">UCs</span><span className="tabular-nums">{(Number(p.qtdUcs) || 0).toLocaleString("pt-BR")}</span></div>
+      {totalGeral > 0 && (
+        <div className="flex justify-between gap-4"><span className="text-muted-foreground">% do total</span><span className="tabular-nums">{((p.valor / totalGeral) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%</span></div>
+      )}
+    </div>
+  );
+}
+
+const fmtBRLCompact = (v: number) => {
+  const n = Number(v) || 0;
+  if (Math.abs(n) >= 1_000_000) return `R$ ${(n / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}M`;
+  if (Math.abs(n) >= 1_000) return `R$ ${(n / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k`;
+  return `R$ ${n.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+};
 
 interface Props { procedimento: any; }
 
@@ -204,6 +245,94 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     }));
   }, [filteredBase, dataBase]);
 
+  // ===== Agregações para gráficos (respeitam TODOS os filtros, inclusive aging) =====
+  type Agg = { label: string; valor: number; qtd: number; ucs: Set<string> };
+  const aggToArr = (m: Map<string, Agg>) =>
+    Array.from(m.values()).map((a) => ({ label: a.label, valor: a.valor, qtd: a.qtd, qtdUcs: a.ucs.size }));
+
+  const totalFiltrado = useMemo(
+    () => filtered.reduce((s: number, i: any) => s + (Number(i.valor_em_aberto) || 0), 0),
+    [filtered]
+  );
+
+  const chartAging = useMemo(() => {
+    const m = new Map<string, Agg>();
+    AGING_FAIXAS.forEach((f) => m.set(f.label, { label: f.label, valor: 0, qtd: 0, ucs: new Set() }));
+    filtered.forEach((i: any) => {
+      const f = classificarAging(getDiasAtraso(i));
+      const a = m.get(f.label)!;
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m);
+  }, [filtered, dataBase]);
+
+  const aggBy = (keyFn: (i: any) => string) => {
+    const m = new Map<string, Agg>();
+    filtered.forEach((i: any) => {
+      const k = keyFn(i);
+      let a = m.get(k);
+      if (!a) { a = { label: k, valor: 0, qtd: 0, ucs: new Set() }; m.set(k, a); }
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return m;
+  };
+
+  const chartSituacao = useMemo(
+    () => aggToArr(aggBy((i) => i.situacao_fornecimento || "Sem informação"))
+      .sort((a, b) => b.valor - a.valor),
+    [filtered]
+  );
+
+  const chartClasse = useMemo(() => {
+    const arr = aggToArr(aggBy((i) =>
+      i.classe_descricao_snapshot || i.classe_codigo || "Classe não informada"
+    )).sort((a, b) => b.valor - a.valor);
+    if (arr.length <= 10) return arr;
+    const top = arr.slice(0, 10);
+    const outras = arr.slice(10).reduce(
+      (acc, x) => ({ label: "Outras", valor: acc.valor + x.valor, qtd: acc.qtd + x.qtd, qtdUcs: acc.qtdUcs + x.qtdUcs }),
+      { label: "Outras", valor: 0, qtd: 0, qtdUcs: 0 }
+    );
+    return [...top, outras];
+  }, [filtered]);
+
+  const chartVencidoXAVencer = useMemo(() => {
+    const m = new Map<string, Agg>([
+      ["A vencer",       { label: "A vencer", valor: 0, qtd: 0, ucs: new Set() }],
+      ["Vencido",        { label: "Vencido",  valor: 0, qtd: 0, ucs: new Set() }],
+      ["Sem informação", { label: "Sem informação", valor: 0, qtd: 0, ucs: new Set() }],
+    ]);
+    filtered.forEach((i: any) => {
+      const d = getDiasAtraso(i);
+      const k = d === null ? "Sem informação" : d > 0 ? "Vencido" : "A vencer";
+      const a = m.get(k)!;
+      a.valor += Number(i.valor_em_aberto) || 0;
+      a.qtd += 1;
+      if (i.uc) a.ucs.add(i.uc);
+    });
+    return aggToArr(m).filter((x) => x.qtd > 0);
+  }, [filtered, dataBase]);
+
+  const chartAnoMes = useMemo(() => {
+    const arr = aggToArr(aggBy((i) => {
+      if (i.ano_mes_faturamento) return String(i.ano_mes_faturamento);
+      if (i.data_vencimento) {
+        const d = new Date(i.data_vencimento);
+        if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      }
+      return "Sem informação";
+    }));
+    return arr.sort((a, b) => {
+      if (a.label === "Sem informação") return 1;
+      if (b.label === "Sem informação") return -1;
+      return a.label.localeCompare(b.label);
+    });
+  }, [filtered]);
+
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
     setFilterAnoVenc("all"); setFilterAnoMes("all"); setFilterStatus("all");
@@ -319,6 +448,40 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         </div>
       </div>
 
+      {/* Gráficos gerenciais */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">Gráficos gerenciais</h3>
+        <p className="text-[11px] text-muted-foreground">Todos os gráficos respeitam os filtros aplicados acima.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ChartCard title="Aging — valor em aberto">
+            <BarsHorizontal data={chartAging} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Vencido x A vencer">
+            <DonutChart data={chartVencidoXAVencer} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Situação de fornecimento">
+            <BarsHorizontal data={chartSituacao} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Top 10 classes (+ Outras)">
+            <BarsHorizontal data={chartClasse} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Ano/mês de faturamento" full>
+            <BarsVertical data={chartAnoMes} totalGeral={totalFiltrado} />
+          </ChartCard>
+        </div>
+      </div>
+
+      {/* Tabelas-resumo */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">Tabelas-resumo</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ResumoTable titulo="Resumo Vencido x A vencer" colLabel="Grupo" rows={chartVencidoXAVencer} totalGeral={totalFiltrado} />
+          <ResumoTable titulo="Resumo por Situação"        colLabel="Situação" rows={chartSituacao}        totalGeral={totalFiltrado} />
+          <ResumoTable titulo="Resumo por Classe"          colLabel="Classe"   rows={chartClasse}          totalGeral={totalFiltrado} />
+          <ResumoTable titulo="Resumo por Ano/Mês"         colLabel="Ano/Mês"  rows={chartAnoMes}          totalGeral={totalFiltrado} hidePct />
+        </div>
+      </div>
+
       {/* Tabela */}
       {filtered.length === 0 ? (
         <div className="p-6 text-sm text-muted-foreground border rounded">
@@ -393,5 +556,117 @@ function FilterSel({ value, onChange, options }: { value: string; onChange: (v: 
       <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
       <SelectContent>{options.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}</SelectContent>
     </Select>
+  );
+}
+
+function ChartCard({ title, children, full }: { title: string; children: React.ReactNode; full?: boolean }) {
+  return (
+    <Card className={full ? "lg:col-span-2" : ""}>
+      <CardContent className="p-3 space-y-2">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+const EmptyChart = () => (
+  <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground border border-dashed rounded">
+    Nenhum dado disponível para os filtros selecionados.
+  </div>
+);
+
+function BarsHorizontal({ data, totalGeral }: { data: any[]; totalGeral: number }) {
+  if (!data.length || data.every((d) => !d.valor)) return <EmptyChart />;
+  return (
+    <div style={{ width: "100%", height: Math.max(220, data.length * 32 + 40) }}>
+      <ResponsiveContainer>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis type="number" tickFormatter={fmtBRLCompact} stroke="hsl(var(--muted-foreground))" fontSize={10} />
+          <YAxis type="category" dataKey="label" width={140} stroke="hsl(var(--muted-foreground))" fontSize={10} interval={0} />
+          <RTooltip content={<ChartTooltip totalGeral={totalGeral} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
+          <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+            {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function BarsVertical({ data, totalGeral }: { data: any[]; totalGeral: number }) {
+  if (!data.length || data.every((d) => !d.valor)) return <EmptyChart />;
+  return (
+    <div style={{ width: "100%", height: 280 }}>
+      <ResponsiveContainer>
+        <BarChart data={data} margin={{ top: 8, right: 16, left: 4, bottom: 40 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={10} angle={-35} textAnchor="end" interval={0} height={60} />
+          <YAxis tickFormatter={fmtBRLCompact} stroke="hsl(var(--muted-foreground))" fontSize={10} />
+          <RTooltip content={<ChartTooltip totalGeral={totalGeral} />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
+          <Bar dataKey="valor" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function DonutChart({ data, totalGeral }: { data: any[]; totalGeral: number }) {
+  if (!data.length || data.every((d) => !d.valor)) return <EmptyChart />;
+  return (
+    <div style={{ width: "100%", height: 260 }}>
+      <ResponsiveContainer>
+        <PieChart>
+          <RTooltip content={<ChartTooltip totalGeral={totalGeral} />} />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Pie data={data} dataKey="valor" nameKey="label" innerRadius={50} outerRadius={90} paddingAngle={2}>
+            {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ResumoTable({ titulo, colLabel, rows, totalGeral, hidePct }: { titulo: string; colLabel: string; rows: any[]; totalGeral: number; hidePct?: boolean }) {
+  return (
+    <Card>
+      <CardContent className="p-3 space-y-2">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{titulo}</h4>
+        {rows.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">Nenhum dado para exibir.</p>
+        ) : (
+          <div className="border rounded overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted">
+                <TableRow>
+                  <TableHead>{colLabel}</TableHead>
+                  <TableHead className="text-right">Faturas</TableHead>
+                  <TableHead className="text-right">UCs</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  {!hidePct && <TableHead className="text-center">%</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{r.label}</TableCell>
+                    <TableCell className="text-right tabular-nums">{(Number(r.qtd) || 0).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-right tabular-nums">{(Number(r.qtdUcs) || 0).toLocaleString("pt-BR")}</TableCell>
+                    <TableCell className="text-right tabular-nums">{(Number(r.valor) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell>
+                    {!hidePct && (
+                      <TableCell className="text-center tabular-nums">
+                        {totalGeral > 0 ? ((r.valor / totalGeral) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 }) + "%" : "—"}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
