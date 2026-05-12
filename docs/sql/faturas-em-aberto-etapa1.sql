@@ -10,18 +10,38 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
--- 0) ENUM tipo_procedimento_auxiliar (se existir)
+-- 0) ENUM do tipo de procedimento (se a coluna usar enum)
 -- ------------------------------------------------------------
--- Se o tipo é controlado por enum próprio, garantir o valor
--- 'faturas_em_aberto'. Se for apenas TEXT no schema, este bloco
--- não fará nada (DO/EXCEPTION).
+-- A coluna procedimentos_auxiliares.tipo_procedimento pode ser
+-- TEXT ou um ENUM. Detectamos dinamicamente o tipo real da coluna
+-- e, se for enum, adicionamos 'faturas_em_aberto'. Se for TEXT, o
+-- bloco apenas não faz nada. Não falha se o valor já existir.
 DO $$
+DECLARE
+  v_udt_name text;
+  v_udt_schema text;
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_procedimento_auxiliar') THEN
+  SELECT udt_schema, udt_name
+    INTO v_udt_schema, v_udt_name
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'procedimentos_auxiliares'
+    AND column_name = 'tipo_procedimento';
+
+  IF v_udt_name IS NULL THEN
+    RAISE NOTICE 'Coluna procedimentos_auxiliares.tipo_procedimento não encontrada. Pulando ajuste de enum.';
+  ELSIF EXISTS (
+    SELECT 1 FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = v_udt_name AND n.nspname = v_udt_schema AND t.typtype = 'e'
+  ) THEN
     BEGIN
-      ALTER TYPE public.tipo_procedimento_auxiliar ADD VALUE IF NOT EXISTS 'faturas_em_aberto';
+      EXECUTE format('ALTER TYPE %I.%I ADD VALUE IF NOT EXISTS %L',
+                     v_udt_schema, v_udt_name, 'faturas_em_aberto');
     EXCEPTION WHEN duplicate_object THEN NULL;
     END;
+  ELSE
+    RAISE NOTICE 'Coluna tipo_procedimento não é enum (tipo=%). Nenhuma ação necessária.', v_udt_name;
   END IF;
 END$$;
 
