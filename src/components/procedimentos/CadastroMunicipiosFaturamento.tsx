@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import ImportCadastroAuxiliarDialog from "./ImportCadastroAuxiliarDialog";
 
 interface Props { clienteId: string; }
 
@@ -17,6 +18,7 @@ const empty = { codigo_municipio: "", nome_municipio: "", uf: "", codigo_ibge: "
 export default function CadastroMunicipiosFaturamento({ clienteId }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [openImport, setOpenImport] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(empty);
 
@@ -64,9 +66,14 @@ export default function CadastroMunicipiosFaturamento({ clienteId }: Props) {
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{data.length} município(s) cadastrado(s)</p>
-        <Button size="sm" onClick={() => { setEditing(null); setForm(empty); setOpen(true); }}>
-          <Plus size={14} /> Novo município
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setOpenImport(true)}>
+            <Upload size={14} /> Importar Municípios
+          </Button>
+          <Button size="sm" onClick={() => { setEditing(null); setForm(empty); setOpen(true); }}>
+            <Plus size={14} /> Novo município
+          </Button>
+        </div>
       </div>
       <Table>
         <TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Nome</TableHead><TableHead>UF</TableHead><TableHead>IBGE</TableHead><TableHead>Regional</TableHead><TableHead>Ativo</TableHead><TableHead></TableHead></TableRow></TableHeader>
