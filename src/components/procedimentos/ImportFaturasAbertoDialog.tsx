@@ -260,6 +260,7 @@ export default function ImportFaturasAbertoDialog({ open, onClose, procedimento 
           trabalho_auditoria_id: procedimento.trabalho_auditoria_id,
           nome_arquivo: fileName, tipo_arquivo: fileName.split(".").pop()?.toLowerCase(),
           tamanho_arquivo: fileSize,
+          data_emissao_padrao: dataEmissaoPadrao || null,
           quantidade_linhas_lidas: rawRows.length,
           quantidade_linhas_importadas: validItems.length,
           quantidade_linhas_com_erro: errors.length,
