@@ -183,9 +183,7 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   numero_parcela     integer,
   quantidade_parcelas integer,
 
-  -- Situação UC
-  situacao_uc_codigo             text,
-  situacao_uc_descricao_snapshot text,
+  -- Situação UC (apenas situacao_fornecimento usada nesta etapa)
   situacao_fornecimento          text,
   data_situacao_uc               date,
 
@@ -206,10 +204,7 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_itens (
   localidade_codigo              text,
   localidade_nome_snapshot       text,
 
-  -- Conta contábil
-  conta_contabil_codigo            text,
-  conta_contabil_descricao_snapshot text,
-  grupo_contabil                   text,
+  -- (Conta contábil removida nesta etapa)
 
   -- Rastreabilidade
   linha_arquivo  integer,
