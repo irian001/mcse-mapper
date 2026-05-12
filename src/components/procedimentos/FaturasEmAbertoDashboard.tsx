@@ -285,8 +285,8 @@ function Kpi({ label, value, align = "left" }: { label: string; value: string; a
   const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
   return (
     <Card><CardContent className="p-2">
-      <div className={`text-[10px] uppercase tracking-wide text-muted-foreground ${alignCls}`}>{label}</div>
-      <div className={`text-sm font-semibold tabular-nums ${alignCls}`}>{value}</div>
+      <div className={`text-[10px] uppercase tracking-wide text-muted-foreground leading-tight ${alignCls}`}>{label}</div>
+      <div className={`text-base font-semibold tabular-nums leading-tight mt-1 truncate ${alignCls}`} title={value}>{value}</div>
     </CardContent></Card>
   );
 }
