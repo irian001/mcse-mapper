@@ -281,11 +281,12 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, align = "left" }: { label: string; value: string; align?: "left" | "right" | "center" }) {
+  const alignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
   return (
-    <Card><CardContent className="p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <Card><CardContent className="p-2">
+      <div className={`text-[10px] uppercase tracking-wide text-muted-foreground ${alignCls}`}>{label}</div>
+      <div className={`text-sm font-semibold tabular-nums ${alignCls}`}>{value}</div>
     </CardContent></Card>
   );
 }
