@@ -448,6 +448,40 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         </div>
       </div>
 
+      {/* Gráficos gerenciais */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">Gráficos gerenciais</h3>
+        <p className="text-[11px] text-muted-foreground">Todos os gráficos respeitam os filtros aplicados acima.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ChartCard title="Aging — valor em aberto">
+            <BarsHorizontal data={chartAging} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Vencido x A vencer">
+            <DonutChart data={chartVencidoXAVencer} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Situação de fornecimento">
+            <BarsHorizontal data={chartSituacao} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Top 10 classes (+ Outras)">
+            <BarsHorizontal data={chartClasse} totalGeral={totalFiltrado} />
+          </ChartCard>
+          <ChartCard title="Ano/mês de faturamento" full>
+            <BarsVertical data={chartAnoMes} totalGeral={totalFiltrado} />
+          </ChartCard>
+        </div>
+      </div>
+
+      {/* Tabelas-resumo */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">Tabelas-resumo</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ResumoTable titulo="Resumo Vencido x A vencer" colLabel="Grupo" rows={chartVencidoXAVencer} totalGeral={totalFiltrado} />
+          <ResumoTable titulo="Resumo por Situação"        colLabel="Situação" rows={chartSituacao}        totalGeral={totalFiltrado} />
+          <ResumoTable titulo="Resumo por Classe"          colLabel="Classe"   rows={chartClasse}          totalGeral={totalFiltrado} />
+          <ResumoTable titulo="Resumo por Ano/Mês"         colLabel="Ano/Mês"  rows={chartAnoMes}          totalGeral={totalFiltrado} hidePct />
+        </div>
+      </div>
+
       {/* Tabela */}
       {filtered.length === 0 ? (
         <div className="p-6 text-sm text-muted-foreground border rounded">
