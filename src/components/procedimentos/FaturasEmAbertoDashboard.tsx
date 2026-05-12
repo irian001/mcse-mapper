@@ -199,11 +199,23 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <FilterSel value={filterClasse} onChange={setFilterClasse} options={[{ v: "all", l: "Todas classes" }, ...classeOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterAnoVenc} onChange={setFilterAnoVenc} options={[{ v: "all", l: "Todos anos venc." }, ...anoVencOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: "Todos ano/mês fat." }, ...anoMesOpts.map((c) => ({ v: c, l: c }))]} />
+        <FilterSel value={filterStatus} onChange={setFilterStatus} options={[
+          { v: "all", l: "Todos status" },
+          { v: "vencido", l: "Vencidos" },
+          { v: "a_vencer", l: "A vencer" },
+          { v: "sem_data", l: "Sem data venc." },
+        ]} />
         <Button variant="outline" size="sm" onClick={limparFiltros}><RotateCcw size={14} /> Limpar</Button>
       </div>
 
+      {dataBase && (
+        <p className="text-xs text-muted-foreground">
+          Data-base de referência (AME): <strong>{fmtDate(dataBase)}</strong>. Vencimento calculado em relação a esta data.
+        </p>
+      )}
+
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
         <Kpi label="Valor total em aberto" value={fmtBRL(kpis.total)} />
         <Kpi label="Faturas" value={fmtInt(kpis.qtd)} />
         <Kpi label="UCs devedoras" value={fmtInt(kpis.qtdUcs)} />
@@ -211,6 +223,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <Kpi label="Valor vencido" value={fmtBRL(kpis.vencido)} />
         <Kpi label="Valor a vencer" value={fmtBRL(kpis.aVencer)} />
         <Kpi label="% Vencido" value={fmtPct(kpis.pctVencido)} />
+        <Kpi label="% A vencer" value={fmtPct(kpis.pctAVencer)} />
       </div>
 
       {/* Tabela */}
