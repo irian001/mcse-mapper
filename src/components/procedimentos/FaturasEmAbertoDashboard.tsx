@@ -199,10 +199,14 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     () => Array.from(new Set(itens.map(getAnoVenc).filter(Boolean))).sort(),
     [itens]
   );
-  const anoMesOpts = useMemo(
-    () => Array.from(new Set(itens.map((i: any) => i.ano_mes_faturamento).filter(Boolean))).sort(),
-    [itens]
-  );
+  const anoMesOpts = useMemo(() => {
+    const s = new Set<string>();
+    itens.forEach((i: any) => {
+      const am = getAnoMesFromItem(i);
+      if (am && am.slice(0, 4) === String(anoDataBase)) s.add(am);
+    });
+    return Array.from(s).sort();
+  }, [itens, anoDataBase]);
 
   // Filtros base (sem aging) — usado pelo Resumo por Aging
   const filteredBase = useMemo(() => {
