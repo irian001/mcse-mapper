@@ -22,6 +22,26 @@ const fmtDate = (s?: string | null) => {
   return d.toLocaleDateString("pt-BR");
 };
 
+// ===== Aging =====
+type AgingCode = "A_VENCER" | "VENCIDO_0_90" | "VENCIDO_91_180" | "VENCIDO_181_360" | "VENCIDO_ACIMA_360" | "SEM_INFORMACAO";
+interface AgingFaixa { codigo: AgingCode; label: string; ordem: number; }
+const AGING_FAIXAS: AgingFaixa[] = [
+  { codigo: "A_VENCER",          label: "A vencer",          ordem: 1 },
+  { codigo: "VENCIDO_0_90",      label: "0 a 90 dias",       ordem: 2 },
+  { codigo: "VENCIDO_91_180",    label: "91 a 180 dias",     ordem: 3 },
+  { codigo: "VENCIDO_181_360",   label: "181 a 360 dias",    ordem: 4 },
+  { codigo: "VENCIDO_ACIMA_360", label: "Acima de 360 dias", ordem: 5 },
+  { codigo: "SEM_INFORMACAO",    label: "Sem informação",    ordem: 6 },
+];
+const classificarAging = (dias: number | null): AgingFaixa => {
+  if (dias === null || dias === undefined || isNaN(dias)) return AGING_FAIXAS[5];
+  if (dias <= 0) return AGING_FAIXAS[0];
+  if (dias <= 90) return AGING_FAIXAS[1];
+  if (dias <= 180) return AGING_FAIXAS[2];
+  if (dias <= 360) return AGING_FAIXAS[3];
+  return AGING_FAIXAS[4];
+};
+
 export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   const procedimentoId = procedimento.id;
   const dataBase = procedimento.data_base_referencia;
@@ -32,6 +52,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   const [filterAnoVenc, setFilterAnoVenc] = useState("all");
   const [filterAnoMes, setFilterAnoMes] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterAging, setFilterAging] = useState<string>("all");
   const [search, setSearch] = useState("");
 
   const lotesQ = useQuery({
@@ -67,8 +88,6 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   const itens = itensQ.data || [];
 
   const getDiasAtraso = (i: any): number | null => {
-    // Sempre recalcula a partir da data-base do procedimento (AME) vs data de vencimento,
-    // para garantir consistência quando dias_em_atraso importado estiver desatualizado.
     if (dataBase && i.data_vencimento) {
       const a = new Date(dataBase).getTime();
       const b = new Date(i.data_vencimento).getTime();
@@ -107,7 +126,8 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     [itens]
   );
 
-  const filtered = useMemo(() => {
+  // Filtros base (sem aging) — usado pelo Resumo por Aging
+  const filteredBase = useMemo(() => {
     const s = search.trim().toLowerCase();
     return itens.filter((i: any) => {
       if (filterLote !== "all" && i.lote_importacao_id !== filterLote) return false;
@@ -128,6 +148,12 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
       return true;
     });
   }, [itens, filterLote, filterSit, filterClasse, filterAnoVenc, filterAnoMes, filterStatus, search, dataBase]);
+
+  // Filtrado completo (inclui aging) — usado pelos KPIs e tabela de itens
+  const filtered = useMemo(() => {
+    if (filterAging === "all") return filteredBase;
+    return filteredBase.filter((i: any) => classificarAging(getDiasAtraso(i)).codigo === filterAging);
+  }, [filteredBase, filterAging, dataBase]);
 
   const kpis = useMemo(() => {
     const ucs = new Set<string>();
@@ -150,9 +176,38 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     };
   }, [filtered, dataBase]);
 
+  // Resumo por aging — sempre sobre filteredBase (ignora filtro de aging)
+  const resumoAging = useMemo(() => {
+    const acc: Record<AgingCode, { qtd: number; ucs: Set<string>; valor: number }> = {
+      A_VENCER:          { qtd: 0, ucs: new Set(), valor: 0 },
+      VENCIDO_0_90:      { qtd: 0, ucs: new Set(), valor: 0 },
+      VENCIDO_91_180:    { qtd: 0, ucs: new Set(), valor: 0 },
+      VENCIDO_181_360:   { qtd: 0, ucs: new Set(), valor: 0 },
+      VENCIDO_ACIMA_360: { qtd: 0, ucs: new Set(), valor: 0 },
+      SEM_INFORMACAO:    { qtd: 0, ucs: new Set(), valor: 0 },
+    };
+    let totalGeral = 0;
+    filteredBase.forEach((i: any) => {
+      const f = classificarAging(getDiasAtraso(i));
+      const v = Number(i.valor_em_aberto) || 0;
+      acc[f.codigo].qtd += 1;
+      acc[f.codigo].valor += v;
+      if (i.uc) acc[f.codigo].ucs.add(i.uc);
+      totalGeral += v;
+    });
+    return AGING_FAIXAS.map((f) => ({
+      ...f,
+      qtd: acc[f.codigo].qtd,
+      qtdUcs: acc[f.codigo].ucs.size,
+      valor: acc[f.codigo].valor,
+      pct: totalGeral > 0 ? (acc[f.codigo].valor / totalGeral) * 100 : 0,
+    }));
+  }, [filteredBase, dataBase]);
+
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
-    setFilterAnoVenc("all"); setFilterAnoMes("all"); setFilterStatus("all"); setSearch("");
+    setFilterAnoVenc("all"); setFilterAnoMes("all"); setFilterStatus("all");
+    setFilterAging("all"); setSearch("");
   };
 
   const isLoading = lotesQ.isLoading || itensQ.isLoading;
@@ -205,6 +260,10 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
           { v: "a_vencer", l: "A vencer" },
           { v: "sem_data", l: "Sem data venc." },
         ]} />
+        <FilterSel value={filterAging} onChange={setFilterAging} options={[
+          { v: "all", l: "Todas faixas aging" },
+          ...AGING_FAIXAS.map((f) => ({ v: f.codigo, l: f.label })),
+        ]} />
         <Button variant="outline" size="sm" onClick={limparFiltros}><RotateCcw size={14} /> Limpar</Button>
       </div>
 
@@ -226,6 +285,40 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <Kpi label="% A vencer" value={fmtPct(kpis.pctAVencer)} align="center" />
       </div>
 
+      {/* Resumo por Aging */}
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h3 className="text-sm font-semibold">Resumo por Aging</h3>
+          <p className="text-[11px] text-muted-foreground">
+            Considera os filtros aplicados, exceto o próprio filtro de faixa de aging.
+          </p>
+        </div>
+        <div className="border rounded overflow-x-auto">
+          <Table>
+            <TableHeader className="sticky top-0 bg-muted">
+              <TableRow>
+                <TableHead>Faixa</TableHead>
+                <TableHead className="text-right">Qtd. faturas</TableHead>
+                <TableHead className="text-right">Qtd. UCs</TableHead>
+                <TableHead className="text-right">Valor em aberto</TableHead>
+                <TableHead className="text-center">% do total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {resumoAging.map((r) => (
+                <TableRow key={r.codigo} className={filterAging === r.codigo ? "bg-accent/40" : ""}>
+                  <TableCell className="font-medium">{r.label}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmtInt(r.qtd)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmtInt(r.qtdUcs)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fmtBRL(r.valor)}</TableCell>
+                  <TableCell className="text-center tabular-nums">{fmtPct(r.pct)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
       {/* Tabela */}
       {filtered.length === 0 ? (
         <div className="p-6 text-sm text-muted-foreground border rounded">
@@ -240,30 +333,33 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
                   <TableHead>UC</TableHead>
                   <TableHead>Consumidor</TableHead>
                   <TableHead>Fatura/Doc</TableHead>
-                  <TableHead>Emissão</TableHead>
-                  <TableHead>Vencimento</TableHead>
+                  <TableHead className="text-center">Emissão</TableHead>
+                  <TableHead className="text-center">Vencimento</TableHead>
                   <TableHead className="text-right">Atraso</TableHead>
                   <TableHead className="text-right">Valor em aberto</TableHead>
                   <TableHead>Situação</TableHead>
                   <TableHead>Classe</TableHead>
-                  <TableHead>Ano/mês fat.</TableHead>
+                  <TableHead className="text-center">Ano/mês fat.</TableHead>
+                  <TableHead>Faixa aging</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.slice(0, 500).map((i: any) => {
                   const d = getDiasAtraso(i);
+                  const faixa = classificarAging(d);
                   return (
                     <TableRow key={i.id}>
                       <TableCell>{i.uc || "—"}</TableCell>
                       <TableCell>{i.nome_consumidor || "—"}</TableCell>
                       <TableCell>{i.numero_fatura || i.numero_documento || "—"}</TableCell>
-                      <TableCell>{fmtDate(i.data_emissao)}</TableCell>
-                      <TableCell>{fmtDate(i.data_vencimento)}</TableCell>
-                      <TableCell className="text-right">{d ?? "—"}</TableCell>
-                      <TableCell className="text-right">{fmtBRL(i.valor_em_aberto)}</TableCell>
+                      <TableCell className="text-center">{fmtDate(i.data_emissao)}</TableCell>
+                      <TableCell className="text-center">{fmtDate(i.data_vencimento)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{d ?? "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmtBRL(i.valor_em_aberto)}</TableCell>
                       <TableCell>{i.situacao_fornecimento || "—"}</TableCell>
                       <TableCell>{i.classe_descricao_snapshot || i.classe_codigo || "—"}</TableCell>
-                      <TableCell>{i.ano_mes_faturamento || "—"}</TableCell>
+                      <TableCell className="text-center">{i.ano_mes_faturamento || "—"}</TableCell>
+                      <TableCell>{faixa.label}</TableCell>
                     </TableRow>
                   );
                 })}
