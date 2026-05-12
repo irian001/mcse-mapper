@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS public.procedimento_faturas_aberto_lotes (
   tamanho_arquivo             bigint,
 
   data_importacao             timestamptz NOT NULL DEFAULT now(),
+  data_emissao_padrao         date,
   usuario_importacao_id       uuid,
 
   quantidade_linhas_lidas     integer NOT NULL DEFAULT 0,
