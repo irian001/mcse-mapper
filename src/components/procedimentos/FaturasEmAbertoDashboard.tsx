@@ -703,7 +703,7 @@ function DonutChart({ data, totalGeral }: { data: any[]; totalGeral: number }) {
   );
 }
 
-function ResumoTable({ titulo, colLabel, rows, totalGeral, hidePct }: { titulo: string; colLabel: string; rows: any[]; totalGeral: number; hidePct?: boolean }) {
+function ResumoTable({ titulo, colLabel, rows, totalGeral, hidePct, emptyMessage }: { titulo: string; colLabel: string; rows: any[]; totalGeral: number; hidePct?: boolean; emptyMessage?: string }) {
   return (
     <Card>
       <CardContent className="p-3 space-y-2">
