@@ -158,6 +158,13 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     if (am) return am.slice(0, 4);
     return null;
   };
+  const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const fmtMesLabel = (am: string): string => {
+    const m = /^\d{4}-(\d{2})$/.exec(am);
+    if (!m) return am;
+    const idx = Number(m[1]) - 1;
+    return MESES_PT[idx] ?? am;
+  };
 
   const { anoDataBase, anoDataBaseFallback } = useMemo(() => {
     if (dataBase) {
