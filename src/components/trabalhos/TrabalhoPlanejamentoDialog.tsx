@@ -528,10 +528,13 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Base de Cálculo</Label>
+                    <Label className="text-xs">Base de Cálculo <span className="text-destructive">*</span></Label>
                     <Input maxLength={200} value={matForm.base_calculo}
                       onChange={(e) => setMatForm({ ...matForm, base_calculo: e.target.value })}
-                      placeholder="Ex.: Lucro antes de IR, Receita Líquida..." />
+                      placeholder="Ex.: Lucro antes de IR, Receita Líquida..." required />
+                    {!matForm.base_calculo.trim() && (
+                      <div className="text-[11px] text-warning-foreground mt-1">Informe a base de cálculo da materialidade.</div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-xs">Percentual Aplicado (%)</Label>
