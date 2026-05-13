@@ -378,7 +378,19 @@ export default function TrabalhosPage() {
                   </Button>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil size={14} /></Button>
+                  <div className="flex items-center gap-1">
+                    {isInterno && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Planejamento do Trabalho"
+                        onClick={() => { setPlanejamentoTrabalho(t); setPlanejamentoOpen(true); }}
+                      >
+                        <ClipboardList size={14} />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil size={14} /></Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
