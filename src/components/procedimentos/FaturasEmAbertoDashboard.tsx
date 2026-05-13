@@ -647,6 +647,83 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         </div>
       </div>
 
+      {/* Top 20 Maiores Devedores */}
+      <div className="space-y-2">
+        <div>
+          <h3 className="text-sm font-semibold">Top 20 Maiores Devedores</h3>
+          <p className="text-[11px] text-muted-foreground">
+            Ranking dos consumidores com maior valor em aberto, considerando os filtros aplicados.
+          </p>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground border rounded">
+            Nenhuma fatura encontrada para os filtros selecionados.
+          </div>
+        ) : top20Result.top.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground border rounded">
+            Não há consumidores válidos para compor o ranking.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <Kpi label="Valor total do Top 20" value={fmtBRL(top20Result.valorTop)} align="right" />
+              <Kpi label="% do Top 20 sobre carteira filtrada" value={fmtPct(top20Result.pctTop)} align="center" />
+              <Kpi label="Consumidores no Top 20" value={fmtInt(top20Result.top.length)} align="right" />
+              <Kpi
+                label="Maior devedor individual"
+                value={top20Result.maior ? `${top20Result.maior.nome} — ${fmtBRL(top20Result.maior.valorTotal)}` : "—"}
+                align="left"
+              />
+            </div>
+            <div className="border rounded overflow-x-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-muted">
+                  <TableRow>
+                    <TableHead className="text-center">#</TableHead>
+                    <TableHead>Consumidor</TableHead>
+                    <TableHead className="text-right">Valor total em aberto</TableHead>
+                    <TableHead className="text-right">Qtd. UCs</TableHead>
+                    <TableHead>UCs vinculadas</TableHead>
+                    <TableHead className="text-right">Qtd. faturas</TableHead>
+                    <TableHead className="text-right">Valor vencido</TableHead>
+                    <TableHead className="text-right">Valor a vencer</TableHead>
+                    <TableHead className="text-center">Vencida mais antiga</TableHead>
+                    <TableHead className="text-right">Maior atraso (dias)</TableHead>
+                    <TableHead>Situação predominante</TableHead>
+                    <TableHead>Classe predominante</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {top20Result.top.map((r) => {
+                    const ucsResumo = r.ucsList.length === 0
+                      ? "—"
+                      : r.ucsList.length <= 3
+                        ? r.ucsList.join(", ")
+                        : `${r.ucsList.slice(0, 3).join(", ")} + ${r.ucsList.length - 3} outras`;
+                    return (
+                      <TableRow key={r.pos}>
+                        <TableCell className="text-center tabular-nums">{r.pos}</TableCell>
+                        <TableCell className="font-medium">{r.nome}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmtBRL(r.valorTotal)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmtInt(r.qtdUcs)}</TableCell>
+                        <TableCell className="text-xs" title={r.ucsList.join(", ")}>{ucsResumo}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmtInt(r.qtdFaturas)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmtBRL(r.valorVencido)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmtBRL(r.valorAVencer)}</TableCell>
+                        <TableCell className="text-center">{r.dataVencidaMaisAntiga ? fmtDate(r.dataVencidaMaisAntiga) : "—"}</TableCell>
+                        <TableCell className="text-right tabular-nums">{r.maiorAtraso ?? "—"}</TableCell>
+                        <TableCell>{r.situacao || "Sem informação"}</TableCell>
+                        <TableCell>{r.classe || "Classe não informada"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Tabela */}
       {filtered.length === 0 ? (
         <div className="p-6 text-sm text-muted-foreground border rounded">
