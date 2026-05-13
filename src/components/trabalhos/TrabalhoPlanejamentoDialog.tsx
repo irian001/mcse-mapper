@@ -198,6 +198,21 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   const [confirmAprovarPlan, setConfirmAprovarPlan] = useState(false);
   const [confirmAprovarMat, setConfirmAprovarMat] = useState<{ id: string } | null>(null);
 
+  // Bases ativas da materialidade em confirmação de aprovação (para resumo/alerta)
+  const basesAprovacaoQ = useQuery({
+    queryKey: ["trabalho-materialidade-bases-aprovacao", confirmAprovarMat?.id],
+    enabled: !!confirmAprovarMat?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trabalho_materialidade_bases" as any)
+        .select("id, nome_base, valor_materialidade, ativo")
+        .eq("trabalho_materialidade_id", confirmAprovarMat!.id)
+        .eq("ativo", true);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
 
   type FormState = {
     objetivo_geral_auditoria: string;
