@@ -607,7 +607,23 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                     )}
                   </div>
                   {isInterno && !isAprovado && (
-                    <Button size="sm" variant="outline" onClick={startEdit}><Pencil size={14} className="mr-1" />Editar</Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={startEdit}><Pencil size={14} className="mr-1" />Editar</Button>
+                      {podeAprovarPlanejamento ? (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const err = validarAprovacaoPlan();
+                            if (err) { toast.error(err); return; }
+                            setConfirmAprovarPlan(true);
+                          }}
+                        >
+                          <CheckCircle2 size={14} className="mr-1" />Aprovar planejamento
+                        </Button>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">{motivoSemAlcadaPlan}</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 {isAprovado && (
