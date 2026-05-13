@@ -10,7 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Info, Pencil, Plus, Lock } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { AlertCircle, Info, Pencil, Plus, Lock, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -158,6 +162,41 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   const qc = useQueryClient();
   const { data: userProfile } = useUserProfile();
   const isInterno = userProfile?.role === "auditor";
+
+  // ===== Matriz de alçada inicial (Fase 0A.1.5) =====
+  // Mapeada via auditores.perfil_acesso (admin/socio/gerente/senior/assistente).
+  // Senior só aprova planejamento se for responsável principal do trabalho.
+  const auditorAtual = (userProfile as any)?.auditor || null;
+  const auditorIdAtual: string | null = auditorAtual?.id ?? null;
+  const perfilAcesso: string = String(auditorAtual?.perfil_acesso || "").toLowerCase();
+  const ehResponsavelPrincipal = !!(equipeQ.data || []).find(
+    (r: any) => r.auditor_id === auditorIdAtual && r.responsavel_principal === true
+  );
+  const podeAprovarPlanejamento =
+    isInterno && (
+      perfilAcesso === "admin" ||
+      perfilAcesso === "socio" ||
+      perfilAcesso === "gerente" ||
+      (perfilAcesso === "senior" && ehResponsavelPrincipal)
+    );
+  const podeAprovarMaterialidade =
+    isInterno && (
+      perfilAcesso === "admin" ||
+      perfilAcesso === "socio" ||
+      perfilAcesso === "gerente"
+    );
+  const motivoSemAlcadaPlan = !podeAprovarPlanejamento
+    ? (perfilAcesso === "senior"
+        ? "Senior só pode aprovar quando for responsável principal do trabalho."
+        : "Você não possui alçada para aprovar o planejamento.")
+    : "";
+  const motivoSemAlcadaMat = !podeAprovarMaterialidade
+    ? "Você não possui alçada para aprovar a materialidade."
+    : "";
+
+  const [confirmAprovarPlan, setConfirmAprovarPlan] = useState(false);
+  const [confirmAprovarMat, setConfirmAprovarMat] = useState<{ id: string } | null>(null);
+
 
   type FormState = {
     objetivo_geral_auditoria: string;
@@ -372,6 +411,87 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
     onError: (e: any) => toast.error(e.message || "Erro ao salvar materialidade"),
   });
 
+  // ===== Aprovação de Planejamento (Fase 0A.1.5) =====
+  const validarAprovacaoPlan = (): string | null => {
+    if (!planData) return "Planejamento não encontrado.";
+    if (planData.status_planejamento !== "rascunho") return "Apenas planejamento em rascunho pode ser aprovado.";
+    if (!String(planData.objetivo_geral_auditoria || "").trim()) return "Preencha o Objetivo Geral antes de aprovar.";
+    if (!String(planData.escopo_resumido || "").trim()) return "Preencha o Escopo Resumido antes de aprovar.";
+    if (!String(planData.estrategia_resumida || "").trim()) return "Preencha a Estratégia Resumida antes de aprovar.";
+    if (!String(planData.equipe_responsavel_id || "").trim()) return "Informe o Responsável pelo planejamento antes de aprovar.";
+    return null;
+  };
+
+  const aprovarPlanMutation = useMutation({
+    mutationFn: async () => {
+      if (!podeAprovarPlanejamento) throw new Error(motivoSemAlcadaPlan || "Sem alçada para aprovar.");
+      const err = validarAprovacaoPlan();
+      if (err) throw new Error(err);
+      const { error } = await supabase
+        .from("trabalho_planejamento" as any)
+        .update({
+          status_planejamento: "aprovado",
+          aprovado_por: auditorIdAtual,
+          data_aprovacao: new Date().toISOString(),
+        })
+        .eq("id", planData!.id)
+        .eq("status_planejamento", "rascunho");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Planejamento aprovado");
+      setConfirmAprovarPlan(false);
+      qc.invalidateQueries({ queryKey: ["trabalho-planejamento", trabalhoId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao aprovar planejamento"),
+  });
+
+  // ===== Aprovação de Materialidade (Fase 0A.1.5) =====
+  const validarAprovacaoMat = (m: any): string | null => {
+    if (!m) return "Materialidade não encontrada.";
+    if (m.status_materialidade !== "rascunho") return "Apenas materialidade em rascunho pode ser aprovada.";
+    if (vigente && vigente.id !== m.id) {
+      return "Já existe materialidade aprovada e vigente para este trabalho. A substituição por nova versão será implementada em etapa futura.";
+    }
+    if (!String(m.base_calculo || "").trim()) return "Preencha a Base de Cálculo antes de aprovar.";
+    const g = Number(m.materialidade_global);
+    const d = Number(m.materialidade_desempenho);
+    const lt = Number(m.limite_trivialidade);
+    if (!(g > 0)) return "Materialidade Global deve ser maior que zero.";
+    if (!(d > 0)) return "Materialidade Desempenho deve ser maior que zero.";
+    if (!(lt >= 0)) return "Limite Trivialidade deve ser maior ou igual a zero.";
+    if (d > g) return "Materialidade Desempenho não pode ser maior que a Global.";
+    if (!String(m.justificativa_tecnica || "").trim()) return "Preencha a Justificativa Técnica antes de aprovar.";
+    if (!String(m.responsavel_definicao_id || "").trim()) return "Informe o Responsável pela definição da materialidade antes de aprovar.";
+    return null;
+  };
+
+  const aprovarMatMutation = useMutation({
+    mutationFn: async (matId: string) => {
+      if (!podeAprovarMaterialidade) throw new Error(motivoSemAlcadaMat || "Sem alçada para aprovar.");
+      const m = (materialidadeQ.data || []).find((x: any) => x.id === matId);
+      const err = validarAprovacaoMat(m);
+      if (err) throw new Error(err);
+      const { error } = await supabase
+        .from("trabalho_materialidade" as any)
+        .update({
+          status_materialidade: "aprovada",
+          vigente: true,
+          aprovado_por: auditorIdAtual,
+          data_aprovacao: new Date().toISOString(),
+        })
+        .eq("id", matId)
+        .eq("status_materialidade", "rascunho");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Materialidade aprovada");
+      setConfirmAprovarMat(null);
+      qc.invalidateQueries({ queryKey: ["trabalho-materialidade", trabalhoId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao aprovar materialidade"),
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -487,7 +607,23 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                     )}
                   </div>
                   {isInterno && !isAprovado && (
-                    <Button size="sm" variant="outline" onClick={startEdit}><Pencil size={14} className="mr-1" />Editar</Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={startEdit}><Pencil size={14} className="mr-1" />Editar</Button>
+                      {podeAprovarPlanejamento ? (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const err = validarAprovacaoPlan();
+                            if (err) { toast.error(err); return; }
+                            setConfirmAprovarPlan(true);
+                          }}
+                        >
+                          <CheckCircle2 size={14} className="mr-1" />Aprovar planejamento
+                        </Button>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">{motivoSemAlcadaPlan}</span>
+                      )}
+                    </div>
                   )}
                 </div>
                 {isAprovado && (
@@ -635,9 +771,30 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                         <Badge variant="outline" className="text-xs">rascunho</Badge>
                       </div>
                       {isInterno && (
-                        <Button size="sm" variant="outline" onClick={() => startEditMat(rascunhoExistente)}>
-                          <Pencil size={14} className="mr-1" />Editar rascunho
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => startEditMat(rascunhoExistente)}>
+                            <Pencil size={14} className="mr-1" />Editar rascunho
+                          </Button>
+                          {podeAprovarMaterialidade ? (
+                            <Button
+                              size="sm"
+                              disabled={!!vigente}
+                              onClick={() => {
+                                if (vigente) {
+                                  toast.error("Já existe materialidade aprovada e vigente. Substituição será implementada em etapa futura.");
+                                  return;
+                                }
+                                const err = validarAprovacaoMat(rascunhoExistente);
+                                if (err) { toast.error(err); return; }
+                                setConfirmAprovarMat({ id: rascunhoExistente.id });
+                              }}
+                            >
+                              <CheckCircle2 size={14} className="mr-1" />Aprovar materialidade
+                            </Button>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground">{motivoSemAlcadaMat}</span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -722,6 +879,51 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={confirmAprovarPlan} onOpenChange={(v) => !v && setConfirmAprovarPlan(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar planejamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Após aprovado, o planejamento não poderá ser editado diretamente nesta fase.
+              Reabertura e nova versão serão tratadas em etapa futura.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={aprovarPlanMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={aprovarPlanMutation.isPending}
+              onClick={(e) => { e.preventDefault(); aprovarPlanMutation.mutate(); }}
+            >
+              {aprovarPlanMutation.isPending ? "Aprovando..." : "Confirmar aprovação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmAprovarMat} onOpenChange={(v) => !v && setConfirmAprovarMat(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar materialidade?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A materialidade aprovada será marcada como <strong>vigente</strong> e não poderá ser editada diretamente.
+              Alterações futuras serão tratadas por nova versão em etapa posterior.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={aprovarMatMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={aprovarMatMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmAprovarMat) aprovarMatMutation.mutate(confirmAprovarMat.id);
+              }}
+            >
+              {aprovarMatMutation.isPending ? "Aprovando..." : "Confirmar aprovação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
