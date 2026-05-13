@@ -83,6 +83,91 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
 
   const vigente = (materialidadeQ.data || []).find((m: any) => m.vigente) || null;
 
+  const qc = useQueryClient();
+  const { data: userProfile } = useUserProfile();
+  const isInterno = userProfile?.role === "auditor";
+
+  type FormState = {
+    objetivo_geral_auditoria: string;
+    escopo_resumido: string;
+    estrategia_resumida: string;
+    equipe_responsavel_id: string;
+    premissas_relevantes: string;
+    limitacoes_escopo: string;
+    observacoes: string;
+  };
+  const emptyForm: FormState = {
+    objetivo_geral_auditoria: "", escopo_resumido: "", estrategia_resumida: "",
+    equipe_responsavel_id: "", premissas_relevantes: "", limitacoes_escopo: "", observacoes: "",
+  };
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState<FormState>(emptyForm);
+
+  const planData = planejamentoQ.data;
+  const isAprovado = planData?.status_planejamento === "aprovado";
+
+  useEffect(() => {
+    if (!open) { setEditMode(false); setForm(emptyForm); }
+  }, [open, trabalhoId]);
+
+  const startEdit = () => {
+    setForm({
+      objetivo_geral_auditoria: planData?.objetivo_geral_auditoria || "",
+      escopo_resumido: planData?.escopo_resumido || "",
+      estrategia_resumida: planData?.estrategia_resumida || "",
+      equipe_responsavel_id: planData?.equipe_responsavel_id || "",
+      premissas_relevantes: planData?.premissas_relevantes || "",
+      limitacoes_escopo: planData?.limitacoes_escopo || "",
+      observacoes: planData?.observacoes || "",
+    });
+    setEditMode(true);
+  };
+  const startCreate = () => { setForm(emptyForm); setEditMode(true); };
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!trabalhoId) throw new Error("Trabalho inválido");
+      const payload: any = {
+        objetivo_geral_auditoria: form.objetivo_geral_auditoria.trim() || null,
+        escopo_resumido: form.escopo_resumido.trim() || null,
+        estrategia_resumida: form.estrategia_resumida.trim() || null,
+        equipe_responsavel_id: form.equipe_responsavel_id.trim() || null,
+        premissas_relevantes: form.premissas_relevantes.trim() || null,
+        limitacoes_escopo: form.limitacoes_escopo.trim() || null,
+        observacoes: form.observacoes.trim() || null,
+      };
+      if (planData?.id) {
+        const { error } = await supabase
+          .from("trabalho_planejamento" as any)
+          .update(payload)
+          .eq("id", planData.id);
+        if (error) throw error;
+      } else {
+        const insertPayload = {
+          ...payload,
+          trabalho_auditoria_id: trabalhoId,
+          cliente_id: trabalho?.cliente_id ?? null,
+          exercicio_id: trabalho?.exercicio_id ?? null,
+          status_planejamento: "rascunho",
+        };
+        const { error } = await supabase
+          .from("trabalho_planejamento" as any)
+          .insert(insertPayload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(planData?.id ? "Planejamento atualizado" : "Planejamento criado");
+      setEditMode(false);
+      qc.invalidateQueries({ queryKey: ["trabalho-planejamento", trabalhoId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao salvar planejamento"),
+  });
+
+  const camposPrincipaisVazios = !form.objetivo_geral_auditoria.trim()
+    || !form.escopo_resumido.trim()
+    || !form.estrategia_resumida.trim();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
