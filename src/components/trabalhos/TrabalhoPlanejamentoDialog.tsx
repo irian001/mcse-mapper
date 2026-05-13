@@ -651,11 +651,17 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   </div>
                 )}
 
-                {isInterno && !rascunhoExistente && (
+                {isInterno && !rascunhoExistente && !vigente && (
                   <div className="flex justify-end">
                     <Button size="sm" onClick={startCreateMat}>
                       <Plus size={14} className="mr-1" />Nova materialidade (rascunho)
                     </Button>
+                  </div>
+                )}
+
+                {isInterno && !rascunhoExistente && vigente && (
+                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
+                    A criação de nova versão de materialidade aprovada será implementada em etapa futura.
                   </div>
                 )}
 
@@ -681,9 +687,14 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   </div>
                 </div>
 
-                {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "aprovada" || m.status_materialidade === "substituida") && (
+                {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "aprovada") && (
                   <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    Materialidade aprovada ou substituída não pode ser editada diretamente. Alterações serão tratadas por nova versão em etapa futura.
+                    Materialidade aprovada não pode ser editada diretamente.
+                  </div>
+                )}
+                {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "substituida") && (
+                  <div className="rounded-md border border-muted-foreground/20 bg-muted/30 p-3 text-xs">
+                    Materialidade substituída permanece apenas para histórico.
                   </div>
                 )}
 
