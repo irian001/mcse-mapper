@@ -619,6 +619,12 @@ export default function TrabalhosPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <TrabalhoPlanejamentoDialog
+        open={planejamentoOpen}
+        onOpenChange={setPlanejamentoOpen}
+        trabalho={planejamentoTrabalho}
+      />
     </div>
   );
 }
