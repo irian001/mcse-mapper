@@ -168,6 +168,126 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
     || !form.escopo_resumido.trim()
     || !form.estrategia_resumida.trim();
 
+  // ===== MATERIALIDADE =====
+  // Aprovação, alçada e nova versão de materialidade aprovada serão tratadas em fase posterior.
+  type MatForm = {
+    base_calculo: string;
+    percentual_aplicado: string;
+    materialidade_global: string;
+    materialidade_desempenho: string;
+    limite_trivialidade: string;
+    justificativa_tecnica: string;
+    responsavel_definicao_id: string;
+    observacoes: string;
+  };
+  const emptyMat: MatForm = {
+    base_calculo: "", percentual_aplicado: "", materialidade_global: "",
+    materialidade_desempenho: "", limite_trivialidade: "",
+    justificativa_tecnica: "", responsavel_definicao_id: "", observacoes: "",
+  };
+  const [matEditMode, setMatEditMode] = useState<null | "create" | "edit">(null);
+  const [matForm, setMatForm] = useState<MatForm>(emptyMat);
+  const [editingMatId, setEditingMatId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) { setMatEditMode(null); setMatForm(emptyMat); setEditingMatId(null); }
+  }, [open, trabalhoId]);
+
+  const rascunhoExistente = (materialidadeQ.data || []).find(
+    (m: any) => m.status_materialidade === "rascunho"
+  ) || null;
+
+  const startCreateMat = () => {
+    setMatForm(emptyMat);
+    setEditingMatId(null);
+    setMatEditMode("create");
+  };
+  const startEditMat = (m: any) => {
+    setMatForm({
+      base_calculo: m.base_calculo ?? "",
+      percentual_aplicado: m.percentual_aplicado != null ? String(m.percentual_aplicado) : "",
+      materialidade_global: m.materialidade_global != null ? String(m.materialidade_global) : "",
+      materialidade_desempenho: m.materialidade_desempenho != null ? String(m.materialidade_desempenho) : "",
+      limite_trivialidade: m.limite_trivialidade != null ? String(m.limite_trivialidade) : "",
+      justificativa_tecnica: m.justificativa_tecnica ?? "",
+      responsavel_definicao_id: m.responsavel_definicao_id ?? "",
+      observacoes: m.observacoes ?? "",
+    });
+    setEditingMatId(m.id);
+    setMatEditMode("edit");
+  };
+
+  const parseNum = (v: string): number | null => {
+    const t = v.trim().replace(",", ".");
+    if (!t) return null;
+    const n = Number(t);
+    return isNaN(n) ? null : n;
+  };
+
+  const validateMat = (): string | null => {
+    const g = parseNum(matForm.materialidade_global);
+    const d = parseNum(matForm.materialidade_desempenho);
+    const lt = parseNum(matForm.limite_trivialidade);
+    if (g !== null && g <= 0) return "Materialidade Global deve ser maior que zero.";
+    if (d !== null && d <= 0) return "Materialidade Desempenho deve ser maior que zero.";
+    if (lt !== null && lt < 0) return "Limite Trivialidade deve ser maior ou igual a zero.";
+    if (g !== null && d !== null && d > g) return "Materialidade Desempenho não pode ser maior que a Global.";
+    return null;
+  };
+
+  const proximaVersao = () => {
+    const arr = materialidadeQ.data || [];
+    if (!arr.length) return 1;
+    return Math.max(...arr.map((m: any) => Number(m.versao) || 0)) + 1;
+  };
+
+  const saveMatMutation = useMutation({
+    mutationFn: async () => {
+      if (!trabalhoId) throw new Error("Trabalho inválido");
+      const err = validateMat();
+      if (err) throw new Error(err);
+      const payload: any = {
+        base_calculo: matForm.base_calculo.trim() || null,
+        percentual_aplicado: parseNum(matForm.percentual_aplicado),
+        materialidade_global: parseNum(matForm.materialidade_global),
+        materialidade_desempenho: parseNum(matForm.materialidade_desempenho),
+        limite_trivialidade: parseNum(matForm.limite_trivialidade),
+        justificativa_tecnica: matForm.justificativa_tecnica.trim() || null,
+        responsavel_definicao_id: matForm.responsavel_definicao_id.trim() || null,
+        observacoes: matForm.observacoes.trim() || null,
+      };
+      if (matEditMode === "edit" && editingMatId) {
+        const { error } = await supabase
+          .from("trabalho_materialidade" as any)
+          .update(payload)
+          .eq("id", editingMatId)
+          .eq("status_materialidade", "rascunho");
+        if (error) throw error;
+      } else {
+        const insertPayload = {
+          ...payload,
+          trabalho_auditoria_id: trabalhoId,
+          cliente_id: trabalho?.cliente_id ?? null,
+          exercicio_id: trabalho?.exercicio_id ?? null,
+          status_materialidade: "rascunho",
+          versao: proximaVersao(),
+          vigente: false,
+        };
+        const { error } = await supabase
+          .from("trabalho_materialidade" as any)
+          .insert(insertPayload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(matEditMode === "edit" ? "Materialidade atualizada" : "Materialidade criada");
+      setMatEditMode(null);
+      setEditingMatId(null);
+      qc.invalidateQueries({ queryKey: ["trabalho-materialidade", trabalhoId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao salvar materialidade"),
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
