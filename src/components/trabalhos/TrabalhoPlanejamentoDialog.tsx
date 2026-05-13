@@ -163,6 +163,41 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   const { data: userProfile } = useUserProfile();
   const isInterno = userProfile?.role === "auditor";
 
+  // ===== Matriz de alçada inicial (Fase 0A.1.5) =====
+  // Mapeada via auditores.perfil_acesso (admin/socio/gerente/senior/assistente).
+  // Senior só aprova planejamento se for responsável principal do trabalho.
+  const auditorAtual = (userProfile as any)?.auditor || null;
+  const auditorIdAtual: string | null = auditorAtual?.id ?? null;
+  const perfilAcesso: string = String(auditorAtual?.perfil_acesso || "").toLowerCase();
+  const ehResponsavelPrincipal = !!(equipeQ.data || []).find(
+    (r: any) => r.auditor_id === auditorIdAtual && r.responsavel_principal === true
+  );
+  const podeAprovarPlanejamento =
+    isInterno && (
+      perfilAcesso === "admin" ||
+      perfilAcesso === "socio" ||
+      perfilAcesso === "gerente" ||
+      (perfilAcesso === "senior" && ehResponsavelPrincipal)
+    );
+  const podeAprovarMaterialidade =
+    isInterno && (
+      perfilAcesso === "admin" ||
+      perfilAcesso === "socio" ||
+      perfilAcesso === "gerente"
+    );
+  const motivoSemAlcadaPlan = !podeAprovarPlanejamento
+    ? (perfilAcesso === "senior"
+        ? "Senior só pode aprovar quando for responsável principal do trabalho."
+        : "Você não possui alçada para aprovar o planejamento.")
+    : "";
+  const motivoSemAlcadaMat = !podeAprovarMaterialidade
+    ? "Você não possui alçada para aprovar a materialidade."
+    : "";
+
+  const [confirmAprovarPlan, setConfirmAprovarPlan] = useState(false);
+  const [confirmAprovarMat, setConfirmAprovarMat] = useState<{ id: string } | null>(null);
+
+
   type FormState = {
     objetivo_geral_auditoria: string;
     escopo_resumido: string;
