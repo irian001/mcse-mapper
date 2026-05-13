@@ -761,6 +761,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Motivo Nova Versão"><div className="whitespace-pre-wrap text-sm">{orDash(vigente.motivo_nova_versao)}</div></Field>
                       <Field label="Observações"><div className="whitespace-pre-wrap text-sm">{orDash(vigente.observacoes)}</div></Field>
                     </div>
+                    <MaterialidadeBasesPanel materialidade={vigente} trabalho={trabalho} readOnly={true} />
                   </div>
                 )}
 
