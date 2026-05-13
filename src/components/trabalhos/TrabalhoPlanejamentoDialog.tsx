@@ -419,9 +419,16 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                     onChange={(e) => setForm({ ...form, estrategia_resumida: e.target.value })} />
                 </div>
                 <div>
-                  <Label className="text-xs">Equipe Responsável (ID)</Label>
-                  <Input maxLength={100} value={form.equipe_responsavel_id}
-                    onChange={(e) => setForm({ ...form, equipe_responsavel_id: e.target.value })} />
+                  <Label className="text-xs">Responsável pelo planejamento</Label>
+                  <ResponsavelSelect
+                    value={form.equipe_responsavel_id}
+                    onChange={(v) => setForm({ ...form, equipe_responsavel_id: v })}
+                  />
+                  {!form.equipe_responsavel_id && (
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      Recomendado informar um responsável (não obrigatório).
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs">Premissas Relevantes</Label>
