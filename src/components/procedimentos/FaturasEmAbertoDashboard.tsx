@@ -358,10 +358,22 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     return aggToArr(m).filter((x) => x.qtd > 0);
   }, [filtered, dataBase]);
 
+  // Para o gráfico/tabela "por Ano" usamos:
+  //   1) ano de ano_mes_faturamento (preferencial)
+  //   2) ano_vencimento
+  //   3) ano de data_vencimento
+  // O Ano/Mês continua restrito a ano_mes_faturamento.
+  const getAnoForChart = (i: any): string | null => {
+    const a1 = getAnoFromItem(i);
+    if (a1) return a1;
+    const a2 = getAnoVenc(i);
+    return a2 || null;
+  };
+
   const chartAno = useMemo(() => {
     const m = new Map<string, Agg>();
     filtered.forEach((i: any) => {
-      const ano = getAnoFromItem(i);
+      const ano = getAnoForChart(i);
       const k = ano ?? "Sem informação";
       let a = m.get(k);
       if (!a) { a = { label: k, valor: 0, qtd: 0, ucs: new Set() }; m.set(k, a); }
