@@ -84,6 +84,77 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
 
   const vigente = (materialidadeQ.data || []).find((m: any) => m.vigente) || null;
 
+  // Equipe vinculada ao trabalho — usada como fonte de Responsáveis (Planejamento e Materialidade)
+  const equipeQ = useQuery({
+    queryKey: ["trabalho-equipe-responsaveis", trabalhoId],
+    enabled: !!trabalhoId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trabalho_auditores")
+        .select("auditor_id, papel_no_trabalho, responsavel_principal, auditores(id, nome, email, cargo)")
+        .eq("trabalho_auditoria_id", trabalhoId!)
+        .eq("ativo", true)
+        .order("responsavel_principal", { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const equipeOptions = (equipeQ.data || []).map((row: any) => {
+    const a = row.auditores || {};
+    const nome = a.nome || a.email || "(sem nome)";
+    const papel = row.papel_no_trabalho ? String(row.papel_no_trabalho).replace(/_/g, " ") : null;
+    const label = papel ? `${nome} — ${papel}` : nome;
+    return { id: row.auditor_id as string, label };
+  });
+
+  const labelDoResponsavel = (id: string | null | undefined): string => {
+    if (!id) return "—";
+    const found = equipeOptions.find((o) => o.id === id);
+    if (found) return found.label;
+    return "Responsável salvo não encontrado na equipe atual";
+  };
+
+  const ResponsavelSelect = ({
+    value,
+    onChange,
+    placeholder = "Selecionar auditor...",
+  }: { value: string; onChange: (v: string) => void; placeholder?: string }) => {
+    const semEquipe = !equipeQ.isLoading && equipeOptions.length === 0;
+    const valorForaDaEquipe = !!value && !equipeOptions.some((o) => o.id === value);
+    const NONE = "__none__";
+    return (
+      <div className="space-y-1">
+        <Select
+          value={value || NONE}
+          onValueChange={(v) => onChange(v === NONE ? "" : v)}
+          disabled={equipeQ.isLoading || semEquipe}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Sem responsável —</SelectItem>
+            {valorForaDaEquipe && (
+              <SelectItem value={value}>
+                {`(fora da equipe) ${value.slice(0, 8)}…`}
+              </SelectItem>
+            )}
+            {equipeOptions.map((o) => (
+              <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {semEquipe && (
+          <div className="text-[11px] text-muted-foreground">Nenhum auditor vinculado a este trabalho.</div>
+        )}
+        {valorForaDaEquipe && (
+          <div className="text-[11px] text-warning-foreground">Responsável salvo não encontrado na equipe atual.</div>
+        )}
+      </div>
+    );
+  };
+
   const qc = useQueryClient();
   const { data: userProfile } = useUserProfile();
   const isInterno = userProfile?.role === "auditor";
