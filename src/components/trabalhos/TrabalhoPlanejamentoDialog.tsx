@@ -203,32 +203,98 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 </div>
                 <Button size="sm" variant="outline" onClick={() => planejamentoQ.refetch()}>Tentar novamente</Button>
               </div>
-            ) : !planejamentoQ.data ? (
-              <div className="space-y-2">
+            ) : editMode ? (
+              <div className="space-y-4">
+                {camposPrincipaisVazios && (
+                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs flex items-start gap-2">
+                    <AlertCircle size={14} className="text-warning-foreground mt-0.5" />
+                    <span>Recomendado preencher Objetivo, Escopo e Estratégia. O salvamento é permitido mesmo em branco.</span>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-xs">Objetivo Geral da Auditoria</Label>
+                  <Textarea rows={3} maxLength={4000} value={form.objetivo_geral_auditoria}
+                    onChange={(e) => setForm({ ...form, objetivo_geral_auditoria: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Escopo Resumido</Label>
+                  <Textarea rows={3} maxLength={4000} value={form.escopo_resumido}
+                    onChange={(e) => setForm({ ...form, escopo_resumido: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Estratégia Resumida</Label>
+                  <Textarea rows={3} maxLength={4000} value={form.estrategia_resumida}
+                    onChange={(e) => setForm({ ...form, estrategia_resumida: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Equipe Responsável (ID)</Label>
+                  <Input maxLength={100} value={form.equipe_responsavel_id}
+                    onChange={(e) => setForm({ ...form, equipe_responsavel_id: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Premissas Relevantes</Label>
+                  <Textarea rows={2} maxLength={4000} value={form.premissas_relevantes}
+                    onChange={(e) => setForm({ ...form, premissas_relevantes: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Limitações de Escopo</Label>
+                  <Textarea rows={2} maxLength={4000} value={form.limitacoes_escopo}
+                    onChange={(e) => setForm({ ...form, limitacoes_escopo: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Observações</Label>
+                  <Textarea rows={2} maxLength={4000} value={form.observacoes}
+                    onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setEditMode(false)} disabled={saveMutation.isPending}>Cancelar</Button>
+                  <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                    {saveMutation.isPending ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+              </div>
+            ) : !planData ? (
+              <div className="space-y-3">
                 <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                   Nenhum planejamento cadastrado para este trabalho.
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Info size={12} /> O cadastro e edição do planejamento serão implementados na próxima etapa.
-                </div>
+                {isInterno && (
+                  <div className="flex justify-center">
+                    <Button size="sm" onClick={startCreate}><Plus size={14} className="mr-1" />Criar planejamento</Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{orDash(planData.status_planejamento)}</Badge>
+                    {isAprovado && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Lock size={12} /> Bloqueado para edição
+                      </span>
+                    )}
+                  </div>
+                  {isInterno && !isAprovado && (
+                    <Button size="sm" variant="outline" onClick={startEdit}><Pencil size={14} className="mr-1" />Editar</Button>
+                  )}
+                </div>
+                {isAprovado && (
+                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
+                    Planejamento aprovado. Alterações serão tratadas em etapa futura.
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Status do Planejamento"><Badge variant="outline">{orDash(planejamentoQ.data.status_planejamento)}</Badge></Field>
-                  <Field label="Equipe Responsável (ID)">{orDash(planejamentoQ.data.equipe_responsavel_id)}</Field>
-                  <Field label="Aprovado por">{orDash(planejamentoQ.data.aprovado_por)}</Field>
-                  <Field label="Data de Aprovação">{fmtDate(planejamentoQ.data.data_aprovacao)}</Field>
+                  <Field label="Equipe Responsável (ID)">{orDash(planData.equipe_responsavel_id)}</Field>
+                  <Field label="Aprovado por">{orDash(planData.aprovado_por)}</Field>
+                  <Field label="Data de Aprovação">{fmtDate(planData.data_aprovacao)}</Field>
                 </div>
-                <Field label="Objetivo Geral da Auditoria"><div className="whitespace-pre-wrap">{orDash(planejamentoQ.data.objetivo_geral_auditoria)}</div></Field>
-                <Field label="Escopo Resumido"><div className="whitespace-pre-wrap">{orDash(planejamentoQ.data.escopo_resumido)}</div></Field>
-                <Field label="Estratégia Resumida"><div className="whitespace-pre-wrap">{orDash(planejamentoQ.data.estrategia_resumida)}</div></Field>
-                <Field label="Premissas Relevantes"><div className="whitespace-pre-wrap">{orDash(planejamentoQ.data.premissas_relevantes)}</div></Field>
-                <Field label="Limitações de Escopo"><div className="whitespace-pre-wrap">{orDash(planejamentoQ.data.limitacoes_escopo)}</div></Field>
-                <Field label="Observações"><div className="whitespace-pre-wrap">{orDash(planejamentoQ.data.observacoes)}</div></Field>
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Info size={12} /> Edição do planejamento será implementada na próxima etapa.
-                </div>
+                <Field label="Objetivo Geral da Auditoria"><div className="whitespace-pre-wrap">{orDash(planData.objetivo_geral_auditoria)}</div></Field>
+                <Field label="Escopo Resumido"><div className="whitespace-pre-wrap">{orDash(planData.escopo_resumido)}</div></Field>
+                <Field label="Estratégia Resumida"><div className="whitespace-pre-wrap">{orDash(planData.estrategia_resumida)}</div></Field>
+                <Field label="Premissas Relevantes"><div className="whitespace-pre-wrap">{orDash(planData.premissas_relevantes)}</div></Field>
+                <Field label="Limitações de Escopo"><div className="whitespace-pre-wrap">{orDash(planData.limitacoes_escopo)}</div></Field>
+                <Field label="Observações"><div className="whitespace-pre-wrap">{orDash(planData.observacoes)}</div></Field>
               </div>
             )}
           </TabsContent>
