@@ -404,6 +404,84 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     return aggToArr(m).sort((a: any, b: any) => String(a._key ?? a.label).localeCompare(String(b._key ?? b.label)));
   }, [filtered, anoDataBase]);
 
+  // ===== Top 20 Maiores Devedores (por nome_consumidor) =====
+  type TopDev = {
+    keyNome: string;
+    nome: string;
+    valorTotal: number;
+    valorVencido: number;
+    valorAVencer: number;
+    qtdFaturas: number;
+    ucs: Set<string>;
+    dataVencidaMaisAntiga: string | null;
+    maiorAtraso: number | null;
+    sitCount: Map<string, number>;
+    classeCount: Map<string, number>;
+  };
+  const top20Result = useMemo(() => {
+    const m = new Map<string, TopDev>();
+    filtered.forEach((i: any) => {
+      const nomeRaw = (i.nome_consumidor || "").trim();
+      const key = nomeRaw ? nomeRaw.toLowerCase().replace(/\s+/g, " ") : "__sem__";
+      const nome = nomeRaw || "Consumidor não informado";
+      let a = m.get(key);
+      if (!a) {
+        a = {
+          keyNome: key, nome,
+          valorTotal: 0, valorVencido: 0, valorAVencer: 0,
+          qtdFaturas: 0, ucs: new Set<string>(),
+          dataVencidaMaisAntiga: null, maiorAtraso: null,
+          sitCount: new Map(), classeCount: new Map(),
+        };
+        m.set(key, a);
+      }
+      const v = Number(i.valor_em_aberto) || 0;
+      a.valorTotal += v;
+      a.qtdFaturas += 1;
+      if (i.uc) a.ucs.add(String(i.uc));
+      const d = getDiasAtraso(i);
+      if (d !== null && d > 0) {
+        a.valorVencido += v;
+        if (i.data_vencimento) {
+          if (!a.dataVencidaMaisAntiga || new Date(i.data_vencimento).getTime() < new Date(a.dataVencidaMaisAntiga).getTime()) {
+            a.dataVencidaMaisAntiga = i.data_vencimento;
+          }
+        }
+      } else if (d !== null && d <= 0) {
+        a.valorAVencer += v;
+      }
+      if (d !== null && (a.maiorAtraso === null || d > a.maiorAtraso)) a.maiorAtraso = d;
+      const sit = i.situacao_fornecimento || "Sem informação";
+      a.sitCount.set(sit, (a.sitCount.get(sit) || 0) + 1);
+      const cls = i.classe_descricao_snapshot || i.classe_codigo || "Classe não informada";
+      a.classeCount.set(cls, (a.classeCount.get(cls) || 0) + 1);
+    });
+    const pickMax = (mp: Map<string, number>): string => {
+      let best = "—"; let max = -1;
+      mp.forEach((v, k) => { if (v > max) { max = v; best = k; } });
+      return best;
+    };
+    const all = Array.from(m.values()).sort((a, b) => b.valorTotal - a.valorTotal);
+    const top = all.slice(0, 20).map((a, idx) => ({
+      pos: idx + 1,
+      nome: a.nome,
+      valorTotal: a.valorTotal,
+      qtdUcs: a.ucs.size,
+      ucsList: Array.from(a.ucs).sort(),
+      qtdFaturas: a.qtdFaturas,
+      valorVencido: a.valorVencido,
+      valorAVencer: a.valorAVencer,
+      dataVencidaMaisAntiga: a.dataVencidaMaisAntiga,
+      maiorAtraso: a.maiorAtraso,
+      situacao: pickMax(a.sitCount),
+      classe: pickMax(a.classeCount),
+    }));
+    const valorTop = top.reduce((s, r) => s + r.valorTotal, 0);
+    const pctTop = totalFiltrado > 0 ? (valorTop / totalFiltrado) * 100 : 0;
+    const maior = top[0] || null;
+    return { top, valorTop, pctTop, maior, totalConsumidores: all.length };
+  }, [filtered, totalFiltrado, dataBase]);
+
   const limparFiltros = () => {
     setFilterLote("all"); setFilterSit("all"); setFilterClasse("all");
     setFilterAnoVenc("all"); setFilterAnoMes("all"); setFilterStatus("all");
