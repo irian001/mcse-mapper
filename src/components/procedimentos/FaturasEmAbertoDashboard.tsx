@@ -147,6 +147,10 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);
     if (/^\d{4}\/\d{2}/.test(s)) return s.slice(0, 4) + "-" + s.slice(5, 7);
     if (/^\d{6}$/.test(s)) return s.slice(0, 4) + "-" + s.slice(4, 6);
+    const dataBr = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (dataBr) return `${dataBr[3]}-${dataBr[2]}`;
+    const mesAnoBr = s.match(/^(\d{2})\/(\d{4})$/);
+    if (mesAnoBr) return `${mesAnoBr[2]}-${mesAnoBr[1]}`;
     return null;
   };
   const getAnoFromItem = (i: any): string | null => {
