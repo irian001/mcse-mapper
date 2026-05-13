@@ -18,6 +18,7 @@ import { AlertCircle, Info, Pencil, Plus, Lock, CheckCircle2 } from "lucide-reac
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import MaterialidadeBasesPanel from "./MaterialidadeBasesPanel";
 
 interface Props {
   open: boolean;
