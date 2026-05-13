@@ -11,10 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Search, Users, Trash2, Clock } from "lucide-react";
+import { Plus, Pencil, Search, Users, Trash2, Clock, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
+import TrabalhoPlanejamentoDialog from "@/components/trabalhos/TrabalhoPlanejamentoDialog";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const STATUS_LIST = ["planejado", "iniciado", "em_execucao", "revisao_1", "revisao_2", "finalizado_para_parecer", "encerrado"] as const;
 type StatusTrabalho = typeof STATUS_LIST[number];
