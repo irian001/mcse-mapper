@@ -411,6 +411,87 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
     onError: (e: any) => toast.error(e.message || "Erro ao salvar materialidade"),
   });
 
+  // ===== Aprovação de Planejamento (Fase 0A.1.5) =====
+  const validarAprovacaoPlan = (): string | null => {
+    if (!planData) return "Planejamento não encontrado.";
+    if (planData.status_planejamento !== "rascunho") return "Apenas planejamento em rascunho pode ser aprovado.";
+    if (!String(planData.objetivo_geral_auditoria || "").trim()) return "Preencha o Objetivo Geral antes de aprovar.";
+    if (!String(planData.escopo_resumido || "").trim()) return "Preencha o Escopo Resumido antes de aprovar.";
+    if (!String(planData.estrategia_resumida || "").trim()) return "Preencha a Estratégia Resumida antes de aprovar.";
+    if (!String(planData.equipe_responsavel_id || "").trim()) return "Informe o Responsável pelo planejamento antes de aprovar.";
+    return null;
+  };
+
+  const aprovarPlanMutation = useMutation({
+    mutationFn: async () => {
+      if (!podeAprovarPlanejamento) throw new Error(motivoSemAlcadaPlan || "Sem alçada para aprovar.");
+      const err = validarAprovacaoPlan();
+      if (err) throw new Error(err);
+      const { error } = await supabase
+        .from("trabalho_planejamento" as any)
+        .update({
+          status_planejamento: "aprovado",
+          aprovado_por: auditorIdAtual,
+          data_aprovacao: new Date().toISOString(),
+        })
+        .eq("id", planData!.id)
+        .eq("status_planejamento", "rascunho");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Planejamento aprovado");
+      setConfirmAprovarPlan(false);
+      qc.invalidateQueries({ queryKey: ["trabalho-planejamento", trabalhoId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao aprovar planejamento"),
+  });
+
+  // ===== Aprovação de Materialidade (Fase 0A.1.5) =====
+  const validarAprovacaoMat = (m: any): string | null => {
+    if (!m) return "Materialidade não encontrada.";
+    if (m.status_materialidade !== "rascunho") return "Apenas materialidade em rascunho pode ser aprovada.";
+    if (vigente && vigente.id !== m.id) {
+      return "Já existe materialidade aprovada e vigente para este trabalho. A substituição por nova versão será implementada em etapa futura.";
+    }
+    if (!String(m.base_calculo || "").trim()) return "Preencha a Base de Cálculo antes de aprovar.";
+    const g = Number(m.materialidade_global);
+    const d = Number(m.materialidade_desempenho);
+    const lt = Number(m.limite_trivialidade);
+    if (!(g > 0)) return "Materialidade Global deve ser maior que zero.";
+    if (!(d > 0)) return "Materialidade Desempenho deve ser maior que zero.";
+    if (!(lt >= 0)) return "Limite Trivialidade deve ser maior ou igual a zero.";
+    if (d > g) return "Materialidade Desempenho não pode ser maior que a Global.";
+    if (!String(m.justificativa_tecnica || "").trim()) return "Preencha a Justificativa Técnica antes de aprovar.";
+    if (!String(m.responsavel_definicao_id || "").trim()) return "Informe o Responsável pela definição da materialidade antes de aprovar.";
+    return null;
+  };
+
+  const aprovarMatMutation = useMutation({
+    mutationFn: async (matId: string) => {
+      if (!podeAprovarMaterialidade) throw new Error(motivoSemAlcadaMat || "Sem alçada para aprovar.");
+      const m = (materialidadeQ.data || []).find((x: any) => x.id === matId);
+      const err = validarAprovacaoMat(m);
+      if (err) throw new Error(err);
+      const { error } = await supabase
+        .from("trabalho_materialidade" as any)
+        .update({
+          status_materialidade: "aprovada",
+          vigente: true,
+          aprovado_por: auditorIdAtual,
+          data_aprovacao: new Date().toISOString(),
+        })
+        .eq("id", matId)
+        .eq("status_materialidade", "rascunho");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Materialidade aprovada");
+      setConfirmAprovarMat(null);
+      qc.invalidateQueries({ queryKey: ["trabalho-materialidade", trabalhoId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao aprovar materialidade"),
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
