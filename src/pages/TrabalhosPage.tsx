@@ -342,7 +342,7 @@ export default function TrabalhosPage() {
               <TableHead>Status</TableHead>
               <TableHead>Horas</TableHead>
               <TableHead>Equipe</TableHead>
-              <TableHead className="w-20"></TableHead>
+              <TableHead className="w-32"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
