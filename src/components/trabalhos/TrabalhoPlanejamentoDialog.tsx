@@ -308,6 +308,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   };
 
   const validateMat = (): string | null => {
+    if (!matForm.base_calculo.trim()) return "Informe a base de cálculo da materialidade.";
     const g = parseNum(matForm.materialidade_global);
     const d = parseNum(matForm.materialidade_desempenho);
     const lt = parseNum(matForm.limite_trivialidade);
