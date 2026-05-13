@@ -810,6 +810,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                     <MaterialidadeBasesPanel materialidade={rascunhoExistente} trabalho={trabalho} readOnly={false} />
                   </div>
                 )}
+
+                {isInterno && !rascunhoExistente && !vigente && (
                   <div className="flex justify-end">
                     <Button size="sm" onClick={startCreateMat}>
                       <Plus size={14} className="mr-1" />Nova materialidade (rascunho)
