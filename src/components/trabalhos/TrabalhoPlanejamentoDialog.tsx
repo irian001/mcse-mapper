@@ -89,13 +89,6 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
 
   const vigente = (materialidadeQ.data || []).find((m: any) => m.vigente) || null;
 
-  // Bases ativas da materialidade que está sendo confirmada para aprovação
-  const basesAprovacaoQ = useQuery({
-    queryKey: ["trabalho-materialidade-bases-aprovacao", undefined as string | undefined],
-    enabled: false,
-    queryFn: async () => [] as any[],
-  });
-
   // Equipe vinculada ao trabalho — usada como fonte de Responsáveis (Planejamento e Materialidade)
   const equipeQ = useQuery({
     queryKey: ["trabalho-equipe-responsaveis", trabalhoId],
