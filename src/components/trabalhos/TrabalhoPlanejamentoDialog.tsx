@@ -18,6 +18,7 @@ import { AlertCircle, Info, Pencil, Plus, Lock, CheckCircle2 } from "lucide-reac
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import MaterialidadeBasesPanel from "./MaterialidadeBasesPanel";
 
 interface Props {
   open: boolean;
@@ -760,6 +761,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Motivo Nova Versão"><div className="whitespace-pre-wrap text-sm">{orDash(vigente.motivo_nova_versao)}</div></Field>
                       <Field label="Observações"><div className="whitespace-pre-wrap text-sm">{orDash(vigente.observacoes)}</div></Field>
                     </div>
+                    <MaterialidadeBasesPanel materialidade={vigente} trabalho={trabalho} readOnly={true} />
                   </div>
                 )}
 
@@ -805,6 +807,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Limite Trivialidade">{fmtBRL(rascunhoExistente.limite_trivialidade)}</Field>
                       <Field label="Responsável pela materialidade">{labelDoResponsavel(rascunhoExistente.responsavel_definicao_id)}</Field>
                     </div>
+                    <MaterialidadeBasesPanel materialidade={rascunhoExistente} trabalho={trabalho} readOnly={false} />
                   </div>
                 )}
 
