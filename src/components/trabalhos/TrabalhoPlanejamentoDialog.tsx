@@ -771,9 +771,30 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                         <Badge variant="outline" className="text-xs">rascunho</Badge>
                       </div>
                       {isInterno && (
-                        <Button size="sm" variant="outline" onClick={() => startEditMat(rascunhoExistente)}>
-                          <Pencil size={14} className="mr-1" />Editar rascunho
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => startEditMat(rascunhoExistente)}>
+                            <Pencil size={14} className="mr-1" />Editar rascunho
+                          </Button>
+                          {podeAprovarMaterialidade ? (
+                            <Button
+                              size="sm"
+                              disabled={!!vigente}
+                              onClick={() => {
+                                if (vigente) {
+                                  toast.error("Já existe materialidade aprovada e vigente. Substituição será implementada em etapa futura.");
+                                  return;
+                                }
+                                const err = validarAprovacaoMat(rascunhoExistente);
+                                if (err) { toast.error(err); return; }
+                                setConfirmAprovarMat({ id: rascunhoExistente.id });
+                              }}
+                            >
+                              <CheckCircle2 size={14} className="mr-1" />Aprovar materialidade
+                            </Button>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground">{motivoSemAlcadaMat}</span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
