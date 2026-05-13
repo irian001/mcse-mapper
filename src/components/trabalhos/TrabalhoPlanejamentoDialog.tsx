@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, Info, Pencil, Plus, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -82,6 +83,77 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   });
 
   const vigente = (materialidadeQ.data || []).find((m: any) => m.vigente) || null;
+
+  // Equipe vinculada ao trabalho — usada como fonte de Responsáveis (Planejamento e Materialidade)
+  const equipeQ = useQuery({
+    queryKey: ["trabalho-equipe-responsaveis", trabalhoId],
+    enabled: !!trabalhoId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trabalho_auditores")
+        .select("auditor_id, papel_no_trabalho, responsavel_principal, auditores(id, nome, email, cargo)")
+        .eq("trabalho_auditoria_id", trabalhoId!)
+        .eq("ativo", true)
+        .order("responsavel_principal", { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const equipeOptions = (equipeQ.data || []).map((row: any) => {
+    const a = row.auditores || {};
+    const nome = a.nome || a.email || "(sem nome)";
+    const papel = row.papel_no_trabalho ? String(row.papel_no_trabalho).replace(/_/g, " ") : null;
+    const label = papel ? `${nome} — ${papel}` : nome;
+    return { id: row.auditor_id as string, label };
+  });
+
+  const labelDoResponsavel = (id: string | null | undefined): string => {
+    if (!id) return "—";
+    const found = equipeOptions.find((o) => o.id === id);
+    if (found) return found.label;
+    return "Responsável salvo não encontrado na equipe atual";
+  };
+
+  const ResponsavelSelect = ({
+    value,
+    onChange,
+    placeholder = "Selecionar auditor...",
+  }: { value: string; onChange: (v: string) => void; placeholder?: string }) => {
+    const semEquipe = !equipeQ.isLoading && equipeOptions.length === 0;
+    const valorForaDaEquipe = !!value && !equipeOptions.some((o) => o.id === value);
+    const NONE = "__none__";
+    return (
+      <div className="space-y-1">
+        <Select
+          value={value || NONE}
+          onValueChange={(v) => onChange(v === NONE ? "" : v)}
+          disabled={equipeQ.isLoading || semEquipe}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Sem responsável —</SelectItem>
+            {valorForaDaEquipe && (
+              <SelectItem value={value}>
+                {`(fora da equipe) ${value.slice(0, 8)}…`}
+              </SelectItem>
+            )}
+            {equipeOptions.map((o) => (
+              <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {semEquipe && (
+          <div className="text-[11px] text-muted-foreground">Nenhum auditor vinculado a este trabalho.</div>
+        )}
+        {valorForaDaEquipe && (
+          <div className="text-[11px] text-warning-foreground">Responsável salvo não encontrado na equipe atual.</div>
+        )}
+      </div>
+    );
+  };
 
   const qc = useQueryClient();
   const { data: userProfile } = useUserProfile();
@@ -347,9 +419,16 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                     onChange={(e) => setForm({ ...form, estrategia_resumida: e.target.value })} />
                 </div>
                 <div>
-                  <Label className="text-xs">Equipe Responsável (ID)</Label>
-                  <Input maxLength={100} value={form.equipe_responsavel_id}
-                    onChange={(e) => setForm({ ...form, equipe_responsavel_id: e.target.value })} />
+                  <Label className="text-xs">Responsável pelo planejamento</Label>
+                  <ResponsavelSelect
+                    value={form.equipe_responsavel_id}
+                    onChange={(v) => setForm({ ...form, equipe_responsavel_id: v })}
+                  />
+                  {!form.equipe_responsavel_id && (
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      Recomendado informar um responsável (não obrigatório).
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs">Premissas Relevantes</Label>
@@ -405,7 +484,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Equipe Responsável (ID)">{orDash(planData.equipe_responsavel_id)}</Field>
+                  <Field label="Responsável pelo planejamento">{labelDoResponsavel(planData.equipe_responsavel_id)}</Field>
                   <Field label="Aprovado por">{orDash(planData.aprovado_por)}</Field>
                   <Field label="Data de Aprovação">{fmtDate(planData.data_aprovacao)}</Field>
                 </div>
@@ -463,9 +542,16 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       onChange={(e) => setMatForm({ ...matForm, limite_trivialidade: e.target.value })} />
                   </div>
                   <div>
-                    <Label className="text-xs">Responsável Definição (ID)</Label>
-                    <Input maxLength={100} value={matForm.responsavel_definicao_id}
-                      onChange={(e) => setMatForm({ ...matForm, responsavel_definicao_id: e.target.value })} />
+                    <Label className="text-xs">Responsável pela definição da materialidade</Label>
+                    <ResponsavelSelect
+                      value={matForm.responsavel_definicao_id}
+                      onChange={(v) => setMatForm({ ...matForm, responsavel_definicao_id: v })}
+                    />
+                    {!matForm.responsavel_definicao_id && (
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Recomendado informar um responsável (não obrigatório).
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -516,7 +602,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Limite Trivialidade">{fmtBRL(vigente.limite_trivialidade)}</Field>
                       <Field label="Aprovado por">{orDash(vigente.aprovado_por)}</Field>
                       <Field label="Data de Aprovação">{fmtDate(vigente.data_aprovacao)}</Field>
-                      <Field label="Responsável Definição (ID)">{orDash(vigente.responsavel_definicao_id)}</Field>
+                      <Field label="Responsável pela materialidade">{labelDoResponsavel(vigente.responsavel_definicao_id)}</Field>
                     </div>
                     <div className="mt-3 space-y-2">
                       <Field label="Justificativa Técnica"><div className="whitespace-pre-wrap text-sm">{orDash(vigente.justificativa_tecnica)}</div></Field>
@@ -545,7 +631,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Materialidade Global">{fmtBRL(rascunhoExistente.materialidade_global)}</Field>
                       <Field label="Materialidade Desempenho">{fmtBRL(rascunhoExistente.materialidade_desempenho)}</Field>
                       <Field label="Limite Trivialidade">{fmtBRL(rascunhoExistente.limite_trivialidade)}</Field>
-                      <Field label="Responsável Definição (ID)">{orDash(rascunhoExistente.responsavel_definicao_id)}</Field>
+                      <Field label="Responsável pela materialidade">{labelDoResponsavel(rascunhoExistente.responsavel_definicao_id)}</Field>
                     </div>
                   </div>
                 )}
