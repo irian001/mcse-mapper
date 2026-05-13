@@ -158,6 +158,13 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
     if (am) return am.slice(0, 4);
     return null;
   };
+  const MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const fmtMesLabel = (am: string): string => {
+    const m = /^\d{4}-(\d{2})$/.exec(am);
+    if (!m) return am;
+    const idx = Number(m[1]) - 1;
+    return MESES_PT[idx] ?? am;
+  };
 
   const { anoDataBase, anoDataBaseFallback } = useMemo(() => {
     if (dataBase) {
@@ -389,12 +396,12 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
       const am = getAnoMesFromItem(i);
       if (!am || am.slice(0, 4) !== anoStr) return;
       let a = m.get(am);
-      if (!a) { a = { label: am, valor: 0, qtd: 0, ucs: new Set() }; m.set(am, a); }
+      if (!a) { a = { label: fmtMesLabel(am), valor: 0, qtd: 0, ucs: new Set(), _key: am } as any; m.set(am, a); }
       a.valor += Number(i.valor_em_aberto) || 0;
       a.qtd += 1;
       if (i.uc) a.ucs.add(i.uc);
     });
-    return aggToArr(m).sort((a, b) => a.label.localeCompare(b.label));
+    return aggToArr(m).sort((a: any, b: any) => String(a._key ?? a.label).localeCompare(String(b._key ?? b.label)));
   }, [filtered, anoDataBase]);
 
   const limparFiltros = () => {
@@ -446,7 +453,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <FilterSel value={filterSit} onChange={setFilterSit} options={[{ v: "all", l: "Todas situações" }, ...sitOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterClasse} onChange={setFilterClasse} options={[{ v: "all", l: "Todas classes" }, ...classeOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterAnoVenc} onChange={setFilterAnoVenc} options={[{ v: "all", l: "Todos anos venc." }, ...anoVencOpts.map((c) => ({ v: c, l: c }))]} />
-        <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: `Todos meses ${anoDataBase}` }, ...anoMesOpts.map((c) => ({ v: c, l: c }))]} />
+        <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: `Todos meses ${anoDataBase}` }, ...anoMesOpts.map((c) => ({ v: c, l: fmtMesLabel(c) }))]} />
         <FilterSel value={filterStatus} onChange={setFilterStatus} options={[
           { v: "all", l: "Todos status" },
           { v: "vencido", l: "Vencidos" },
