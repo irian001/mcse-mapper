@@ -270,6 +270,17 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   ) || null;
 
   const startCreateMat = () => {
+    // Bloqueia múltiplos rascunhos na UI: se já existe rascunho, abre o existente.
+    if (rascunhoExistente) {
+      toast.info("Já existe uma materialidade em rascunho para este trabalho. Edite o rascunho existente.");
+      startEditMat(rascunhoExistente);
+      return;
+    }
+    // Nova versão a partir de materialidade aprovada/vigente será tratada em etapa futura.
+    if (vigente) {
+      toast.info("A criação de nova versão de materialidade aprovada será implementada em etapa futura.");
+      return;
+    }
     setMatForm(emptyMat);
     setEditingMatId(null);
     setMatEditMode("create");
@@ -297,6 +308,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   };
 
   const validateMat = (): string | null => {
+    if (!matForm.base_calculo.trim()) return "Informe a base de cálculo da materialidade.";
     const g = parseNum(matForm.materialidade_global);
     const d = parseNum(matForm.materialidade_desempenho);
     const lt = parseNum(matForm.limite_trivialidade);
@@ -319,7 +331,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
       const err = validateMat();
       if (err) throw new Error(err);
       const payload: any = {
-        base_calculo: matForm.base_calculo.trim() || null,
+        base_calculo: matForm.base_calculo.trim(),
         percentual_aplicado: parseNum(matForm.percentual_aplicado),
         materialidade_global: parseNum(matForm.materialidade_global),
         materialidade_desempenho: parseNum(matForm.materialidade_desempenho),
@@ -516,10 +528,13 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Base de Cálculo</Label>
+                    <Label className="text-xs">Base de Cálculo <span className="text-destructive">*</span></Label>
                     <Input maxLength={200} value={matForm.base_calculo}
                       onChange={(e) => setMatForm({ ...matForm, base_calculo: e.target.value })}
-                      placeholder="Ex.: Lucro antes de IR, Receita Líquida..." />
+                      placeholder="Ex.: Lucro antes de IR, Receita Líquida..." required />
+                    {!matForm.base_calculo.trim() && (
+                      <div className="text-[11px] text-warning-foreground mt-1">Informe a base de cálculo da materialidade.</div>
+                    )}
                   </div>
                   <div>
                     <Label className="text-xs">Percentual Aplicado (%)</Label>
@@ -636,11 +651,17 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   </div>
                 )}
 
-                {isInterno && !rascunhoExistente && (
+                {isInterno && !rascunhoExistente && !vigente && (
                   <div className="flex justify-end">
                     <Button size="sm" onClick={startCreateMat}>
                       <Plus size={14} className="mr-1" />Nova materialidade (rascunho)
                     </Button>
+                  </div>
+                )}
+
+                {isInterno && !rascunhoExistente && vigente && (
+                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
+                    A criação de nova versão de materialidade aprovada será implementada em etapa futura.
                   </div>
                 )}
 
@@ -666,9 +687,14 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   </div>
                 </div>
 
-                {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "aprovada" || m.status_materialidade === "substituida") && (
+                {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "aprovada") && (
                   <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    Materialidade aprovada ou substituída não pode ser editada diretamente. Alterações serão tratadas por nova versão em etapa futura.
+                    Materialidade aprovada não pode ser editada diretamente.
+                  </div>
+                )}
+                {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "substituida") && (
+                  <div className="rounded-md border border-muted-foreground/20 bg-muted/30 p-3 text-xs">
+                    Materialidade substituída permanece apenas para histórico.
                   </div>
                 )}
 
