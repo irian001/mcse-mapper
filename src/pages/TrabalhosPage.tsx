@@ -68,6 +68,10 @@ export default function TrabalhosPage() {
   const [form, setForm] = useState<TrabalhoForm>(emptyForm);
   const [equipeDialogOpen, setEquipeDialogOpen] = useState(false);
   const [selectedTrabalhoId, setSelectedTrabalhoId] = useState<string | null>(null);
+  const [planejamentoOpen, setPlanejamentoOpen] = useState(false);
+  const [planejamentoTrabalho, setPlanejamentoTrabalho] = useState<any | null>(null);
+  const { data: userProfile } = useUserProfile();
+  const isInterno = userProfile?.role === "auditor";
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
