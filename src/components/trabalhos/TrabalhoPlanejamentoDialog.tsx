@@ -879,6 +879,51 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={confirmAprovarPlan} onOpenChange={(v) => !v && setConfirmAprovarPlan(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar planejamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Após aprovado, o planejamento não poderá ser editado diretamente nesta fase.
+              Reabertura e nova versão serão tratadas em etapa futura.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={aprovarPlanMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={aprovarPlanMutation.isPending}
+              onClick={(e) => { e.preventDefault(); aprovarPlanMutation.mutate(); }}
+            >
+              {aprovarPlanMutation.isPending ? "Aprovando..." : "Confirmar aprovação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmAprovarMat} onOpenChange={(v) => !v && setConfirmAprovarMat(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar materialidade?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A materialidade aprovada será marcada como <strong>vigente</strong> e não poderá ser editada diretamente.
+              Alterações futuras serão tratadas por nova versão em etapa posterior.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={aprovarMatMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={aprovarMatMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmAprovarMat) aprovarMatMutation.mutate(confirmAprovarMat.id);
+              }}
+            >
+              {aprovarMatMutation.isPending ? "Aprovando..." : "Confirmar aprovação"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
