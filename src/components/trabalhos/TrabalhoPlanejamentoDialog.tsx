@@ -923,15 +923,45 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Aprovar materialidade?</AlertDialogTitle>
-            <AlertDialogDescription>
-              A materialidade aprovada será marcada como <strong>vigente</strong> e não poderá ser editada diretamente.
-              Alterações futuras serão tratadas por nova versão em etapa posterior.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  A materialidade aprovada será marcada como <strong>vigente</strong> e não poderá ser editada diretamente.
+                  Alterações futuras serão tratadas por nova versão em etapa posterior.
+                </p>
+                {(() => {
+                  if (basesAprovacaoQ.isLoading) {
+                    return <p className="text-xs text-muted-foreground">Carregando bases...</p>;
+                  }
+                  const bases = basesAprovacaoQ.data || [];
+                  if (bases.length === 0) {
+                    return (
+                      <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
+                        <strong>Atenção:</strong> esta materialidade não possui bases específicas cadastradas. Deseja aprovar mesmo assim?
+                      </div>
+                    );
+                  }
+                  const soma = bases.reduce(
+                    (acc: number, b: any) => acc + (Number(b.valor_materialidade) || 0),
+                    0,
+                  );
+                  const algumComValor = bases.some((b: any) => b.valor_materialidade != null);
+                  return (
+                    <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                      <div><strong>{bases.length}</strong> base(s) ativa(s) vinculada(s) a esta materialidade.</div>
+                      {algumComValor && (
+                        <div>Soma dos valores de materialidade das bases: <strong>{fmtBRL(soma)}</strong></div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={aprovarMatMutation.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              disabled={aprovarMatMutation.isPending}
+              disabled={aprovarMatMutation.isPending || basesAprovacaoQ.isLoading}
               onClick={(e) => {
                 e.preventDefault();
                 if (confirmAprovarMat) aprovarMatMutation.mutate(confirmAprovarMat.id);
