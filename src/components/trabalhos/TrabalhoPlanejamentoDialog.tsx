@@ -484,7 +484,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Equipe Responsável (ID)">{orDash(planData.equipe_responsavel_id)}</Field>
+                  <Field label="Responsável pelo planejamento">{labelDoResponsavel(planData.equipe_responsavel_id)}</Field>
                   <Field label="Aprovado por">{orDash(planData.aprovado_por)}</Field>
                   <Field label="Data de Aprovação">{fmtDate(planData.data_aprovacao)}</Field>
                 </div>
@@ -542,9 +542,16 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       onChange={(e) => setMatForm({ ...matForm, limite_trivialidade: e.target.value })} />
                   </div>
                   <div>
-                    <Label className="text-xs">Responsável Definição (ID)</Label>
-                    <Input maxLength={100} value={matForm.responsavel_definicao_id}
-                      onChange={(e) => setMatForm({ ...matForm, responsavel_definicao_id: e.target.value })} />
+                    <Label className="text-xs">Responsável pela definição da materialidade</Label>
+                    <ResponsavelSelect
+                      value={matForm.responsavel_definicao_id}
+                      onChange={(v) => setMatForm({ ...matForm, responsavel_definicao_id: v })}
+                    />
+                    {!matForm.responsavel_definicao_id && (
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Recomendado informar um responsável (não obrigatório).
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -595,7 +602,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Limite Trivialidade">{fmtBRL(vigente.limite_trivialidade)}</Field>
                       <Field label="Aprovado por">{orDash(vigente.aprovado_por)}</Field>
                       <Field label="Data de Aprovação">{fmtDate(vigente.data_aprovacao)}</Field>
-                      <Field label="Responsável Definição (ID)">{orDash(vigente.responsavel_definicao_id)}</Field>
+                      <Field label="Responsável pela materialidade">{labelDoResponsavel(vigente.responsavel_definicao_id)}</Field>
                     </div>
                     <div className="mt-3 space-y-2">
                       <Field label="Justificativa Técnica"><div className="whitespace-pre-wrap text-sm">{orDash(vigente.justificativa_tecnica)}</div></Field>
@@ -624,7 +631,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Materialidade Global">{fmtBRL(rascunhoExistente.materialidade_global)}</Field>
                       <Field label="Materialidade Desempenho">{fmtBRL(rascunhoExistente.materialidade_desempenho)}</Field>
                       <Field label="Limite Trivialidade">{fmtBRL(rascunhoExistente.limite_trivialidade)}</Field>
-                      <Field label="Responsável Definição (ID)">{orDash(rascunhoExistente.responsavel_definicao_id)}</Field>
+                      <Field label="Responsável pela materialidade">{labelDoResponsavel(rascunhoExistente.responsavel_definicao_id)}</Field>
                     </div>
                   </div>
                 )}
