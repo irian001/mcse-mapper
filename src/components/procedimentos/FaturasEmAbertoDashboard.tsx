@@ -453,7 +453,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
         <FilterSel value={filterSit} onChange={setFilterSit} options={[{ v: "all", l: "Todas situações" }, ...sitOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterClasse} onChange={setFilterClasse} options={[{ v: "all", l: "Todas classes" }, ...classeOpts.map((c) => ({ v: c, l: c }))]} />
         <FilterSel value={filterAnoVenc} onChange={setFilterAnoVenc} options={[{ v: "all", l: "Todos anos venc." }, ...anoVencOpts.map((c) => ({ v: c, l: c }))]} />
-        <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: `Todos meses ${anoDataBase}` }, ...anoMesOpts.map((c) => ({ v: c, l: c }))]} />
+        <FilterSel value={filterAnoMes} onChange={setFilterAnoMes} options={[{ v: "all", l: `Todos meses ${anoDataBase}` }, ...anoMesOpts.map((c) => ({ v: c, l: fmtMesLabel(c) }))]} />
         <FilterSel value={filterStatus} onChange={setFilterStatus} options={[
           { v: "all", l: "Todos status" },
           { v: "vencido", l: "Vencidos" },
