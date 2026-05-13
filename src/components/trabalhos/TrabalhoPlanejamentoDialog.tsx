@@ -331,7 +331,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
       const err = validateMat();
       if (err) throw new Error(err);
       const payload: any = {
-        base_calculo: matForm.base_calculo.trim() || null,
+        base_calculo: matForm.base_calculo.trim(),
         percentual_aplicado: parseNum(matForm.percentual_aplicado),
         materialidade_global: parseNum(matForm.materialidade_global),
         materialidade_desempenho: parseNum(matForm.materialidade_desempenho),
