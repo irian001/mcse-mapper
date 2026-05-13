@@ -11,10 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Search, Users, Trash2, Clock } from "lucide-react";
+import { Plus, Pencil, Search, Users, Trash2, Clock, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import ContextoClienteEstrutura from "@/components/ContextoClienteEstrutura";
+import TrabalhoPlanejamentoDialog from "@/components/trabalhos/TrabalhoPlanejamentoDialog";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const STATUS_LIST = ["planejado", "iniciado", "em_execucao", "revisao_1", "revisao_2", "finalizado_para_parecer", "encerrado"] as const;
 type StatusTrabalho = typeof STATUS_LIST[number];
@@ -66,6 +68,10 @@ export default function TrabalhosPage() {
   const [form, setForm] = useState<TrabalhoForm>(emptyForm);
   const [equipeDialogOpen, setEquipeDialogOpen] = useState(false);
   const [selectedTrabalhoId, setSelectedTrabalhoId] = useState<string | null>(null);
+  const [planejamentoOpen, setPlanejamentoOpen] = useState(false);
+  const [planejamentoTrabalho, setPlanejamentoTrabalho] = useState<any | null>(null);
+  const { data: userProfile } = useUserProfile();
+  const isInterno = userProfile?.role === "auditor";
   const [search, setSearch] = useState("");
   const [filterCliente, setFilterCliente] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -336,7 +342,7 @@ export default function TrabalhosPage() {
               <TableHead>Status</TableHead>
               <TableHead>Horas</TableHead>
               <TableHead>Equipe</TableHead>
-              <TableHead className="w-20"></TableHead>
+              <TableHead className="w-32"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -372,7 +378,19 @@ export default function TrabalhosPage() {
                   </Button>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil size={14} /></Button>
+                  <div className="flex items-center gap-1">
+                    {isInterno && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Planejamento do Trabalho"
+                        onClick={() => { setPlanejamentoTrabalho(t); setPlanejamentoOpen(true); }}
+                      >
+                        <ClipboardList size={14} />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil size={14} /></Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -601,6 +619,12 @@ export default function TrabalhosPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <TrabalhoPlanejamentoDialog
+        open={planejamentoOpen}
+        onOpenChange={setPlanejamentoOpen}
+        trabalho={planejamentoTrabalho}
+      />
     </div>
   );
 }
