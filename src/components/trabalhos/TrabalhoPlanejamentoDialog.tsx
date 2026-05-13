@@ -807,10 +807,9 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                       <Field label="Limite Trivialidade">{fmtBRL(rascunhoExistente.limite_trivialidade)}</Field>
                       <Field label="Responsável pela materialidade">{labelDoResponsavel(rascunhoExistente.responsavel_definicao_id)}</Field>
                     </div>
+                    <MaterialidadeBasesPanel materialidade={rascunhoExistente} trabalho={trabalho} readOnly={false} />
                   </div>
                 )}
-
-                {isInterno && !rascunhoExistente && !vigente && (
                   <div className="flex justify-end">
                     <Button size="sm" onClick={startCreateMat}>
                       <Plus size={14} className="mr-1" />Nova materialidade (rascunho)
