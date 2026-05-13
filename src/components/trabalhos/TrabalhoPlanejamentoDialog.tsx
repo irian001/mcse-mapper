@@ -430,14 +430,74 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 </div>
                 <Button size="sm" variant="outline" onClick={() => materialidadeQ.refetch()}>Tentar novamente</Button>
               </div>
+            ) : matEditMode ? (
+              <div className="space-y-3">
+                <div className="text-sm font-medium">
+                  {matEditMode === "create" ? "Nova materialidade (rascunho)" : `Editar rascunho — v${(materialidadeQ.data || []).find((m: any) => m.id === editingMatId)?.versao ?? "—"}`}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Base de Cálculo</Label>
+                    <Input maxLength={200} value={matForm.base_calculo}
+                      onChange={(e) => setMatForm({ ...matForm, base_calculo: e.target.value })}
+                      placeholder="Ex.: Lucro antes de IR, Receita Líquida..." />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Percentual Aplicado (%)</Label>
+                    <Input inputMode="decimal" value={matForm.percentual_aplicado}
+                      onChange={(e) => setMatForm({ ...matForm, percentual_aplicado: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Materialidade Global (R$)</Label>
+                    <Input inputMode="decimal" value={matForm.materialidade_global}
+                      onChange={(e) => setMatForm({ ...matForm, materialidade_global: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Materialidade Desempenho (R$)</Label>
+                    <Input inputMode="decimal" value={matForm.materialidade_desempenho}
+                      onChange={(e) => setMatForm({ ...matForm, materialidade_desempenho: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Limite Trivialidade (R$)</Label>
+                    <Input inputMode="decimal" value={matForm.limite_trivialidade}
+                      onChange={(e) => setMatForm({ ...matForm, limite_trivialidade: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Responsável Definição (ID)</Label>
+                    <Input maxLength={100} value={matForm.responsavel_definicao_id}
+                      onChange={(e) => setMatForm({ ...matForm, responsavel_definicao_id: e.target.value })} />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Justificativa Técnica</Label>
+                  <Textarea rows={3} maxLength={4000} value={matForm.justificativa_tecnica}
+                    onChange={(e) => setMatForm({ ...matForm, justificativa_tecnica: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Observações</Label>
+                  <Textarea rows={2} maxLength={4000} value={matForm.observacoes}
+                    onChange={(e) => setMatForm({ ...matForm, observacoes: e.target.value })} />
+                </div>
+                <div className="text-[11px] text-muted-foreground flex items-start gap-1">
+                  <Info size={12} className="mt-0.5" /> Materialidade específica (JSON) e aprovação serão tratadas em etapa futura.
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => setMatEditMode(null)} disabled={saveMatMutation.isPending}>Cancelar</Button>
+                  <Button size="sm" onClick={() => saveMatMutation.mutate()} disabled={saveMatMutation.isPending}>
+                    {saveMatMutation.isPending ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+              </div>
             ) : (materialidadeQ.data?.length ?? 0) === 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                   Nenhuma materialidade cadastrada para este trabalho.
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Info size={12} /> O cadastro, aprovação e versionamento de materialidade serão implementados na próxima etapa.
-                </div>
+                {isInterno && (
+                  <div className="flex justify-center">
+                    <Button size="sm" onClick={startCreateMat}><Plus size={14} className="mr-1" />Criar materialidade</Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -466,32 +526,72 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   </div>
                 )}
 
+                {rascunhoExistente && (
+                  <div className="rounded-md border p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">v{orDash(rascunhoExistente.versao)}</Badge>
+                        <Badge variant="outline" className="text-xs">rascunho</Badge>
+                      </div>
+                      {isInterno && (
+                        <Button size="sm" variant="outline" onClick={() => startEditMat(rascunhoExistente)}>
+                          <Pencil size={14} className="mr-1" />Editar rascunho
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Field label="Base de Cálculo">{orDash(rascunhoExistente.base_calculo)}</Field>
+                      <Field label="Percentual Aplicado">{fmtPct(rascunhoExistente.percentual_aplicado)}</Field>
+                      <Field label="Materialidade Global">{fmtBRL(rascunhoExistente.materialidade_global)}</Field>
+                      <Field label="Materialidade Desempenho">{fmtBRL(rascunhoExistente.materialidade_desempenho)}</Field>
+                      <Field label="Limite Trivialidade">{fmtBRL(rascunhoExistente.limite_trivialidade)}</Field>
+                      <Field label="Responsável Definição (ID)">{orDash(rascunhoExistente.responsavel_definicao_id)}</Field>
+                    </div>
+                  </div>
+                )}
+
+                {isInterno && !rascunhoExistente && (
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={startCreateMat}>
+                      <Plus size={14} className="mr-1" />Nova materialidade (rascunho)
+                    </Button>
+                  </div>
+                )}
+
                 <div>
                   <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Histórico de Versões</div>
                   <div className="border rounded-md divide-y">
-                    {materialidadeQ.data!.map((m: any) => (
-                      <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">v{orDash(m.versao)}</Badge>
-                          {m.vigente && <Badge variant="outline" className="text-[10px] bg-success/15 text-success border-success/30">vigente</Badge>}
-                          <span className="text-xs text-muted-foreground">{orDash(m.status_materialidade)}</span>
+                    {materialidadeQ.data!.map((m: any) => {
+                      const bloqueada = m.status_materialidade === "aprovada" || m.status_materialidade === "substituida";
+                      return (
+                        <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">v{orDash(m.versao)}</Badge>
+                            {m.vigente && <Badge variant="outline" className="text-[10px] bg-success/15 text-success border-success/30">vigente</Badge>}
+                            <span className="text-xs text-muted-foreground">{orDash(m.status_materialidade)}</span>
+                            {bloqueada && <Lock size={12} className="text-muted-foreground" />}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Global: {fmtBRL(m.materialidade_global)} · Aprovação: {fmtDate(m.data_aprovacao)}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Global: {fmtBRL(m.materialidade_global)} · Aprovação: {fmtDate(m.data_aprovacao)}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
+                {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "aprovada" || m.status_materialidade === "substituida") && (
+                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
+                    Materialidade aprovada ou substituída não pode ser editada diretamente. Alterações serão tratadas por nova versão em etapa futura.
+                  </div>
+                )}
+
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Info size={12} /> Cadastro, aprovação e versionamento serão implementados na próxima etapa.
+                  <Info size={12} /> Aprovação, alçada e nova versão serão implementadas na próxima etapa.
                 </div>
               </div>
             )}
           </TabsContent>
-
-          {/* RISCOS */}
           <TabsContent value="riscos" className="pt-3">
             <div className="rounded-md border border-dashed p-6 space-y-3">
               <div className="text-sm font-medium">A matriz de riscos será implementada em fase posterior.</div>
