@@ -300,7 +300,7 @@ export default function FaturasEmAbertoDashboard({ procedimento }: Props) {
   // ===== Agregações para gráficos (respeitam TODOS os filtros, inclusive aging) =====
   type Agg = { label: string; valor: number; qtd: number; ucs: Set<string> };
   const aggToArr = (m: Map<string, Agg>) =>
-    Array.from(m.values()).map((a) => ({ label: a.label, valor: a.valor, qtd: a.qtd, qtdUcs: a.ucs.size }));
+    Array.from(m.values()).map((a: any) => ({ label: a.label, valor: a.valor, qtd: a.qtd, qtdUcs: a.ucs.size, _key: a._key }));
 
   const totalFiltrado = useMemo(
     () => filtered.reduce((s: number, i: any) => s + (Number(i.valor_em_aberto) || 0), 0),
