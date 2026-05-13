@@ -10,6 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ClipboardList } from "lucide-react";
 
+function getMensagemErroPta(err: any) {
+  const code = err?.code;
+  const message = String(err?.message || "");
+
+  if (code === "23505" || /duplicate key|unique constraint|violates unique/i.test(message)) {
+    return "Registro duplicado: já existe um PTA para esta conta MCSE neste trabalho.";
+  }
+
+  return message || "Não foi possível concluir a operação de PTA.";
+}
+
 export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("auto");
@@ -146,7 +157,7 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
       onClose();
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(getMensagemErroPta(err)),
   });
 
   const gerarManualMutation = useMutation({
@@ -180,7 +191,7 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["papeis_trabalho"] });
       onClose();
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(getMensagemErroPta(err)),
   });
 
   return (
