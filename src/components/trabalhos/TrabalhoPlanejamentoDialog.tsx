@@ -270,6 +270,17 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   ) || null;
 
   const startCreateMat = () => {
+    // Bloqueia múltiplos rascunhos na UI: se já existe rascunho, abre o existente.
+    if (rascunhoExistente) {
+      toast.info("Já existe uma materialidade em rascunho para este trabalho. Edite o rascunho existente.");
+      startEditMat(rascunhoExistente);
+      return;
+    }
+    // Nova versão a partir de materialidade aprovada/vigente será tratada em etapa futura.
+    if (vigente) {
+      toast.info("A criação de nova versão de materialidade aprovada será implementada em etapa futura.");
+      return;
+    }
     setMatForm(emptyMat);
     setEditingMatId(null);
     setMatEditMode("create");
