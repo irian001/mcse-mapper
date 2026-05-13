@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS public.trabalho_materialidade (
   data_aprovacao                timestamptz,
 
   versao                        integer NOT NULL DEFAULT 1,
-  vigente                       boolean NOT NULL DEFAULT true,
+  -- vigente nasce false; vira true apenas quando a versão é aprovada
+  vigente                       boolean NOT NULL DEFAULT false,
 
   materialidade_especifica_json jsonb,
   observacoes                   text,
@@ -102,7 +103,11 @@ CREATE TABLE IF NOT EXISTS public.trabalho_materialidade (
       materialidade_global IS NULL
       OR materialidade_desempenho IS NULL
       OR materialidade_desempenho <= materialidade_global
-    )
+    ),
+
+  -- Coerência vigente x status: só pode estar vigente se aprovada
+  CONSTRAINT chk_tm_vigente_requer_aprovada
+    CHECK (vigente = false OR status_materialidade = 'aprovada')
 );
 
 -- Auto-referência adicionada via ALTER (idempotente)
@@ -119,10 +124,23 @@ BEGIN
   END IF;
 END$$;
 
--- Apenas UMA materialidade vigente por trabalho (índice parcial)
-CREATE UNIQUE INDEX IF NOT EXISTS uq_tm_vigente_por_trabalho
+-- Apenas UMA materialidade APROVADA e VIGENTE por trabalho.
+-- Permite múltiplas versões em rascunho ou substituidas em paralelo.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tm_aprovada_vigente_por_trabalho
   ON public.trabalho_materialidade(trabalho_auditoria_id)
-  WHERE vigente = true;
+  WHERE vigente = true AND status_materialidade = 'aprovada';
+
+-- NOTA: o índice antigo uq_tm_vigente_por_trabalho (WHERE vigente = true)
+-- foi intencionalmente removido para suportar o fluxo de versionamento:
+--   rascunho (vigente=false) -> aprovada/vigente=true ->
+--   nova versão rascunho (vigente=false) -> ao aprovar, anterior vira
+--   substituida/vigente=false e nova vira aprovada/vigente=true.
+
+-- COERÊNCIA cliente_id / exercicio_id / trabalho_auditoria_id:
+-- Nesta fase, a consistência entre esses três campos é responsabilidade
+-- da APLICAÇÃO (camada de serviço/UI ao criar/atualizar registros).
+-- Uma trigger de validação cruzada poderá ser adicionada em fase futura,
+-- caso necessário, sem impacto neste DDL.
 
 CREATE INDEX IF NOT EXISTS idx_tm_trabalho   ON public.trabalho_materialidade(trabalho_auditoria_id);
 CREATE INDEX IF NOT EXISTS idx_tm_cliente    ON public.trabalho_materialidade(cliente_id);
