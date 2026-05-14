@@ -250,6 +250,15 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
                 </Select>
               </div>
             )}
+            {autoTrabalhoId && (
+              <div className="border-t pt-3">
+                <MaterialidadeBaseSelect
+                  trabalhoId={autoTrabalhoId}
+                  value={autoBaseSnap.materialidade_base_id}
+                  onChange={handleAutoBaseChange}
+                />
+              </div>
+            )}
             <Button onClick={() => gerarAutoMutation.mutate()} disabled={!autoTrabalhoId || !autoContaMcseId || gerarAutoMutation.isPending} className="w-full">
               {gerarAutoMutation.isPending ? "Gerando..." : "Gerar PTA Automático"}
             </Button>
