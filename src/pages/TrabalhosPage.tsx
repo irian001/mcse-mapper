@@ -355,8 +355,8 @@ export default function TrabalhosPage() {
                 <TableCell className="font-medium">{t.nome_trabalho}</TableCell>
                 <TableCell className="text-muted-foreground">{t.clientes?.razao_social || "—"}</TableCell>
                 <TableCell>{t.exercicios?.ano_exercicio || "—"}</TableCell>
-                <TableCell className="text-sm">{t.data_inicio_programada ? format(new Date(t.data_inicio_programada + "T00:00:00"), "dd/MM/yyyy") : "—"}</TableCell>
-                <TableCell className="text-sm">{t.data_fim_programada ? format(new Date(t.data_fim_programada + "T00:00:00"), "dd/MM/yyyy") : "—"}</TableCell>
+                <TableCell className="text-sm">{(() => { if (!t.data_inicio_programada) return "—"; const d = new Date(t.data_inicio_programada + "T00:00:00"); return isNaN(d.getTime()) ? "—" : format(d, "dd/MM/yyyy"); })()}</TableCell>
+                <TableCell className="text-sm">{(() => { if (!t.data_fim_programada) return "—"; const d = new Date(t.data_fim_programada + "T00:00:00"); return isNaN(d.getTime()) ? "—" : format(d, "dd/MM/yyyy"); })()}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className={`text-xs font-medium ${statusConfig[t.status_trabalho]?.className || ""}`}>
                     {statusConfig[t.status_trabalho]?.label || t.status_trabalho}
