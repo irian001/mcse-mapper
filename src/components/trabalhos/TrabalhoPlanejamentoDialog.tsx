@@ -903,8 +903,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
           <AlertDialogHeader>
             <AlertDialogTitle>Aprovar planejamento?</AlertDialogTitle>
             <AlertDialogDescription>
-              Após aprovado, o planejamento não poderá ser editado diretamente nesta fase.
-              Reabertura e nova versão serão tratadas em etapa futura.
+              Após aprovado, o planejamento ficará bloqueado para edição direta.
+              A criação de nova versão será disponibilizada em etapa futura.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
