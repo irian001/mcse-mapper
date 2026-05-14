@@ -103,10 +103,20 @@ export default function MaterialidadeBaseSelect({ trabalhoId, value, onChange, d
   const selected = bases.find((b) => b.id === value) || null;
   const usingSnapshotOnly = !selected && value && snapshot?.materialidade_base_id === value;
 
+  const basesSemValor = bases.filter((b) => b.valor_materialidade == null).length;
+  const snapshotSemValor =
+    !!value && snapshot?.materialidade_base_id === value && snapshot?.materialidade_base_valor_snapshot == null;
+
   const handleChange = (v: string) => {
     if (v === "__none__") return onChange(null);
     const b = bases.find((x) => x.id === v);
-    if (b) onChange(b);
+    if (!b) return;
+    if (b.valor_materialidade == null) {
+      // Defensivo: itens sem valor são renderizados como disabled, mas garantimos bloqueio aqui.
+      return;
+    }
+    if (!b.nome_base) return;
+    onChange(b);
   };
 
   return (
