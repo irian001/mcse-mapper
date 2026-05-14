@@ -288,6 +288,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Remove line
   const removeLinhaMutation = useMutation({
     mutationFn: async (linhaId: string) => {
+      if (isReadOnly) throw new Error(READ_ONLY_MSG);
       const { error } = await supabase
         .from("papel_trabalho_linhas")
         .delete()
