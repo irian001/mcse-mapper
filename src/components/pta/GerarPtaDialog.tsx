@@ -187,6 +187,12 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       if (existenteManual) throw new Error("Já existe um PTA com este título neste trabalho");
 
       const baseSelM = manBaseSnap.materialidade_base_id ? manBaseSnap : null;
+      if (baseSelM && (
+        !baseSelM.materialidade_base_nome_snapshot ||
+        baseSelM.materialidade_base_valor_snapshot == null
+      )) {
+        throw new Error("Base de materialidade selecionada está sem valor calculado. Escolha outra base.");
+      }
       const { error } = await (supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: manTrabalhoId,
         cliente_id: trabalho.cliente_id,
@@ -194,6 +200,7 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
         titulo_pta: tituloNormalizado,
         ...(baseSelM ? {
           materialidade_aplicavel: true,
+          // Regra Fase 0A.1.8.3: limite_materialidade segue o valor da base; limite_variacao permanece manual.
           limite_materialidade: baseSelM.materialidade_base_valor_snapshot,
         } : {}),
         ...manBaseSnap,
