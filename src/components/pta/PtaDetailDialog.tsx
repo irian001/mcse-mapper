@@ -690,9 +690,9 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
 
           <Separator />
 
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full">
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isReadOnly} className="w-full" title={isReadOnly ? READ_ONLY_MSG : undefined}>
             <Save size={14} className="mr-1" />
-            {saveMutation.isPending ? "Salvando..." : "Salvar PTA"}
+            {isReadOnly ? "PTA somente leitura" : (saveMutation.isPending ? "Salvando..." : "Salvar PTA")}
           </Button>
         </DialogContent>
       </Dialog>
