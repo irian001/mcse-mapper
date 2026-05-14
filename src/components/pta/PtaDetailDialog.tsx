@@ -96,9 +96,20 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   }, [pta]);
 
   const handleBaseChange = (base: any | null) => {
+    if (isReadOnly) return;
     const snap = baseToSnapshot(base);
+    // Caso "Sem base vinculada": limpa apenas vínculo + snapshots.
+    // Não toca em limite_materialidade, limite_variacao nem materialidade_aplicavel.
+    if (!base) {
+      setBaseSnap(snap);
+      return;
+    }
+    // Defesa: nunca aceitar base sem nome ou sem valor calculado.
+    if (!base.nome_base || base.valor_materialidade == null) {
+      toast.error("Base sem valor de materialidade calculado não pode ser vinculada.");
+      return;
+    }
     setBaseSnap(snap);
-    if (!base) return;
     const novoValor = snap.materialidade_base_valor_snapshot;
     if (novoValor == null) return;
     const atual = limiteMaterialidade ? parseFloat(limiteMaterialidade) : null;
@@ -112,6 +123,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
         setLimiteMatTouched(false);
       }
     }
+    // Regra Fase 0A.1.8.3: limite_variacao permanece manual; nunca preenchido pela base.
   };
 
   // Fetch linked lines
