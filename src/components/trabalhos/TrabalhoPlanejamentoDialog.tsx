@@ -926,8 +926,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  A materialidade aprovada será marcada como <strong>vigente</strong> e não poderá ser editada diretamente.
-                  Alterações futuras serão tratadas por nova versão em etapa posterior.
+                  A materialidade aprovada será marcada como <strong>vigente</strong> e ficará bloqueada para edição direta.
+                  A criação de nova versão será disponibilizada em etapa futura.
                 </p>
                 {(() => {
                   if (basesAprovacaoQ.isLoading) {
