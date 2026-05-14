@@ -643,8 +643,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   )}
                 </div>
                 {isAprovado && (
-                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    Planejamento aprovado. Alterações serão tratadas em etapa futura.
+                  <div className="rounded-md border border-success/30 bg-success/5 p-3 text-xs">
+                    Planejamento aprovado e bloqueado para edição direta.
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -732,7 +732,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                     onChange={(e) => setMatForm({ ...matForm, observacoes: e.target.value })} />
                 </div>
                 <div className="text-[11px] text-muted-foreground flex items-start gap-1">
-                  <Info size={12} className="mt-0.5" /> Materialidade específica (JSON) e aprovação serão tratadas em etapa futura.
+                  <Info size={12} className="mt-0.5" /> Após salvar, o rascunho poderá ser aprovado e tornar-se a materialidade vigente.
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <Button variant="outline" size="sm" onClick={() => setMatEditMode(null)} disabled={saveMatMutation.isPending}>Cancelar</Button>
@@ -798,7 +798,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                               disabled={!!vigente}
                               onClick={() => {
                                 if (vigente) {
-                                  toast.error("Já existe materialidade aprovada e vigente. Substituição será implementada em etapa futura.");
+                                  toast.error("Já existe materialidade aprovada e vigente. A criação de nova versão será disponibilizada em etapa futura.");
                                   return;
                                 }
                                 const err = validarAprovacaoMat(rascunhoExistente);
@@ -835,8 +835,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 )}
 
                 {isInterno && !rascunhoExistente && vigente && (
-                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    A criação de nova versão de materialidade aprovada será implementada em etapa futura.
+                  <div className="rounded-md border border-success/30 bg-success/5 p-3 text-xs">
+                    Materialidade aprovada e vigente. A criação de nova versão será disponibilizada em etapa futura.
                   </div>
                 )}
 
@@ -863,8 +863,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 </div>
 
                 {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "aprovada") && (
-                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    Materialidade aprovada não pode ser editada diretamente.
+                  <div className="rounded-md border border-success/30 bg-success/5 p-3 text-xs">
+                    Materialidade aprovada e vigente — bloqueada para edição direta.
                   </div>
                 )}
                 {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "substituida") && (
@@ -874,7 +874,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 )}
 
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Info size={12} /> Aprovação, alçada e nova versão serão implementadas na próxima etapa.
+                  <Info size={12} /> A criação de nova versão de materialidade aprovada será disponibilizada em etapa futura.
                 </div>
               </div>
             )}
@@ -903,8 +903,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
           <AlertDialogHeader>
             <AlertDialogTitle>Aprovar planejamento?</AlertDialogTitle>
             <AlertDialogDescription>
-              Após aprovado, o planejamento não poderá ser editado diretamente nesta fase.
-              Reabertura e nova versão serão tratadas em etapa futura.
+              Após aprovado, o planejamento ficará bloqueado para edição direta.
+              A criação de nova versão será disponibilizada em etapa futura.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -926,8 +926,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  A materialidade aprovada será marcada como <strong>vigente</strong> e não poderá ser editada diretamente.
-                  Alterações futuras serão tratadas por nova versão em etapa posterior.
+                  A materialidade aprovada será marcada como <strong>vigente</strong> e ficará bloqueada para edição direta.
+                  A criação de nova versão será disponibilizada em etapa futura.
                 </p>
                 {(() => {
                   if (basesAprovacaoQ.isLoading) {
