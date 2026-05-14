@@ -488,12 +488,12 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             <div className="grid grid-cols-2 gap-3 mt-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">Título do PTA</Label>
-                <Input value={tituloPta} onChange={e => setTituloPta(e.target.value)} className="h-9" />
+                <Input value={tituloPta} onChange={e => setTituloPta(e.target.value)} className="h-9" disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Status</Label>
-                <Select value={statusPta} onValueChange={setStatusPta}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <Select value={statusPta} onValueChange={setStatusPta} disabled={isReadOnly}>
+                  <SelectTrigger className="h-9" title={isReadOnly ? READ_ONLY_MSG : undefined}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
@@ -502,7 +502,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Objetivo do Procedimento</Label>
-              <Textarea placeholder="Descreva o objetivo..." value={objetivoProcedimento} onChange={e => setObjetivoProcedimento(e.target.value)} className="min-h-[50px]" />
+              <Textarea placeholder="Descreva o objetivo..." value={objetivoProcedimento} onChange={e => setObjetivoProcedimento(e.target.value)} className="min-h-[50px]" disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
             </div>
           </div>
 
