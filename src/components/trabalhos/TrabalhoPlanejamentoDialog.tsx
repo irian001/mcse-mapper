@@ -835,8 +835,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 )}
 
                 {isInterno && !rascunhoExistente && vigente && (
-                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    A criação de nova versão de materialidade aprovada será implementada em etapa futura.
+                  <div className="rounded-md border border-success/30 bg-success/5 p-3 text-xs">
+                    Materialidade aprovada e vigente. A criação de nova versão será disponibilizada em etapa futura.
                   </div>
                 )}
 
