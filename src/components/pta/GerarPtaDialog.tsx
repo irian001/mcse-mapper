@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ClipboardList } from "lucide-react";
+import MaterialidadeBaseSelect, { baseToSnapshot, EMPTY_BASE_SNAPSHOT, type BaseSnapshot } from "./MaterialidadeBaseSelect";
 
 export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -17,10 +18,22 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
   // Auto form
   const [autoTrabalhoId, setAutoTrabalhoId] = useState("");
   const [autoContaMcseId, setAutoContaMcseId] = useState("");
+  const [autoBaseSnap, setAutoBaseSnap] = useState<BaseSnapshot>({ ...EMPTY_BASE_SNAPSHOT });
+  const [autoLimiteMatTouched, setAutoLimiteMatTouched] = useState(false);
 
   // Manual form
   const [manTrabalhoId, setManTrabalhoId] = useState("");
   const [manTitulo, setManTitulo] = useState("");
+  const [manBaseSnap, setManBaseSnap] = useState<BaseSnapshot>({ ...EMPTY_BASE_SNAPSHOT });
+
+  const handleAutoBaseChange = (base: any | null) => {
+    const snap = baseToSnapshot(base);
+    setAutoBaseSnap(snap);
+    if (base && !autoLimiteMatTouched) {
+      // suggestion already encoded in snapshot.valor; nothing else to do here
+    }
+  };
+  const handleManBaseChange = (base: any | null) => setManBaseSnap(baseToSnapshot(base));
 
   const { data: trabalhos = [] } = useQuery({
     queryKey: ["trabalhos_for_gerar_pta"],
