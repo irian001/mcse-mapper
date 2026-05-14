@@ -251,6 +251,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Save PTA
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (isReadOnly) throw new Error(READ_ONLY_MSG);
       // Validação simples: se base_id setado, deve ter nome e valor
       if (
         baseSnap.materialidade_base_id &&
