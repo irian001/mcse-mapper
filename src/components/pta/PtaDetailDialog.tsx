@@ -675,7 +675,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
                             )}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLinhaMutation.mutate(ll.id)}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLinhaMutation.mutate(ll.id)} disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined}>
                               <Trash2 size={12} />
                             </Button>
                           </TableCell>
