@@ -128,9 +128,14 @@ COMMIT;
 --     AND tablename='papeis_trabalho'
 --     AND indexname LIKE '%materialidade_base%';
 --
--- 3) Constraints criadas
+-- 3) Constraints esperadas:
+--    - chk_pt_materialidade_base_valor_nn        (valor       >= 0 ou NULL)
+--    - chk_pt_materialidade_base_percentual_nn   (percentual  >= 0 ou NULL)
+--    - chk_pt_materialidade_base_criterio        (critério IN (...) ou NULL)
+--    NÃO deve existir chk_pt_materialidade_base_saldo_nn (saldo pode ser negativo).
 -- SELECT conname, pg_get_constraintdef(oid)
 --   FROM pg_constraint
 --   WHERE conrelid = 'public.papeis_trabalho'::regclass
---     AND conname LIKE '%materialidade_base%';
+--     AND conname LIKE '%materialidade_base%'
+--   ORDER BY conname;
 -- ============================================================
