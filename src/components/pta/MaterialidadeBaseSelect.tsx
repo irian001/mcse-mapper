@@ -145,11 +145,12 @@ export default function MaterialidadeBaseSelect({ trabalhoId, value, onChange, d
           <SelectContent>
             <SelectItem value="__none__">Sem base vinculada</SelectItem>
             {bases.map((b) => {
+              const semValor = b.valor_materialidade == null;
               const partes = [b.nome_base];
               if (b.codigo_conta_snapshot) partes.push(b.codigo_conta_snapshot);
-              partes.push(fmtBRL(b.valor_materialidade));
+              partes.push(semValor ? "sem valor calculado" : fmtBRL(b.valor_materialidade));
               return (
-                <SelectItem key={b.id} value={b.id}>
+                <SelectItem key={b.id} value={b.id} disabled={semValor}>
                   {partes.join(" — ")}
                 </SelectItem>
               );
@@ -162,6 +163,22 @@ export default function MaterialidadeBaseSelect({ trabalhoId, value, onChange, d
           </SelectContent>
         </Select>
       ) : null}
+
+      {basesSemValor > 0 && (
+        <div className="text-[11px] text-amber-600">
+          {basesSemValor === 1
+            ? "1 base ativa está sem valor de materialidade calculado e não pode ser selecionada."
+            : `${basesSemValor} bases ativas estão sem valor de materialidade calculado e não podem ser selecionadas.`}
+        </div>
+      )}
+      {snapshotSemValor && (
+        <div className="text-[11px] text-amber-600">
+          Base vinculada sem valor de materialidade no snapshot. Escolha outra base válida ou remova o vínculo.
+        </div>
+      )}
+      <div className="text-[11px] text-muted-foreground">
+        Limite de variação deve ser informado manualmente quando aplicável.
+      </div>
 
       {(selected || (value && snapshot?.materialidade_base_id === value)) && (
         <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
