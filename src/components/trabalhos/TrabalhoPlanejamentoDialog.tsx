@@ -863,8 +863,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 </div>
 
                 {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "aprovada") && (
-                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    Materialidade aprovada não pode ser editada diretamente.
+                  <div className="rounded-md border border-success/30 bg-success/5 p-3 text-xs">
+                    Materialidade aprovada e vigente — bloqueada para edição direta.
                   </div>
                 )}
                 {(materialidadeQ.data || []).some((m: any) => m.status_materialidade === "substituida") && (
@@ -874,7 +874,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 )}
 
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Info size={12} /> Aprovação, alçada e nova versão serão implementadas na próxima etapa.
+                  <Info size={12} /> A criação de nova versão de materialidade aprovada será disponibilizada em etapa futura.
                 </div>
               </div>
             )}
