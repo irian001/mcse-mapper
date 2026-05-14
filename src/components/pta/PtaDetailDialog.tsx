@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Save, ClipboardList, Trash2, RefreshCw, Plus, FileDown } from "lucide-react";
 import PtaVincularLinhasDialog from "./PtaVincularLinhasDialog";
+import MaterialidadeBaseSelect, { baseToSnapshot, EMPTY_BASE_SNAPSHOT, type BaseSnapshot } from "./MaterialidadeBaseSelect";
 
 function fmt(v: number | null | undefined) {
   if (v == null) return "—";
