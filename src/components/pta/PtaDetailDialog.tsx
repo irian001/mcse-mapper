@@ -634,7 +634,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
                 <Button variant="outline" size="sm" onClick={handleExportPdf}>
                   <FileDown size={13} className="mr-1" /> Salvar PDF
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowVincular(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShowVincular(true)} disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined}>
                   <Plus size={13} className="mr-1" /> Vincular Linhas
                 </Button>
               </div>
