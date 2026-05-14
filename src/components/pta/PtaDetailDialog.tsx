@@ -512,7 +512,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-sm text-muted-foreground">Consolidação</h4>
-              <Button variant="outline" size="sm" onClick={() => recalcMutation.mutate()} disabled={recalcMutation.isPending}>
+              <Button variant="outline" size="sm" onClick={() => recalcMutation.mutate()} disabled={recalcMutation.isPending || isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined}>
                 <RefreshCw size={13} className={`mr-1 ${recalcMutation.isPending ? "animate-spin" : ""}`} />
                 Recalcular
               </Button>
