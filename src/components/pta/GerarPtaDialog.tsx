@@ -116,7 +116,8 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       const varPct = saldoAnt !== 0 ? ((saldoAtual - saldoAnt) / saldoAnt) * 100 : null;
       const pendencias = linhasSinteticas.filter(l => l.possui_pendencia).length;
 
-      const { data: pta, error: ptaError } = await supabase.from("papeis_trabalho").insert({
+      const baseSel = autoBaseSnap.materialidade_base_id ? autoBaseSnap : null;
+      const { data: pta, error: ptaError } = await (supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: autoTrabalhoId,
         cliente_id: trabalho.cliente_id,
         exercicio_id: trabalho.exercicio_id,
@@ -134,7 +135,12 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
         variacao_percentual_total: varPct,
         total_linhas_vinculadas: linhas.length,
         total_linhas_com_pendencia: pendencias,
-      }).select("id").single();
+        ...(baseSel ? {
+          materialidade_aplicavel: true,
+          limite_materialidade: baseSel.materialidade_base_valor_snapshot,
+        } : {}),
+        ...autoBaseSnap,
+      } as any) as any).select("id").single();
 
       if (ptaError) throw ptaError;
 
