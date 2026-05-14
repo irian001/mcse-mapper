@@ -64,6 +64,10 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   const [materialidadeAplicavel, setMaterialidadeAplicavel] = useState(false);
   const [limiteMaterialidade, setLimiteMaterialidade] = useState("");
   const [limiteVariacao, setLimiteVariacao] = useState("");
+  const [baseSnap, setBaseSnap] = useState<BaseSnapshot>({ ...EMPTY_BASE_SNAPSHOT });
+  const [limiteMatTouched, setLimiteMatTouched] = useState(false);
+
+  const isReadOnly = pta?.status_pta === "concluido" || pta?.status_pta === "finalizado" || pta?.fechado === true;
 
   useEffect(() => {
     if (pta) {
@@ -77,8 +81,38 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
       setMaterialidadeAplicavel(pta.materialidade_aplicavel || false);
       setLimiteMaterialidade(pta.limite_materialidade != null ? String(pta.limite_materialidade) : "");
       setLimiteVariacao(pta.limite_variacao != null ? String(pta.limite_variacao) : "");
+      setBaseSnap({
+        materialidade_base_id: pta.materialidade_base_id ?? null,
+        materialidade_base_nome_snapshot: pta.materialidade_base_nome_snapshot ?? null,
+        materialidade_base_valor_snapshot: pta.materialidade_base_valor_snapshot ?? null,
+        materialidade_base_percentual_snapshot: pta.materialidade_base_percentual_snapshot ?? null,
+        materialidade_base_saldo_snapshot: pta.materialidade_base_saldo_snapshot ?? null,
+        materialidade_base_codigo_conta_snapshot: pta.materialidade_base_codigo_conta_snapshot ?? null,
+        materialidade_base_descricao_conta_snapshot: pta.materialidade_base_descricao_conta_snapshot ?? null,
+        materialidade_base_criterio_snapshot: pta.materialidade_base_criterio_snapshot ?? null,
+      });
+      setLimiteMatTouched(false);
     }
   }, [pta]);
+
+  const handleBaseChange = (base: any | null) => {
+    const snap = baseToSnapshot(base);
+    setBaseSnap(snap);
+    if (!base) return;
+    const novoValor = snap.materialidade_base_valor_snapshot;
+    if (novoValor == null) return;
+    const atual = limiteMaterialidade ? parseFloat(limiteMaterialidade) : null;
+    if (!limiteMatTouched || atual == null || atual === 0) {
+      setLimiteMaterialidade(String(novoValor));
+      setMaterialidadeAplicavel(true);
+    } else {
+      const ok = window.confirm("Deseja atualizar o limite de materialidade com o valor da base selecionada?");
+      if (ok) {
+        setLimiteMaterialidade(String(novoValor));
+        setLimiteMatTouched(false);
+      }
+    }
+  };
 
   // Fetch linked lines
   const { data: linkedLines = [], refetch: refetchLines } = useQuery({
