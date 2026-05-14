@@ -456,8 +456,19 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             <DialogTitle className="text-base flex items-center gap-2">
               <ClipboardList size={18} />
               Papel de Trabalho — {pta.codigo_mcse || "Manual"}
+              {isReadOnly && (
+                <Badge variant="outline" className="ml-2 text-[10px] border-amber-300 text-amber-700 bg-amber-50">
+                  Somente leitura
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
+
+          {isReadOnly && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              {READ_ONLY_MSG}
+            </div>
+          )}
 
           {/* Block 1 — Identification */}
           <div className="space-y-1">
