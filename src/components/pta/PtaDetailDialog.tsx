@@ -566,19 +566,30 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
           {/* Block 5 — Params */}
           <div className="space-y-3">
             <h4 className="font-medium text-sm text-muted-foreground">Parâmetros de Materialidade</h4>
+
+            <MaterialidadeBaseSelect
+              trabalhoId={pta.trabalho_auditoria_id}
+              value={baseSnap.materialidade_base_id}
+              onChange={isReadOnly ? () => {} : handleBaseChange}
+              disabled={isReadOnly}
+              snapshot={baseSnap}
+            />
+
             <div className="flex items-center gap-2">
-              <Checkbox id="mat_apl" checked={materialidadeAplicavel} onCheckedChange={(c) => setMaterialidadeAplicavel(c === true)} />
+              <Checkbox id="mat_apl" checked={materialidadeAplicavel} onCheckedChange={(c) => setMaterialidadeAplicavel(c === true)} disabled={isReadOnly} />
               <Label htmlFor="mat_apl" className="text-xs cursor-pointer">Materialidade aplicável</Label>
             </div>
             {materialidadeAplicavel && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Limite de Materialidade</Label>
-                  <Input type="number" step="0.01" value={limiteMaterialidade} onChange={e => setLimiteMaterialidade(e.target.value)} className="h-9" />
+                  <Input type="number" step="0.01" value={limiteMaterialidade}
+                    onChange={e => { setLimiteMaterialidade(e.target.value); setLimiteMatTouched(true); }}
+                    className="h-9" disabled={isReadOnly} />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Limite de Variação (%)</Label>
-                  <Input type="number" step="0.01" value={limiteVariacao} onChange={e => setLimiteVariacao(e.target.value)} className="h-9" />
+                  <Input type="number" step="0.01" value={limiteVariacao} onChange={e => setLimiteVariacao(e.target.value)} className="h-9" disabled={isReadOnly} />
                 </div>
               </div>
             )}
