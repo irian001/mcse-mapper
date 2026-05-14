@@ -161,6 +161,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Recalculate consolidation
   const recalcMutation = useMutation({
     mutationFn: async () => {
+      if (isReadOnly) throw new Error(READ_ONLY_MSG);
       // Fetch fresh line data
       const { data: ptaLinhas } = await supabase
         .from("papel_trabalho_linhas")
