@@ -732,7 +732,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                     onChange={(e) => setMatForm({ ...matForm, observacoes: e.target.value })} />
                 </div>
                 <div className="text-[11px] text-muted-foreground flex items-start gap-1">
-                  <Info size={12} className="mt-0.5" /> Materialidade específica (JSON) e aprovação serão tratadas em etapa futura.
+                  <Info size={12} className="mt-0.5" /> Após salvar, o rascunho poderá ser aprovado e tornar-se a materialidade vigente.
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <Button variant="outline" size="sm" onClick={() => setMatEditMode(null)} disabled={saveMatMutation.isPending}>Cancelar</Button>
