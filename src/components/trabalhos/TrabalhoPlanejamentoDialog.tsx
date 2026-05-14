@@ -643,8 +643,8 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                   )}
                 </div>
                 {isAprovado && (
-                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
-                    Planejamento aprovado. Alterações serão tratadas em etapa futura.
+                  <div className="rounded-md border border-success/30 bg-success/5 p-3 text-xs">
+                    Planejamento aprovado e bloqueado para edição direta.
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
