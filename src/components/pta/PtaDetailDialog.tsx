@@ -17,6 +17,9 @@ import { Save, ClipboardList, Trash2, RefreshCw, Plus, FileDown } from "lucide-r
 import PtaVincularLinhasDialog from "./PtaVincularLinhasDialog";
 import MaterialidadeBaseSelect, { baseToSnapshot, EMPTY_BASE_SNAPSHOT, type BaseSnapshot } from "./MaterialidadeBaseSelect";
 
+
+const READ_ONLY_MSG = "PTA concluído/finalizado não pode ser alterado nesta etapa.";
+
 function fmt(v: number | null | undefined) {
   if (v == null) return "—";
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -96,9 +99,20 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   }, [pta]);
 
   const handleBaseChange = (base: any | null) => {
+    if (isReadOnly) return;
     const snap = baseToSnapshot(base);
+    // Caso "Sem base vinculada": limpa apenas vínculo + snapshots.
+    // Não toca em limite_materialidade, limite_variacao nem materialidade_aplicavel.
+    if (!base) {
+      setBaseSnap(snap);
+      return;
+    }
+    // Defesa: nunca aceitar base sem nome ou sem valor calculado.
+    if (!base.nome_base || base.valor_materialidade == null) {
+      toast.error("Base sem valor de materialidade calculado não pode ser vinculada.");
+      return;
+    }
     setBaseSnap(snap);
-    if (!base) return;
     const novoValor = snap.materialidade_base_valor_snapshot;
     if (novoValor == null) return;
     const atual = limiteMaterialidade ? parseFloat(limiteMaterialidade) : null;
@@ -112,6 +126,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
         setLimiteMatTouched(false);
       }
     }
+    // Regra Fase 0A.1.8.3: limite_variacao permanece manual; nunca preenchido pela base.
   };
 
   // Fetch linked lines
@@ -146,6 +161,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Recalculate consolidation
   const recalcMutation = useMutation({
     mutationFn: async () => {
+      if (isReadOnly) throw new Error(READ_ONLY_MSG);
       // Fetch fresh line data
       const { data: ptaLinhas } = await supabase
         .from("papel_trabalho_linhas")
@@ -235,6 +251,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Save PTA
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (isReadOnly) throw new Error(READ_ONLY_MSG);
       // Validação simples: se base_id setado, deve ter nome e valor
       if (
         baseSnap.materialidade_base_id &&
@@ -271,6 +288,7 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Remove line
   const removeLinhaMutation = useMutation({
     mutationFn: async (linhaId: string) => {
+      if (isReadOnly) throw new Error(READ_ONLY_MSG);
       const { error } = await supabase
         .from("papel_trabalho_linhas")
         .delete()
@@ -438,8 +456,19 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             <DialogTitle className="text-base flex items-center gap-2">
               <ClipboardList size={18} />
               Papel de Trabalho — {pta.codigo_mcse || "Manual"}
+              {isReadOnly && (
+                <Badge variant="outline" className="ml-2 text-[10px] border-amber-300 text-amber-700 bg-amber-50">
+                  Somente leitura
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
+
+          {isReadOnly && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              {READ_ONLY_MSG}
+            </div>
+          )}
 
           {/* Block 1 — Identification */}
           <div className="space-y-1">
@@ -459,12 +488,12 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             <div className="grid grid-cols-2 gap-3 mt-2">
               <div className="space-y-1.5">
                 <Label className="text-xs">Título do PTA</Label>
-                <Input value={tituloPta} onChange={e => setTituloPta(e.target.value)} className="h-9" />
+                <Input value={tituloPta} onChange={e => setTituloPta(e.target.value)} className="h-9" disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Status</Label>
-                <Select value={statusPta} onValueChange={setStatusPta}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <Select value={statusPta} onValueChange={setStatusPta} disabled={isReadOnly}>
+                  <SelectTrigger className="h-9" title={isReadOnly ? READ_ONLY_MSG : undefined}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
@@ -473,7 +502,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Objetivo do Procedimento</Label>
-              <Textarea placeholder="Descreva o objetivo..." value={objetivoProcedimento} onChange={e => setObjetivoProcedimento(e.target.value)} className="min-h-[50px]" />
+              <Textarea placeholder="Descreva o objetivo..." value={objetivoProcedimento} onChange={e => setObjetivoProcedimento(e.target.value)} className="min-h-[50px]" disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
             </div>
           </div>
 
@@ -483,7 +512,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-sm text-muted-foreground">Consolidação</h4>
-              <Button variant="outline" size="sm" onClick={() => recalcMutation.mutate()} disabled={recalcMutation.isPending}>
+              <Button variant="outline" size="sm" onClick={() => recalcMutation.mutate()} disabled={recalcMutation.isPending || isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined}>
                 <RefreshCw size={13} className={`mr-1 ${recalcMutation.isPending ? "animate-spin" : ""}`} />
                 Recalcular
               </Button>
@@ -544,20 +573,20 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Comentário do Auditor</Label>
-                <Textarea value={comentarioAuditor} onChange={e => setComentarioAuditor(e.target.value)} className="min-h-[60px]" placeholder="Observações da análise..." />
+                <Textarea value={comentarioAuditor} onChange={e => setComentarioAuditor(e.target.value)} className="min-h-[60px]" placeholder="Observações da análise..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Comentário do Revisor</Label>
-                <Textarea value={comentarioRevisor} onChange={e => setComentarioRevisor(e.target.value)} className="min-h-[60px]" placeholder="Observações da revisão..." />
+                <Textarea value={comentarioRevisor} onChange={e => setComentarioRevisor(e.target.value)} className="min-h-[60px]" placeholder="Observações da revisão..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Conclusão Preliminar</Label>
-              <Textarea value={conclusaoPreliminar} onChange={e => setConclusaoPreliminar(e.target.value)} className="min-h-[50px]" placeholder="Conclusão preliminar..." />
+              <Textarea value={conclusaoPreliminar} onChange={e => setConclusaoPreliminar(e.target.value)} className="min-h-[50px]" placeholder="Conclusão preliminar..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Conclusão Final</Label>
-              <Textarea value={conclusaoFinal} onChange={e => setConclusaoFinal(e.target.value)} className="min-h-[50px]" placeholder="Conclusão final..." />
+              <Textarea value={conclusaoFinal} onChange={e => setConclusaoFinal(e.target.value)} className="min-h-[50px]" placeholder="Conclusão final..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
             </div>
           </div>
 
@@ -605,7 +634,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
                 <Button variant="outline" size="sm" onClick={handleExportPdf}>
                   <FileDown size={13} className="mr-1" /> Salvar PDF
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowVincular(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShowVincular(true)} disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined}>
                   <Plus size={13} className="mr-1" /> Vincular Linhas
                 </Button>
               </div>
@@ -646,7 +675,7 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
                             )}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLinhaMutation.mutate(ll.id)}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLinhaMutation.mutate(ll.id)} disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined}>
                               <Trash2 size={12} />
                             </Button>
                           </TableCell>
@@ -661,9 +690,9 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
 
           <Separator />
 
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full">
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isReadOnly} className="w-full" title={isReadOnly ? READ_ONLY_MSG : undefined}>
             <Save size={14} className="mr-1" />
-            {saveMutation.isPending ? "Salvando..." : "Salvar PTA"}
+            {isReadOnly ? "PTA somente leitura" : (saveMutation.isPending ? "Salvando..." : "Salvar PTA")}
           </Button>
         </DialogContent>
       </Dialog>
