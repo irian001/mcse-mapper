@@ -75,15 +75,24 @@ BEGIN
              OR materialidade_base_percentual_snapshot >= 0);
   END IF;
 
+  -- NOTA: NÃO existe constraint para materialidade_base_saldo_snapshot,
+  -- pois quando o critério é 'saldo_final' o saldo pode ser negativo.
+
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
-    WHERE conname = 'chk_pt_materialidade_base_saldo_nn'
+    WHERE conname = 'chk_pt_materialidade_base_criterio'
       AND conrelid = 'public.papeis_trabalho'::regclass
   ) THEN
     ALTER TABLE public.papeis_trabalho
-      ADD CONSTRAINT chk_pt_materialidade_base_saldo_nn
-      CHECK (materialidade_base_saldo_snapshot IS NULL
-             OR materialidade_base_saldo_snapshot >= 0);
+      ADD CONSTRAINT chk_pt_materialidade_base_criterio
+      CHECK (materialidade_base_criterio_snapshot IS NULL
+             OR materialidade_base_criterio_snapshot IN (
+               'saldo_final',
+               'saldo_final_absoluto',
+               'saldo_devedor',
+               'saldo_credor',
+               'valor_manual'
+             ));
   END IF;
 END$$;
 
@@ -119,9 +128,14 @@ COMMIT;
 --     AND tablename='papeis_trabalho'
 --     AND indexname LIKE '%materialidade_base%';
 --
--- 3) Constraints criadas
+-- 3) Constraints esperadas:
+--    - chk_pt_materialidade_base_valor_nn        (valor       >= 0 ou NULL)
+--    - chk_pt_materialidade_base_percentual_nn   (percentual  >= 0 ou NULL)
+--    - chk_pt_materialidade_base_criterio        (critério IN (...) ou NULL)
+--    NÃO deve existir chk_pt_materialidade_base_saldo_nn (saldo pode ser negativo).
 -- SELECT conname, pg_get_constraintdef(oid)
 --   FROM pg_constraint
 --   WHERE conrelid = 'public.papeis_trabalho'::regclass
---     AND conname LIKE '%materialidade_base%';
+--     AND conname LIKE '%materialidade_base%'
+--   ORDER BY conname;
 -- ============================================================
