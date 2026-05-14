@@ -235,7 +235,14 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Save PTA
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      // Validação simples: se base_id setado, deve ter nome e valor
+      if (
+        baseSnap.materialidade_base_id &&
+        (!baseSnap.materialidade_base_nome_snapshot || baseSnap.materialidade_base_valor_snapshot == null)
+      ) {
+        throw new Error("Base de materialidade vinculada está com snapshot incompleto.");
+      }
+      const { error } = await (supabase
         .from("papeis_trabalho")
         .update({
           titulo_pta: tituloPta,
@@ -248,8 +255,9 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
           materialidade_aplicavel: materialidadeAplicavel,
           limite_materialidade: limiteMaterialidade ? parseFloat(limiteMaterialidade) : null,
           limite_variacao: limiteVariacao ? parseFloat(limiteVariacao) : null,
-        })
-        .eq("id", pta.id);
+          ...baseSnap,
+        } as any)
+        .eq("id", pta.id));
       if (error) throw error;
     },
     onSuccess: () => {
