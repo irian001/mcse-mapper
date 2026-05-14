@@ -136,6 +136,7 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
         total_linhas_com_pendencia: pendencias,
         ...(baseSel ? {
           materialidade_aplicavel: true,
+          // Regra Fase 0A.1.8.3: limite_materialidade segue o valor da base; limite_variacao permanece manual.
           limite_materialidade: baseSel.materialidade_base_valor_snapshot,
         } : {}),
         ...autoBaseSnap,
