@@ -16,6 +16,9 @@ import { toast } from "sonner";
 import { Save, ClipboardList, Trash2, RefreshCw, Plus, FileDown } from "lucide-react";
 import PtaVincularLinhasDialog from "./PtaVincularLinhasDialog";
 import MaterialidadeBaseSelect, { baseToSnapshot, EMPTY_BASE_SNAPSHOT, type BaseSnapshot } from "./MaterialidadeBaseSelect";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const READ_ONLY_MSG = "PTA concluído/finalizado não pode ser alterado nesta etapa.";
 
 function fmt(v: number | null | undefined) {
   if (v == null) return "—";
