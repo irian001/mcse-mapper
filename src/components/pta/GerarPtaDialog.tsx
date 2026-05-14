@@ -186,12 +186,18 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       if (existenteManualError) throw existenteManualError;
       if (existenteManual) throw new Error("Já existe um PTA com este título neste trabalho");
 
-      const { error } = await supabase.from("papeis_trabalho").insert({
+      const baseSelM = manBaseSnap.materialidade_base_id ? manBaseSnap : null;
+      const { error } = await (supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: manTrabalhoId,
         cliente_id: trabalho.cliente_id,
         exercicio_id: trabalho.exercicio_id,
         titulo_pta: tituloNormalizado,
-      });
+        ...(baseSelM ? {
+          materialidade_aplicavel: true,
+          limite_materialidade: baseSelM.materialidade_base_valor_snapshot,
+        } : {}),
+        ...manBaseSnap,
+      } as any));
       if (error) throw error;
     },
     onSuccess: () => {
