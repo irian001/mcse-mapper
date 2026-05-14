@@ -798,7 +798,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                               disabled={!!vigente}
                               onClick={() => {
                                 if (vigente) {
-                                  toast.error("Já existe materialidade aprovada e vigente. Substituição será implementada em etapa futura.");
+                                  toast.error("Já existe materialidade aprovada e vigente. A criação de nova versão será disponibilizada em etapa futura.");
                                   return;
                                 }
                                 const err = validarAprovacaoMat(rascunhoExistente);
