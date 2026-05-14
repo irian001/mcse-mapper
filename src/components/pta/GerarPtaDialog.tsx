@@ -280,6 +280,15 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
               <Label className="text-xs">Título do PTA</Label>
               <Input value={manTitulo} onChange={e => setManTitulo(e.target.value)} className="h-9" placeholder="Ex: PTA — Caixa e Equivalentes" />
             </div>
+            {manTrabalhoId && (
+              <div className="border-t pt-3">
+                <MaterialidadeBaseSelect
+                  trabalhoId={manTrabalhoId}
+                  value={manBaseSnap.materialidade_base_id}
+                  onChange={handleManBaseChange}
+                />
+              </div>
+            )}
             <Button onClick={() => gerarManualMutation.mutate()} disabled={!manTrabalhoId || !manTitulo.trim() || gerarManualMutation.isPending} className="w-full">
               {gerarManualMutation.isPending ? "Criando..." : "Criar PTA Manual"}
             </Button>
