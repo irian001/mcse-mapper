@@ -110,6 +110,12 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       const pendencias = linhasSinteticas.filter(l => l.possui_pendencia).length;
 
       const baseSel = autoBaseSnap.materialidade_base_id ? autoBaseSnap : null;
+      if (baseSel && (
+        !baseSel.materialidade_base_nome_snapshot ||
+        baseSel.materialidade_base_valor_snapshot == null
+      )) {
+        throw new Error("Base de materialidade selecionada está sem valor calculado. Escolha outra base.");
+      }
       const { data: pta, error: ptaError } = await (supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: autoTrabalhoId,
         cliente_id: trabalho.cliente_id,
