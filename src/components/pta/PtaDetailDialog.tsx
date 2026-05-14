@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Save, ClipboardList, Trash2, RefreshCw, Plus, FileDown } from "lucide-react";
 import PtaVincularLinhasDialog from "./PtaVincularLinhasDialog";
+import MaterialidadeBaseSelect, { baseToSnapshot, EMPTY_BASE_SNAPSHOT, type BaseSnapshot } from "./MaterialidadeBaseSelect";
 
 function fmt(v: number | null | undefined) {
   if (v == null) return "—";
@@ -63,6 +64,10 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   const [materialidadeAplicavel, setMaterialidadeAplicavel] = useState(false);
   const [limiteMaterialidade, setLimiteMaterialidade] = useState("");
   const [limiteVariacao, setLimiteVariacao] = useState("");
+  const [baseSnap, setBaseSnap] = useState<BaseSnapshot>({ ...EMPTY_BASE_SNAPSHOT });
+  const [limiteMatTouched, setLimiteMatTouched] = useState(false);
+
+  const isReadOnly = pta?.status_pta === "concluido" || pta?.status_pta === "finalizado" || pta?.fechado === true;
 
   useEffect(() => {
     if (pta) {
@@ -76,8 +81,38 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
       setMaterialidadeAplicavel(pta.materialidade_aplicavel || false);
       setLimiteMaterialidade(pta.limite_materialidade != null ? String(pta.limite_materialidade) : "");
       setLimiteVariacao(pta.limite_variacao != null ? String(pta.limite_variacao) : "");
+      setBaseSnap({
+        materialidade_base_id: pta.materialidade_base_id ?? null,
+        materialidade_base_nome_snapshot: pta.materialidade_base_nome_snapshot ?? null,
+        materialidade_base_valor_snapshot: pta.materialidade_base_valor_snapshot ?? null,
+        materialidade_base_percentual_snapshot: pta.materialidade_base_percentual_snapshot ?? null,
+        materialidade_base_saldo_snapshot: pta.materialidade_base_saldo_snapshot ?? null,
+        materialidade_base_codigo_conta_snapshot: pta.materialidade_base_codigo_conta_snapshot ?? null,
+        materialidade_base_descricao_conta_snapshot: pta.materialidade_base_descricao_conta_snapshot ?? null,
+        materialidade_base_criterio_snapshot: pta.materialidade_base_criterio_snapshot ?? null,
+      });
+      setLimiteMatTouched(false);
     }
   }, [pta]);
+
+  const handleBaseChange = (base: any | null) => {
+    const snap = baseToSnapshot(base);
+    setBaseSnap(snap);
+    if (!base) return;
+    const novoValor = snap.materialidade_base_valor_snapshot;
+    if (novoValor == null) return;
+    const atual = limiteMaterialidade ? parseFloat(limiteMaterialidade) : null;
+    if (!limiteMatTouched || atual == null || atual === 0) {
+      setLimiteMaterialidade(String(novoValor));
+      setMaterialidadeAplicavel(true);
+    } else {
+      const ok = window.confirm("Deseja atualizar o limite de materialidade com o valor da base selecionada?");
+      if (ok) {
+        setLimiteMaterialidade(String(novoValor));
+        setLimiteMatTouched(false);
+      }
+    }
+  };
 
   // Fetch linked lines
   const { data: linkedLines = [], refetch: refetchLines } = useQuery({
@@ -200,7 +235,14 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
   // Save PTA
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      // Validação simples: se base_id setado, deve ter nome e valor
+      if (
+        baseSnap.materialidade_base_id &&
+        (!baseSnap.materialidade_base_nome_snapshot || baseSnap.materialidade_base_valor_snapshot == null)
+      ) {
+        throw new Error("Base de materialidade vinculada está com snapshot incompleto.");
+      }
+      const { error } = await (supabase
         .from("papeis_trabalho")
         .update({
           titulo_pta: tituloPta,
@@ -213,8 +255,9 @@ export default function PtaDetailDialog({ pta, onClose }: Props) {
           materialidade_aplicavel: materialidadeAplicavel,
           limite_materialidade: limiteMaterialidade ? parseFloat(limiteMaterialidade) : null,
           limite_variacao: limiteVariacao ? parseFloat(limiteVariacao) : null,
-        })
-        .eq("id", pta.id);
+          ...baseSnap,
+        } as any)
+        .eq("id", pta.id));
       if (error) throw error;
     },
     onSuccess: () => {
@@ -523,19 +566,30 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
           {/* Block 5 — Params */}
           <div className="space-y-3">
             <h4 className="font-medium text-sm text-muted-foreground">Parâmetros de Materialidade</h4>
+
+            <MaterialidadeBaseSelect
+              trabalhoId={pta.trabalho_auditoria_id}
+              value={baseSnap.materialidade_base_id}
+              onChange={isReadOnly ? () => {} : handleBaseChange}
+              disabled={isReadOnly}
+              snapshot={baseSnap}
+            />
+
             <div className="flex items-center gap-2">
-              <Checkbox id="mat_apl" checked={materialidadeAplicavel} onCheckedChange={(c) => setMaterialidadeAplicavel(c === true)} />
+              <Checkbox id="mat_apl" checked={materialidadeAplicavel} onCheckedChange={(c) => setMaterialidadeAplicavel(c === true)} disabled={isReadOnly} />
               <Label htmlFor="mat_apl" className="text-xs cursor-pointer">Materialidade aplicável</Label>
             </div>
             {materialidadeAplicavel && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Limite de Materialidade</Label>
-                  <Input type="number" step="0.01" value={limiteMaterialidade} onChange={e => setLimiteMaterialidade(e.target.value)} className="h-9" />
+                  <Input type="number" step="0.01" value={limiteMaterialidade}
+                    onChange={e => { setLimiteMaterialidade(e.target.value); setLimiteMatTouched(true); }}
+                    className="h-9" disabled={isReadOnly} />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Limite de Variação (%)</Label>
-                  <Input type="number" step="0.01" value={limiteVariacao} onChange={e => setLimiteVariacao(e.target.value)} className="h-9" />
+                  <Input type="number" step="0.01" value={limiteVariacao} onChange={e => setLimiteVariacao(e.target.value)} className="h-9" disabled={isReadOnly} />
                 </div>
               </div>
             )}

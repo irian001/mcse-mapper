@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { ClipboardList } from "lucide-react";
+import MaterialidadeBaseSelect, { baseToSnapshot, EMPTY_BASE_SNAPSHOT, type BaseSnapshot } from "./MaterialidadeBaseSelect";
 
 export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -17,10 +18,15 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
   // Auto form
   const [autoTrabalhoId, setAutoTrabalhoId] = useState("");
   const [autoContaMcseId, setAutoContaMcseId] = useState("");
+  const [autoBaseSnap, setAutoBaseSnap] = useState<BaseSnapshot>({ ...EMPTY_BASE_SNAPSHOT });
 
   // Manual form
   const [manTrabalhoId, setManTrabalhoId] = useState("");
   const [manTitulo, setManTitulo] = useState("");
+  const [manBaseSnap, setManBaseSnap] = useState<BaseSnapshot>({ ...EMPTY_BASE_SNAPSHOT });
+
+  const handleAutoBaseChange = (base: any | null) => setAutoBaseSnap(baseToSnapshot(base));
+  const handleManBaseChange = (base: any | null) => setManBaseSnap(baseToSnapshot(base));
 
   const { data: trabalhos = [] } = useQuery({
     queryKey: ["trabalhos_for_gerar_pta"],
@@ -103,7 +109,8 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       const varPct = saldoAnt !== 0 ? ((saldoAtual - saldoAnt) / saldoAnt) * 100 : null;
       const pendencias = linhasSinteticas.filter(l => l.possui_pendencia).length;
 
-      const { data: pta, error: ptaError } = await supabase.from("papeis_trabalho").insert({
+      const baseSel = autoBaseSnap.materialidade_base_id ? autoBaseSnap : null;
+      const { data: pta, error: ptaError } = await (supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: autoTrabalhoId,
         cliente_id: trabalho.cliente_id,
         exercicio_id: trabalho.exercicio_id,
@@ -121,7 +128,12 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
         variacao_percentual_total: varPct,
         total_linhas_vinculadas: linhas.length,
         total_linhas_com_pendencia: pendencias,
-      }).select("id").single();
+        ...(baseSel ? {
+          materialidade_aplicavel: true,
+          limite_materialidade: baseSel.materialidade_base_valor_snapshot,
+        } : {}),
+        ...autoBaseSnap,
+      } as any) as any).select("id").single();
 
       if (ptaError) throw ptaError;
 
@@ -167,12 +179,18 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
       if (existenteManualError) throw existenteManualError;
       if (existenteManual) throw new Error("Já existe um PTA com este título neste trabalho");
 
-      const { error } = await supabase.from("papeis_trabalho").insert({
+      const baseSelM = manBaseSnap.materialidade_base_id ? manBaseSnap : null;
+      const { error } = await (supabase.from("papeis_trabalho").insert({
         trabalho_auditoria_id: manTrabalhoId,
         cliente_id: trabalho.cliente_id,
         exercicio_id: trabalho.exercicio_id,
         titulo_pta: tituloNormalizado,
-      });
+        ...(baseSelM ? {
+          materialidade_aplicavel: true,
+          limite_materialidade: baseSelM.materialidade_base_valor_snapshot,
+        } : {}),
+        ...manBaseSnap,
+      } as any));
       if (error) throw error;
     },
     onSuccess: () => {
@@ -225,6 +243,15 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
                 </Select>
               </div>
             )}
+            {autoTrabalhoId && (
+              <div className="border-t pt-3">
+                <MaterialidadeBaseSelect
+                  trabalhoId={autoTrabalhoId}
+                  value={autoBaseSnap.materialidade_base_id}
+                  onChange={handleAutoBaseChange}
+                />
+              </div>
+            )}
             <Button onClick={() => gerarAutoMutation.mutate()} disabled={!autoTrabalhoId || !autoContaMcseId || gerarAutoMutation.isPending} className="w-full">
               {gerarAutoMutation.isPending ? "Gerando..." : "Gerar PTA Automático"}
             </Button>
@@ -246,6 +273,15 @@ export default function GerarPtaDialog({ onClose }: { onClose: () => void }) {
               <Label className="text-xs">Título do PTA</Label>
               <Input value={manTitulo} onChange={e => setManTitulo(e.target.value)} className="h-9" placeholder="Ex: PTA — Caixa e Equivalentes" />
             </div>
+            {manTrabalhoId && (
+              <div className="border-t pt-3">
+                <MaterialidadeBaseSelect
+                  trabalhoId={manTrabalhoId}
+                  value={manBaseSnap.materialidade_base_id}
+                  onChange={handleManBaseChange}
+                />
+              </div>
+            )}
             <Button onClick={() => gerarManualMutation.mutate()} disabled={!manTrabalhoId || !manTitulo.trim() || gerarManualMutation.isPending} className="w-full">
               {gerarManualMutation.isPending ? "Criando..." : "Criar PTA Manual"}
             </Button>
