@@ -573,20 +573,20 @@ ${conclusaoFinal ? `<h2>Conclusão Final</h2><div class="obs"><p>${conclusaoFina
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Comentário do Auditor</Label>
-                <Textarea value={comentarioAuditor} onChange={e => setComentarioAuditor(e.target.value)} className="min-h-[60px]" placeholder="Observações da análise..." />
+                <Textarea value={comentarioAuditor} onChange={e => setComentarioAuditor(e.target.value)} className="min-h-[60px]" placeholder="Observações da análise..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Comentário do Revisor</Label>
-                <Textarea value={comentarioRevisor} onChange={e => setComentarioRevisor(e.target.value)} className="min-h-[60px]" placeholder="Observações da revisão..." />
+                <Textarea value={comentarioRevisor} onChange={e => setComentarioRevisor(e.target.value)} className="min-h-[60px]" placeholder="Observações da revisão..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Conclusão Preliminar</Label>
-              <Textarea value={conclusaoPreliminar} onChange={e => setConclusaoPreliminar(e.target.value)} className="min-h-[50px]" placeholder="Conclusão preliminar..." />
+              <Textarea value={conclusaoPreliminar} onChange={e => setConclusaoPreliminar(e.target.value)} className="min-h-[50px]" placeholder="Conclusão preliminar..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Conclusão Final</Label>
-              <Textarea value={conclusaoFinal} onChange={e => setConclusaoFinal(e.target.value)} className="min-h-[50px]" placeholder="Conclusão final..." />
+              <Textarea value={conclusaoFinal} onChange={e => setConclusaoFinal(e.target.value)} className="min-h-[50px]" placeholder="Conclusão final..." disabled={isReadOnly} title={isReadOnly ? READ_ONLY_MSG : undefined} />
             </div>
           </div>
 
