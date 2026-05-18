@@ -880,20 +880,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
             )}
           </TabsContent>
           <TabsContent value="riscos" className="pt-3">
-            <div className="rounded-md border border-dashed p-6 space-y-3">
-              <div className="text-sm font-medium">A matriz de riscos será implementada em fase posterior.</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>Esta etapa futura irá contemplar:</div>
-                <ul className="list-disc pl-5 space-y-0.5">
-                  <li>Matriz de aceitação/continuidade</li>
-                  <li>Matriz de riscos de auditoria</li>
-                  <li>Matriz de risco de qualidade</li>
-                  <li>Vínculos risco → regra de auditoria</li>
-                  <li>Vínculos risco → PTA/procedimento</li>
-                  <li>Vínculos risco → solicitação/evidência</li>
-                </ul>
-              </div>
-            </div>
+            <TrabalhoRiscosPanel trabalho={trabalho} />
           </TabsContent>
         </Tabs>
       </DialogContent>
