@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import MaterialidadeBasesPanel from "./MaterialidadeBasesPanel";
+import TrabalhoRiscosPanel from "./TrabalhoRiscosPanel";
 
 interface Props {
   open: boolean;
