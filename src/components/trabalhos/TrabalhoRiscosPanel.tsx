@@ -576,8 +576,8 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
       </div>
 
       {/* Tabela */}
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
+      <div className="rounded-md border overflow-hidden">
+        <Table className="min-w-[1280px]">
           <TableHeader className="sticky top-0 bg-background">
             <TableRow>
               <TableHead>Área/Ciclo</TableHead>
@@ -661,7 +661,7 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
 
       {/* Dialog de Criar/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[96vw] max-w-4xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Editar risco" : "Novo risco"}</DialogTitle>
             <DialogDescription>

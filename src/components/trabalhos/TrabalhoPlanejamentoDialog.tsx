@@ -14,10 +14,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, Info, Pencil, Plus, Lock, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Info, Pencil, Plus, Lock, CheckCircle2, Maximize2, Minimize2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { cn } from "@/lib/utils";
 import MaterialidadeBasesPanel from "./MaterialidadeBasesPanel";
 import TrabalhoRiscosPanel from "./TrabalhoRiscosPanel";
 
@@ -59,6 +60,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalho }: Props) {
   const trabalhoId = trabalho?.id as string | undefined;
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const planejamentoQ = useQuery({
     queryKey: ["trabalho-planejamento", trabalhoId],
@@ -235,7 +237,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
   const isAprovado = planData?.status_planejamento === "aprovado";
 
   useEffect(() => {
-    if (!open) { setEditMode(false); setForm(emptyForm); }
+    if (!open) { setEditMode(false); setForm(emptyForm); setIsFullscreen(false); }
   }, [open, trabalhoId]);
 
   const startEdit = () => {
@@ -511,8 +513,15 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "flex flex-col overflow-hidden",
+          isFullscreen
+            ? "w-[98vw] max-w-[98vw] h-[95vh] max-h-[95vh]"
+            : "max-w-4xl max-h-[90vh]",
+        )}
+      >
+        <DialogHeader className="shrink-0 pr-16">
           <DialogTitle>Planejamento do Trabalho</DialogTitle>
           <DialogDescription className="space-y-1">
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
@@ -524,17 +533,28 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
               )}
             </div>
           </DialogDescription>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-10 top-4 h-8 w-8"
+            onClick={() => setIsFullscreen((v) => !v)}
+            title={isFullscreen ? "Reduzir tela" : "Expandir tela"}
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </Button>
         </DialogHeader>
 
-        <Tabs defaultValue="planejamento" className="mt-2">
-          <TabsList>
+        <Tabs defaultValue="planejamento" className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <TabsList className="shrink-0">
             <TabsTrigger value="planejamento">Planejamento</TabsTrigger>
             <TabsTrigger value="materialidade">Materialidade</TabsTrigger>
             <TabsTrigger value="riscos">Riscos</TabsTrigger>
           </TabsList>
 
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
           {/* PLANEJAMENTO */}
-          <TabsContent value="planejamento" className="space-y-3 pt-3">
+          <TabsContent value="planejamento" className="space-y-3 pt-3 mt-0">
             {planejamentoQ.isLoading ? (
               <div className="space-y-2"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
             ) : planejamentoQ.isError ? (
@@ -664,7 +684,7 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
           </TabsContent>
 
           {/* MATERIALIDADE */}
-          <TabsContent value="materialidade" className="space-y-3 pt-3">
+          <TabsContent value="materialidade" className="space-y-3 pt-3 mt-0">
             {materialidadeQ.isLoading ? (
               <div className="space-y-2"><Skeleton className="h-24 w-full" /><Skeleton className="h-12 w-full" /></div>
             ) : materialidadeQ.isError ? (
@@ -880,9 +900,10 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
               </div>
             )}
           </TabsContent>
-          <TabsContent value="riscos" className="pt-3">
+          <TabsContent value="riscos" className="pt-3 mt-0">
             <TrabalhoRiscosPanel trabalho={trabalho} />
           </TabsContent>
+          </div>
         </Tabs>
       </DialogContent>
 
