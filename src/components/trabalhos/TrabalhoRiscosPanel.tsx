@@ -12,6 +12,11 @@
  * Esta etapa NÃO implementa: vínculo risco → PTA / regra / procedimento /
  * solicitação / evidência / base de materialidade; review_events; review_notes;
  * gates; dashboard QA; nenhuma alteração de status_trabalho ou status_pta.
+ *
+ * Nota técnica (Fase 0A.2.3):
+ * - valores persistidos no banco seguem formato técnico (snake_case, sem acento);
+ * - labels amigáveis são somente apresentação na UI;
+ * - nível de risco pode ser sugerido por Probabilidade × Impacto, mas permanece editável.
  */
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -89,9 +94,48 @@ const STATUS_RISCO = [
 ] as const;
 
 const NONE = "__none__";
-const niceLabel = (v: string | null | undefined) =>
-  v ? v.replace(/_/g, " ") : "—";
+const LABELS: Record<string, string> = {
+  existencia: "Existência",
+  integridade: "Integridade",
+  direitos_obrigacoes: "Direitos e Obrigações",
+  avaliacao: "Avaliação",
+  apresentacao_divulgacao: "Apresentação e Divulgação",
+  corte: "Corte",
+  ocorrencia: "Ocorrência",
+  exatidao: "Exatidão",
+  outro: "Outro",
+  risco_inerente: "Risco inerente",
+  risco_controle: "Risco de controle",
+  risco_distorcao_relevante: "Risco de distorção relevante",
+  risco_fraude: "Risco de fraude",
+  risco_divulgacao: "Risco de divulgação",
+  risco_estimativa: "Risco de estimativa",
+  risco_ti: "Risco de TI",
+  risco_operacional: "Risco operacional",
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+  baixo: "Baixo",
+  medio: "Médio",
+  alto: "Alto",
+  critico: "Crítico",
+  identificado: "Identificado",
+  resposta_planejada: "Resposta planejada",
+  em_execucao: "Em execução",
+  respondido: "Respondido",
+  revisado: "Revisado",
+  encerrado: "Encerrado",
+};
+const niceLabel = (v: string | null | undefined) => (v ? LABELS[v] || v.replace(/_/g, " ") : "—");
 const nivelOrder: Record<string, number> = { critico: 4, alto: 3, medio: 2, baixo: 1 };
+const probabilidadePeso: Record<string, number> = { baixa: 1, media: 2, alta: 3 };
+const impactoPeso: Record<string, number> = { baixo: 1, medio: 2, alto: 3 };
+const nivelByScore = (score: number): string => {
+  if (score <= 2) return "baixo";
+  if (score <= 4) return "medio";
+  if (score <= 6) return "alto";
+  return "critico";
+};
 
 const badgeNivelClass = (n: string | null | undefined) => {
   switch (n) {
@@ -235,7 +279,16 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
         if (!bag.includes(term)) return false;
       }
       return true;
-    }).sort((a, b) => (nivelOrder[b.nivel_risco || ""] || 0) - (nivelOrder[a.nivel_risco || ""] || 0));
+    }).sort((a, b) => {
+      if (a.ativo !== b.ativo) return a.ativo ? -1 : 1;
+      const nivelDiff = (nivelOrder[b.nivel_risco || ""] || 0) - (nivelOrder[a.nivel_risco || ""] || 0);
+      if (nivelDiff !== 0) return nivelDiff;
+      if (!!a.risco_significativo !== !!b.risco_significativo) return a.risco_significativo ? -1 : 1;
+      if (!!a.risco_fraude !== !!b.risco_fraude) return a.risco_fraude ? -1 : 1;
+      const ta = new Date(a.created_at || 0).getTime();
+      const tb = new Date(b.created_at || 0).getTime();
+      return tb - ta;
+    });
   }, [riscosQ.data, filtroBusca, filtroStatus, filtroNivel, filtroSignificativo, filtroFraude, filtroAtivo]);
 
   // ---------- Indicadores ----------
@@ -243,10 +296,14 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
     const arr = (riscosQ.data || []).filter((r) => r.ativo);
     return {
       total: arr.length,
+      criticos: arr.filter((r) => r.nivel_risco === "critico").length,
       significativos: arr.filter((r) => r.risco_significativo).length,
       fraude: arr.filter((r) => r.risco_fraude).length,
       altosCriticos: arr.filter((r) => r.nivel_risco === "alto" || r.nivel_risco === "critico").length,
       semResposta: arr.filter((r) => !r.resposta_planejada || !r.resposta_planejada.trim()).length,
+      pctComResposta: arr.length === 0
+        ? 0
+        : Math.round(((arr.length - arr.filter((r) => !r.resposta_planejada || !r.resposta_planejada.trim()).length) / arr.length) * 100),
     };
   }, [riscosQ.data]);
 
@@ -254,10 +311,12 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [nivelManual, setNivelManual] = useState(false);
 
   const openCreate = () => {
     setForm(emptyForm);
     setEditingId(null);
+    setNivelManual(false);
     setDialogOpen(true);
   };
   const openEdit = (r: TrabalhoRiscoAuditoria) => {
@@ -291,6 +350,7 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
       observacoes: r.observacoes || "",
     });
     setEditingId(r.id);
+    setNivelManual(!!r.nivel_risco);
     setDialogOpen(true);
   };
 
@@ -330,6 +390,22 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
       conta_mcse_id: "", codigo_conta_snapshot: "", descricao_conta_snapshot: "", grupo_contabil: "",
     }));
   };
+
+
+  const scoreSugerido = useMemo(() => {
+    const p = probabilidadePeso[form.probabilidade];
+    const i = impactoPeso[form.impacto];
+    if (!p || !i) return null;
+    return p * i;
+  }, [form.probabilidade, form.impacto]);
+  const nivelSugerido = scoreSugerido ? nivelByScore(scoreSugerido) : "";
+
+  useEffect(() => {
+    if (!dialogOpen || !nivelSugerido) return;
+    if (!form.nivel_risco && !nivelManual) {
+      setForm((prev) => ({ ...prev, nivel_risco: nivelSugerido }));
+    }
+  }, [dialogOpen, form.nivel_risco, nivelManual, nivelSugerido]);
 
   // ---------- Save / Toggle ativo ----------
   const saveMutation = useMutation({
@@ -442,12 +518,14 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
   return (
     <div className="space-y-4">
       {/* Indicadores */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
         <IndCard label="Riscos ativos" value={indicadores.total} />
+        <IndCard label="Críticos" value={indicadores.criticos} tone="danger" />
+        <IndCard label="Alto / Crítico" value={indicadores.altosCriticos} tone="danger" />
         <IndCard label="Significativos" value={indicadores.significativos} tone="warning" />
         <IndCard label="Fraude" value={indicadores.fraude} tone="danger" />
-        <IndCard label="Alto / Crítico" value={indicadores.altosCriticos} tone="danger" />
         <IndCard label="Sem resposta" value={indicadores.semResposta} tone="warning" />
+        <IndCard label="% com resposta" value={`${indicadores.pctComResposta}%`} />
       </div>
 
       {/* Toolbar */}
@@ -478,6 +556,20 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
             { value: "inativos", label: "Apenas inativos" },
             { value: "todos", label: "Todos" },
           ]} allowEmpty={false} />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setFiltroBusca("");
+            setFiltroStatus("");
+            setFiltroNivel("");
+            setFiltroSignificativo("");
+            setFiltroFraude("");
+            setFiltroAtivo("ativos");
+          }}
+        >
+          Limpar filtros
+        </Button>
         <Button onClick={openCreate} size="sm" className="ml-auto">
           <Plus className="h-4 w-4 mr-1" /> Novo risco
         </Button>
@@ -526,7 +618,7 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
                 </TableCell>
                 <TableCell className="text-xs">{niceLabel(r.assertiva)}</TableCell>
                 <TableCell className="text-xs max-w-[280px]">
-                  <div className="line-clamp-2">{r.risco_identificado || "—"}</div>
+                  <div className="line-clamp-2" title={r.risco_identificado || "—"}>{r.risco_identificado || "—"}</div>
                 </TableCell>
                 <TableCell className="text-xs">{niceLabel(r.tipo_risco)}</TableCell>
                 <TableCell className="text-xs">{niceLabel(r.probabilidade)}</TableCell>
@@ -646,9 +738,25 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
                   onChange={(v) => setForm({ ...form, impacto: v })}
                   options={IMPACTOS.map((v) => ({ value: v, label: niceLabel(v) }))} />
                 <FieldSelect label="Nível de risco" value={form.nivel_risco}
-                  onChange={(v) => setForm({ ...form, nivel_risco: v })}
+                  onChange={(v) => { setNivelManual(true); setForm({ ...form, nivel_risco: v }); }}
                   options={NIVEIS_RISCO.map((v) => ({ value: v, label: niceLabel(v) }))} />
               </div>
+              {nivelSugerido && (
+                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                  <span>{`Nível sugerido: ${niceLabel(nivelSugerido)}, com base em Probabilidade × Impacto.`}</span>
+                  {form.nivel_risco !== nivelSugerido && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setForm((f) => ({ ...f, nivel_risco: nivelSugerido }))}
+                    >
+                      Aplicar nível sugerido
+                    </Button>
+                  )}
+                </div>
+              )}
               <div className="flex gap-6">
                 <SwitchField label="Risco significativo" checked={form.risco_significativo}
                   onChange={(v) => setForm({ ...form, risco_significativo: v })} />
@@ -718,7 +826,7 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
               <div className="flex items-start gap-2 rounded-md border border-amber-300/40 bg-amber-50/10 p-2 text-xs">
                 <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
                 <div>
-                  <div className="font-medium">Campos recomendados não preenchidos:</div>
+                  <div className="font-medium">Campos recomendados ainda não preenchidos:</div>
                   <div className="text-muted-foreground">{recomendadosVazios.join(", ")}.</div>
                 </div>
               </div>
@@ -738,7 +846,7 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
 }
 
 // ============ Helpers de UI ============
-function IndCard({ label, value, tone }: { label: string; value: number; tone?: "warning" | "danger" }) {
+function IndCard({ label, value, tone }: { label: string; value: number | string; tone?: "warning" | "danger" }) {
   const cls = tone === "danger" ? "border-red-500/40" : tone === "warning" ? "border-amber-500/40" : "";
   return (
     <div className={`rounded-md border p-2 ${cls}`}>
