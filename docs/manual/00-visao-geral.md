@@ -1,23 +1,23 @@
-# Visao Geral do Sistema
+# Visão Geral do Sistema
 
 ## Objetivo
 
-O sistema apoia a execucao e organizacao de trabalhos de auditoria, integrando cadastros, planejamento, materialidade, matriz de riscos, balancetes, papeis de trabalho, solicitacoes documentais, portal do cliente e procedimentos auxiliares.
+O sistema apoia a execução e organização de trabalhos de auditoria, integrando cadastros, planejamento, materialidade, matriz de riscos, balancetes, papéis de trabalho, solicitações documentais, portal do cliente e procedimentos auxiliares.
 
-Observacao: inferido a partir do codigo e do inventario da Fase D.1.
+Observação: inferido a partir do código e do inventário da Fase D.1.
 
 ## Contexto de auditoria
 
-O fluxo foi estruturado para uma equipe interna de auditoria que cadastra clientes, trabalhos, auditores, estruturas de referencia, regras documentais e procedimentos. O cliente externo acessa apenas um portal restrito para consultar solicitacoes e enviar documentos.
+O fluxo foi estruturado para uma equipe interna de auditoria que cadastra clientes, trabalhos, auditores, estruturas de referência, regras documentais e procedimentos. O cliente externo acessa apenas um portal restrito para consultar solicitações e enviar documentos.
 
 O sistema usa Supabase como backend externo, com autenticação, banco relacional, RLS e storage para documentos.
 
-## Modulos principais
+## Módulos principais
 
-- Autenticacao e roteamento por perfil.
+- Autenticação e roteamento por perfil.
 - Dashboard operacional.
-- Clientes, exercicios e parametros.
-- Auditores e usuarios do cliente.
+- Clientes, exercícios e parâmetros.
+- Auditores e usuários do cliente.
 - Produtos de auditoria e contratos.
 - Trabalhos de auditoria e equipe.
 - Planejamento do trabalho.
@@ -25,8 +25,8 @@ O sistema usa Supabase como backend externo, com autenticação, banco relaciona
 - Matriz de riscos.
 - Balancetes.
 - MCSE, plano de contas, mapeamento e regras.
-- PTA - Papeis de Trabalho de Auditoria.
-- Solicitacoes documentais.
+- PTA - Papéis de Trabalho de Auditoria.
+- Solicitações documentais.
 - Portal do cliente.
 - Procedimentos auxiliares.
 - Contagem de caixa.
@@ -35,36 +35,42 @@ O sistema usa Supabase como backend externo, com autenticação, banco relaciona
 
 ## Fluxo macro
 
-1. O auditor ou administrador cadastra cliente, exercicio, auditores, produtos, contratos e regras.
+1. O auditor ou administrador cadastra cliente, exercício, auditores, produtos, contratos e regras.
 2. O auditor cria um trabalho de auditoria.
-3. A equipe e vinculada ao trabalho.
-4. O planejamento do trabalho e registrado.
-5. A materialidade e definida e aprovada.
+3. A equipe é vinculada ao trabalho.
+4. O planejamento do trabalho é registrado.
+5. A materialidade é definida e aprovada, quando aplicável.
 6. Bases de materialidade podem ser cadastradas e vinculadas ao PTA.
-7. A matriz de riscos e cadastrada por area, conta, assertiva e resposta planejada.
-8. O balancete e importado e mapeado para a estrutura MCSE ou estrutura ativa.
-9. O PTA e gerado ou editado a partir das contas do balancete.
-10. Solicitacoes documentais sao geradas a partir das regras e disponibilizadas ao cliente.
+7. A matriz de riscos é cadastrada por área, conta, assertiva e resposta planejada.
+8. O balancete é importado e mapeado para a estrutura MCSE ou estrutura ativa.
+9. O PTA é gerado ou editado a partir das contas do balancete.
+10. Solicitações documentais são geradas a partir das regras e disponibilizadas ao cliente.
 11. O cliente acessa o portal e envia documentos.
-12. O auditor analisa documentos, vincula evidencias ao balancete e conclui trabalhos auxiliares.
+12. O auditor analisa documentos, vincula evidências ao balancete quando aplicável e conclui trabalhos auxiliares.
 13. Procedimentos auxiliares complementam a auditoria, incluindo caixa, estoque e faturas em aberto.
 
-## Limitacoes atuais
+Resumo do encadeamento operacional:
 
-- O README do repositorio esta desatualizado e descreve outro contexto.
-- `docs/sistema` nao existe nesta etapa.
-- `types.ts` do Supabase esta desatualizado em relacao a tabelas recentes.
-- Ha uso frequente de `as any` para tabelas novas.
-- Alguns SQLs recentes estao em `docs/sql/`, mas nao necessariamente em `supabase/migrations`.
-- Algumas tabelas usadas pelo frontend nao tiveram `CREATE TABLE` local encontrado.
-- Algumas regras de alcada parecem estar implementadas no frontend, sem confirmacao equivalente em RLS.
-- Ha textos com sinais de encoding quebrado em partes do repositorio.
+`trabalho -> planejamento -> materialidade -> bases de materialidade -> matriz de riscos -> balancete -> PTA -> solicitações -> portal cliente -> procedimentos auxiliares`
 
-## Escopo ainda nao implementado ou incompleto
+Observação: a matriz de riscos já é funcional como cadastro e acompanhamento, mas seus vínculos formais com PTA, procedimentos, solicitações e evidências ainda não foram implementados.
 
-- Vinculo formal de risco com PTA, procedimento, solicitacao, evidencia ou base de materialidade. Ainda nao implementado.
-- Workflow completo de revisao tecnica com eventos, notas, gates e dashboards de QA. Ainda nao implementado.
-- Execucao especifica para ordens de compra e ordens de imobilizacao. Ainda nao implementado.
-- Relatorios persistidos centralizados. Ainda nao implementado.
-- Dicionario de dados validado contra o Supabase real. Ainda nao implementado.
-- Matriz final de permissoes validada por testes de RLS. Ainda nao implementado.
+## Limitações atuais
+
+- O README do repositório está desatualizado e descreve outro contexto.
+- `docs/sistema` não existe nesta etapa.
+- `types.ts` do Supabase está desatualizado em relação a tabelas recentes.
+- Há uso frequente de `as any` para tabelas novas.
+- Alguns SQLs recentes estão em `docs/sql/`, mas não necessariamente em `supabase/migrations`.
+- Algumas tabelas usadas pelo frontend não tiveram `CREATE TABLE` local encontrado.
+- Algumas regras de alçada parecem estar implementadas no frontend, sem confirmação equivalente em RLS.
+- Há textos com sinais de encoding quebrado em partes do repositório.
+
+## Escopo ainda não implementado ou incompleto
+
+- Vínculo formal de risco com PTA, procedimento, solicitação, evidência ou base de materialidade. Ainda não implementado.
+- Workflow completo de revisão técnica com eventos, notas, gates e dashboards de QA. Ainda não implementado.
+- Execução específica para ordens de compra e ordens de imobilização. Ainda não implementado.
+- Relatórios persistidos centralizados. Ainda não implementado.
+- Dicionário de dados validado contra o Supabase real. Ainda não implementado.
+- Matriz final de permissões validada por testes de RLS. Ainda não implementado.
