@@ -37,7 +37,16 @@ Observação: o conteúdo reflete o estado identificado no repositório local. D
    - Boas práticas, restrições de acesso, erros comuns e checklist.
 
 4. [03-manual-administrador.md](03-manual-administrador.md)
-   - Guia inicial para administração do sistema: usuários, perfis, vínculos Auth, clientes, estruturas, produtos, regras e cuidados com SQL/RLS.
+   - Manual operacional e técnico leve para administração do sistema: papéis administrativos, usuários internos, auditores, perfis, clientes, usuários do cliente, trabalhos, equipe, exercícios, planejamento, materialidade, riscos, MCSE, regras, solicitações, portal do cliente, procedimentos, Supabase externo, SQLs manuais, storage, RLS, manutenção, erros comuns e checklist.
+
+   Capítulos principais do manual do administrador:
+
+   - Administrador funcional versus administrador técnico.
+   - Gestão de usuários internos, auditores, clientes e usuários do cliente.
+   - Trabalhos, equipe, exercícios, planejamento, materialidade e riscos.
+   - MCSE, plano de contas, regras, solicitações e portal do cliente.
+   - Supabase externo, SQLs manuais, storage, segurança e RLS.
+   - Rotinas de manutenção, erros comuns, checklist e backlog administrativo.
 
 5. [04-manual-tecnico.md](04-manual-tecnico.md)
    - Documentação técnica inicial: arquitetura React/Supabase, pastas, clients Supabase, hooks, módulos e pontos de atenção.

@@ -18,11 +18,29 @@ Toda alteracao deve ser tratada como mudanca controlada:
 
 - Nunca executar SQL sem revisar o conteudo completo.
 - Confirmar ambiente Supabase antes de executar.
+- Confirmar que a aplicacao usa Supabase externo e que o SQL sera executado no projeto correto.
+- Nunca executar SQL no Lovable Cloud quando a aplicacao usa Supabase externo.
 - Confirmar se o SQL e idempotente.
 - Confirmar impacto em tabelas existentes.
 - Confirmar impacto em RLS.
 - Confirmar se ha backup ou forma de rollback.
 - Executar validacoes pos-SQL.
+- Registrar quando, onde e por quem o SQL foi aplicado.
+- Avaliar se o PostgREST precisa de reload schema.
+- Avaliar se `types.ts` deve ser regenerado em fase propria.
+
+Checklist minimo antes de SQL manual:
+
+- [ ] Projeto Supabase correto.
+- [ ] Backup ou ambiente de teste disponivel.
+- [ ] Script revisado.
+- [ ] Script versionado no GitHub.
+- [ ] Idempotencia avaliada.
+- [ ] Dependencias e ordem avaliadas.
+- [ ] Validacoes pos-execucao definidas.
+- [ ] Plano de rollback ou reversao documentado.
+- [ ] Necessidade de reload schema avaliada.
+- [ ] Necessidade de regenerar `types.ts` registrada.
 
 ## `docs/sql` versus `supabase/migrations`
 

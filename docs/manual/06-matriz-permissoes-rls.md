@@ -6,6 +6,8 @@ Observacao: inferido a partir do codigo e SQLs locais.
 
 ## Perfis funcionais
 
+Para a visão operacional de administração de usuários, auditores, clientes, usuários do cliente e testes de isolamento, consulte também `03-manual-administrador.md`.
+
 ### Auditor interno
 
 - Identificado quando o usuario Auth esta vinculado a `auditores.auth_user_id`.
@@ -26,6 +28,9 @@ Observacao: inferido a partir do codigo e SQLs locais.
 - Auditor com `perfil_acesso = admin`.
 - Possui acesso amplo no frontend e em RLS.
 - Pode gerir usuarios, auditores, estruturas, produtos e cadastros sensiveis.
+- Deve ser tratado como perfil crítico de administração funcional e técnica.
+
+Observacao: a separacao entre administrador funcional e administrador tecnico deve ser validada no ambiente real.
 
 ## Perfis de auditor
 
