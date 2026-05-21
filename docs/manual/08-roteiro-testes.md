@@ -2,7 +2,7 @@
 
 Este roteiro é inicial. Roteiros detalhados devem ser criados por módulo.
 
-Escopo desta versão: organizar os testes mínimos por fluxo crítico e reforçar os pontos de Planejamento, Materialidade, Bases de Materialidade, Matriz de Riscos e PTA documentados no manual do auditor.
+Escopo desta versão: organizar os testes mínimos por fluxo crítico e reforçar os pontos de Planejamento, Materialidade, Bases de Materialidade, Matriz de Riscos, PTA e Portal do Cliente documentados nos manuais operacionais.
 
 ## Login e perfis
 
@@ -115,12 +115,27 @@ Escopo desta versão: organizar os testes mínimos por fluxo crítico e reforça
 ## Portal cliente
 
 1. Entrar como cliente_usuario.
-2. Visualizar somente solicitações do próprio cliente.
-3. Enviar PDF válido.
-4. Tentar enviar arquivo inválido.
-5. Reenviar documento recusado.
-6. Verificar pendências.
-7. Tentar acessar dados de outro cliente.
+2. Confirmar redirecionamento para `/cliente/solicitacoes`.
+3. Visualizar somente solicitações do próprio cliente.
+4. Usar busca por título em `Minhas Solicitações`.
+5. Usar filtro por status em `Minhas Solicitações`.
+6. Abrir detalhe de uma solicitação.
+7. Conferir título, trabalho, exercício, emissão, prazo e observações.
+8. Conferir itens agrupados por conta MCSE ou documentos gerais.
+9. Conferir instruções ao cliente e trilha de emissão ERP, quando existirem.
+10. Visualizar obrigatoriedade e prazo do item.
+11. Enviar PDF válido.
+12. Tentar enviar arquivo não PDF.
+13. Tentar enviar PDF maior que 20 MB.
+14. Confirmar registro de versão do documento enviado.
+15. Verificar status do documento após envio.
+16. Reenviar documento recusado.
+17. Enviar complemento quando solicitado.
+18. Verificar `Pendências`.
+19. Confirmar que pendências incluem itens pendentes, rejeitados ou complementares.
+20. Tentar acessar rota interna de auditoria como cliente_usuario.
+21. Tentar acessar dados de outro cliente.
+22. Validar isolamento por cliente no Supabase real.
 
 ## Procedimentos auxiliares
 

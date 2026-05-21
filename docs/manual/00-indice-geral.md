@@ -25,7 +25,16 @@ Observação: o conteúdo reflete o estado identificado no repositório local. D
    - Boas práticas, limitações, erros comuns e checklist operacional.
 
 3. [02-manual-usuario-cliente.md](02-manual-usuario-cliente.md)
-   - Manual inicial para usuários do cliente: acesso ao portal, solicitações, pendências, envio e reenvio de documentos.
+   - Manual operacional para usuários do cliente: acesso ao portal, menu da Área do Cliente, solicitações documentais, pendências, itens solicitados, status, upload de PDF, complementação, acompanhamento de respostas, boas práticas, limitações, erros comuns e checklist.
+
+   Capítulos principais do manual do cliente:
+
+   - Visão geral da Área do Cliente.
+   - Acesso, tela inicial e menus.
+   - Solicitações documentais e pendências.
+   - Itens solicitados e status.
+   - Envio, reenvio e complementação de documentos.
+   - Boas práticas, restrições de acesso, erros comuns e checklist.
 
 4. [03-manual-administrador.md](03-manual-administrador.md)
    - Guia inicial para administração do sistema: usuários, perfis, vínculos Auth, clientes, estruturas, produtos, regras e cuidados com SQL/RLS.
@@ -43,7 +52,7 @@ Observação: o conteúdo reflete o estado identificado no repositório local. D
    - Fluxos e status conhecidos para trabalho, planejamento, materialidade, PTA, solicitações, documentos, procedimentos e riscos.
 
 9. [08-roteiro-testes.md](08-roteiro-testes.md)
-   - Roteiro inicial de testes funcionais por módulo, com foco adicional em planejamento, materialidade, matriz de riscos e PTA.
+   - Roteiro inicial de testes funcionais por módulo, com foco adicional em planejamento, materialidade, matriz de riscos, PTA e Portal do Cliente.
 
 10. [09-runbook-implantacao.md](09-runbook-implantacao.md)
     - Runbook inicial para alteracoes, validacoes, SQL manual, GitHub, Lovable e Codex Desktop/local.
