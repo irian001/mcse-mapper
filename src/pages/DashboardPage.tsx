@@ -7,6 +7,39 @@ import { Badge } from "@/components/ui/badge";
 import { Users, UserCheck, Briefcase, FileText, AlertTriangle, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { format } from "date-fns";
+import { useCurrentAuditor } from "@/hooks/useCurrentAuditor";
+
+/**
+ * Filtro de escopo do dashboard:
+ * - Admin e Sócio: veem TUDO (bypass = true, accessibleTrabalhoIds = null).
+ * - Demais auditores: veem apenas trabalhos onde estão vinculados ativos em trabalho_auditores.
+ * Cards de "Clientes" e "Auditores" permanecem com contagem global (não filtrados),
+ * conforme solicitado.
+ */
+function useDashboardScope() {
+  const { data: auditor, isLoading: loadingAuditor } = useCurrentAuditor();
+  const bypass = auditor?.perfil_acesso === "admin" || auditor?.perfil_acesso === "socio";
+
+  const query = useQuery({
+    queryKey: ["dashboard-scope", auditor?.id, bypass],
+    enabled: !!auditor && !bypass,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("trabalho_auditores")
+        .select("trabalho_auditoria_id")
+        .eq("auditor_id", auditor!.id)
+        .eq("ativo", true);
+      return (data ?? []).map((r: any) => r.trabalho_auditoria_id as string);
+    },
+  });
+
+  return {
+    loading: loadingAuditor || (!bypass && query.isLoading),
+    bypass,
+    auditorId: auditor?.id ?? null,
+    accessibleTrabalhoIds: bypass ? null : (query.data ?? []),
+  };
+}
 
 const STATUS_TRABALHO_LABELS: Record<string, string> = {
   planejado: "Planejado",
