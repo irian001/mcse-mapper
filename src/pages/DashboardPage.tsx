@@ -70,33 +70,64 @@ const COLORS = [
   "hsl(150, 50%, 45%)",
 ];
 
-function useKpis() {
+type Scope = ReturnType<typeof useDashboardScope>;
+
+function useKpis(scope: Scope) {
   return useQuery({
-    queryKey: ["dashboard-kpis"],
+    queryKey: ["dashboard-kpis", scope.bypass, scope.accessibleTrabalhoIds],
+    enabled: !scope.loading,
     queryFn: async () => {
-      const [clientes, auditores, trabalhos, solicitacoes, itens] = await Promise.all([
+      const ids = scope.accessibleTrabalhoIds;
+      // Clientes e Auditores sempre globais (não filtrados por vínculo).
+      const [clientes, auditoresCount] = await Promise.all([
         supabase.from("clientes").select("id", { count: "exact", head: true }),
         supabase.from("auditores").select("id", { count: "exact", head: true }),
-        supabase.from("trabalhos_auditoria").select("id, status_trabalho"),
-        supabase.from("solicitacoes_documentos").select("id, status_solicitacao"),
-        supabase.from("solicitacao_itens").select("id, status_item"),
       ]);
 
+      const baseEmpty = {
+        totalClientes: clientes.count || 0,
+        totalAuditores: auditoresCount.count || 0,
+        totalTrabalhos: 0,
+        trabalhosAbertos: 0,
+        totalSolicitacoes: 0,
+        solicitacoesPendentes: 0,
+        itensPendentes: 0,
+        trabChartData: [] as { name: string; value: number }[],
+        solChartData: [] as { name: string; value: number }[],
+      };
+
+      let trabQ = supabase.from("trabalhos_auditoria").select("id, status_trabalho");
+      let solQ = supabase.from("solicitacoes_documentos").select("id, status_solicitacao");
+      if (!scope.bypass) {
+        if (!ids || ids.length === 0) return baseEmpty;
+        trabQ = trabQ.in("id", ids);
+        solQ = solQ.in("trabalho_auditoria_id", ids);
+      }
+      const [trabalhos, solicitacoes] = await Promise.all([trabQ, solQ]);
       const trabalhosData = trabalhos.data || [];
       const solicitacoesData = solicitacoes.data || [];
-      const itensData = itens.data || [];
+
+      let itensData: { id: string; status_item: string }[] = [];
+      const solIds = solicitacoesData.map((s: any) => s.id);
+      if (scope.bypass) {
+        const { data } = await supabase.from("solicitacao_itens").select("id, status_item");
+        itensData = (data as any) || [];
+      } else if (solIds.length > 0) {
+        const { data } = await supabase
+          .from("solicitacao_itens")
+          .select("id, status_item")
+          .in("solicitacao_id", solIds);
+        itensData = (data as any) || [];
+      }
 
       const trabalhosAbertos = trabalhosData.filter(t => t.status_trabalho !== "encerrado").length;
-
       const solicitacoesPendentes = solicitacoesData.filter(s =>
         !["atendida", "encerrada"].includes(s.status_solicitacao)
       ).length;
-
       const itensPendentes = itensData.filter(i =>
         !["aceito", "atendido"].includes(i.status_item)
       ).length;
 
-      // Charts
       const trabStatusMap: Record<string, number> = {};
       trabalhosData.forEach(t => {
         trabStatusMap[t.status_trabalho] = (trabStatusMap[t.status_trabalho] || 0) + 1;
@@ -117,7 +148,7 @@ function useKpis() {
 
       return {
         totalClientes: clientes.count || 0,
-        totalAuditores: auditores.count || 0,
+        totalAuditores: auditoresCount.count || 0,
         totalTrabalhos: trabalhosData.length,
         trabalhosAbertos,
         totalSolicitacoes: solicitacoesData.length,
@@ -130,34 +161,45 @@ function useKpis() {
   });
 }
 
-function useRecentTrabalhos() {
+function useRecentTrabalhos(scope: Scope) {
   return useQuery({
-    queryKey: ["dashboard-trabalhos-recentes"],
+    queryKey: ["dashboard-trabalhos-recentes", scope.bypass, scope.accessibleTrabalhoIds],
+    enabled: !scope.loading,
     queryFn: async () => {
-      const { data } = await supabase
+      const ids = scope.accessibleTrabalhoIds;
+      if (!scope.bypass && (!ids || ids.length === 0)) return [];
+      let q = supabase
         .from("trabalhos_auditoria")
         .select("id, nome_trabalho, status_trabalho, data_inicio_programada, data_fim_programada, clientes(razao_social), exercicios(ano_exercicio)")
         .neq("status_trabalho", "encerrado")
         .order("created_at", { ascending: false })
         .limit(8);
+      if (!scope.bypass && ids) q = q.in("id", ids);
+      const { data } = await q;
       return data || [];
     },
   });
 }
 
-function useSolicitacoesPendentes() {
+function useSolicitacoesPendentes(scope: Scope) {
   return useQuery({
-    queryKey: ["dashboard-solicitacoes-pendentes"],
+    queryKey: ["dashboard-solicitacoes-pendentes", scope.bypass, scope.accessibleTrabalhoIds],
+    enabled: !scope.loading,
     queryFn: async () => {
-      const { data } = await supabase
+      const ids = scope.accessibleTrabalhoIds;
+      if (!scope.bypass && (!ids || ids.length === 0)) return [];
+      let q = supabase
         .from("solicitacoes_documentos")
         .select("id, titulo_solicitacao, status_solicitacao, prazo_resposta, clientes(razao_social), trabalhos_auditoria(nome_trabalho)")
         .not("status_solicitacao", "in", '("atendida","encerrada")')
         .order("prazo_resposta", { ascending: true, nullsFirst: false })
         .limit(8);
+      if (!scope.bypass && ids) q = q.in("trabalho_auditoria_id", ids);
+      const { data } = await q;
       return data || [];
     },
   });
+}
 }
 
 const statusColors: Record<string, string> = {
