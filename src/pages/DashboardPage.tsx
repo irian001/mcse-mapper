@@ -200,7 +200,6 @@ function useSolicitacoesPendentes(scope: Scope) {
     },
   });
 }
-}
 
 const statusColors: Record<string, string> = {
   planejado: "bg-muted text-muted-foreground",
