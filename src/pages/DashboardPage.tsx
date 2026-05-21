@@ -218,9 +218,11 @@ const statusColors: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { data: kpis, isLoading } = useKpis();
-  const { data: trabalhos } = useRecentTrabalhos();
-  const { data: solicitacoes } = useSolicitacoesPendentes();
+  const scope = useDashboardScope();
+  const { data: kpis, isLoading } = useKpis(scope);
+  const { data: trabalhos } = useRecentTrabalhos(scope);
+  const { data: solicitacoes } = useSolicitacoesPendentes(scope);
+
 
   if (isLoading) {
     return (
