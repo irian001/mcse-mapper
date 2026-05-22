@@ -49,10 +49,10 @@ Observação: o conteúdo reflete o estado identificado no repositório local. D
    - Rotinas de manutenção, erros comuns, checklist e backlog administrativo.
 
 5. [04-manual-tecnico.md](04-manual-tecnico.md)
-   - Documentação técnica inicial: arquitetura React/Supabase, pastas, clients Supabase, hooks, módulos e pontos de atenção.
+   - Manual técnico consolidado: arquitetura React/Vite/Supabase, stack, estrutura de pastas, roteamento, perfis, clients Supabase, padrões de dados, módulos técnicos, storage, RLS, SQLs manuais, migrations, drift de schema, `types.ts`, uso de `as any`, limitações e backlog técnico.
 
 6. [05-dicionario-dados.md](05-dicionario-dados.md)
-   - Dicionário inicial de tabelas, por grupos funcionais, com finalidade, relações e observações conhecidas.
+   - Dicionário de dados inicial por grupos: base cadastral, usuários, trabalhos, planejamento/materialidade/riscos, MCSE/regras, balancetes/PTA, solicitações, portal, procedimentos, faturas em aberto, contratos/produtos, storage, relacionamentos e RLS.
 
 7. [06-matriz-permissoes-rls.md](06-matriz-permissoes-rls.md)
    - Mapeamento inicial de perfis, funções RLS, bloqueios no frontend e riscos de autorização.
