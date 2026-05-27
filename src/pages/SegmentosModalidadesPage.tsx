@@ -47,6 +47,52 @@ export default function SegmentosModalidadesPage() {
   const [editing, setEditing] = useState<ModalidadeAtuacao | null>(null);
   const [form, setForm] = useState(emptyForm);
 
+  // --- Novo Segmento (admin) ---
+  const [segOpen, setSegOpen] = useState(false);
+  const [segForm, setSegForm] = useState({ codigo: "", nome: "", descricao: "", ordem: 0 });
+
+  const createSegmento = useMutation({
+    mutationFn: async () => {
+      const codigo = segForm.codigo.trim();
+      const nome = segForm.nome.trim();
+      const descricao = segForm.descricao.trim();
+      if (!codigo) throw new Error("Informe o código");
+      if (!nome) throw new Error("Informe o nome");
+      if (segForm.ordem < 0) throw new Error("Ordem não pode ser negativa");
+
+      const payload: any = {
+        codigo,
+        nome,
+        descricao: descricao || null,
+        ordem: Number(segForm.ordem) || 0,
+        ativo: true,
+      };
+      const { data, error } = await (supabase.from as any)("segmentos")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data?.id as string | undefined;
+    },
+    onSuccess: async (newId) => {
+      await qc.invalidateQueries({ queryKey: ["segmentos"] });
+      toast.success("Segmento criado");
+      setSegOpen(false);
+      setSegForm({ codigo: "", nome: "", descricao: "", ordem: 0 });
+      if (newId) setSegmentoId(newId);
+    },
+    onError: (err: any) => {
+      const msg = String(err?.message || "");
+      if (err?.code === "42501" || msg.includes("row-level security") || msg.includes("permission")) {
+        toast.error("Acesso negado: apenas administradores podem criar segmentos.");
+      } else if (err?.code === "23505" || msg.includes("duplicate") || msg.includes("unique")) {
+        toast.error("Já existe um segmento com este código ou nome.");
+      } else {
+        toast.error(msg || "Erro ao criar segmento");
+      }
+    },
+  });
+
   const upsert = useMutation({
     mutationFn: async () => {
       if (!segmentoId) throw new Error("Selecione um segmento");
