@@ -398,3 +398,39 @@ COMMIT;
 -- FROM information_schema.role_routine_grants
 -- WHERE routine_schema = 'public'
 --   AND routine_name = 'set_cliente_modalidade_principal';
+
+-- 13. Definição das três funções (security definer + search_path)
+-- SELECT n.nspname, p.proname,
+--        pg_get_function_identity_arguments(p.oid) AS args,
+--        p.prosecdef AS security_definer,
+--        p.proconfig AS config_search_path
+-- FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+-- WHERE n.nspname = 'public'
+--   AND p.proname IN (
+--     'validar_coerencia_cliente_modalidade',
+--     'proteger_alteracao_segmento_cliente',
+--     'set_cliente_modalidade_principal'
+--   )
+-- ORDER BY p.proname;
+
+-- 14. Grants/revokes das funções auxiliares (devem aparecer apenas service_role / postgres)
+-- SELECT routine_name, grantee, privilege_type
+-- FROM information_schema.role_routine_grants
+-- WHERE routine_schema = 'public'
+--   AND routine_name IN (
+--     'validar_coerencia_cliente_modalidade',
+--     'proteger_alteracao_segmento_cliente'
+--   )
+-- ORDER BY routine_name, grantee;
+
+-- 15. Teste conceitual: tentativa de vínculo com modalidade inativa deve falhar
+-- WITH alvo AS (
+--   SELECT c.id AS cliente_id, m.id AS modalidade_id
+--   FROM public.clientes c
+--   JOIN public.modalidades_atuacao m ON m.segmento_id = c.segmento_id
+--   WHERE m.ativo = false
+--   LIMIT 1
+-- )
+-- INSERT INTO public.cliente_modalidades_atuacao (cliente_id, modalidade_atuacao_id)
+-- SELECT cliente_id, modalidade_id FROM alvo;
+-- -- Esperado: ERROR "A modalidade selecionada está inativa e não pode ser vinculada ao cliente."
