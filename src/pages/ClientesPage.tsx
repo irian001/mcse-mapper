@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import { fetchClientes, fetchExercicios, fetchParametros } from "@/lib/supabase-queries";
 import { useSegmentos } from "@/hooks/useSegmentos";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import ClienteModalidadesDialog from "@/components/cliente/ClienteModalidadesDialog";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Pencil, Building2, Calendar, Settings, Search, MapPin, User } from "lucide-react";
+import { Plus, Pencil, Building2, Calendar, Settings, Search, MapPin, User, Network } from "lucide-react";
 
 type StatusCliente = "ativo" | "inativo" | "prospecto";
 type StatusExercicio = "aberto" | "em_andamento" | "fechado" | "arquivado";
@@ -50,7 +52,10 @@ const UF_LIST = [
 export default function ClientesPage() {
   const qc = useQueryClient();
   const { data: segmentos = [] } = useSegmentos();
+  const { data: profile } = useUserProfile();
+  const isAdmin = profile?.auditor?.perfil_acesso === "admin";
   const { data: clientes = [] } = useQuery({ queryKey: ["clientes"], queryFn: async () => { const { data } = await fetchClientes(); return data || []; } });
+  const segmentosMap = useMemo(() => new Map(segmentos.map(s => [s.id, s])), [segmentos]);
 
   const [clienteDialog, setClienteDialog] = useState(false);
   const [editCliente, setEditCliente] = useState<any>(null);
@@ -58,6 +63,8 @@ export default function ClientesPage() {
   const [buscandoCep, setBuscandoCep] = useState(false);
 
   const [selectedCliente, setSelectedCliente] = useState<any>(null);
+  const [modalidadesDialog, setModalidadesDialog] = useState(false);
+  const selectedSegmento = selectedCliente?.segmento_id ? segmentosMap.get(selectedCliente.segmento_id) || null : null;
 
   // Exercicios
   const { data: exercicios = [] } = useQuery({
@@ -109,9 +116,11 @@ export default function ClientesPage() {
       const payload: any = { ...clienteForm };
       if (segmentos.length === 0) delete payload.segmento_id;
       if (editCliente) {
-        await supabase.from("clientes").update(payload).eq("id", editCliente.id);
+        const { error } = await supabase.from("clientes").update(payload).eq("id", editCliente.id);
+        if (error) throw error;
       } else {
-        await supabase.from("clientes").insert(payload);
+        const { error } = await supabase.from("clientes").insert(payload);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
@@ -121,7 +130,17 @@ export default function ClientesPage() {
       if (editCliente && selectedCliente?.id === editCliente.id) {
         setSelectedCliente({ ...selectedCliente, ...clienteForm });
       }
-    }
+    },
+    onError: (err: any) => {
+      const msg = String(err?.message || "");
+      if (msg.includes("segmento do cliente") || msg.includes("modalidades ativas incompatíveis") || msg.includes("modalidades ativas incompat")) {
+        toast.error("O segmento não pode ser alterado enquanto o cliente possuir modalidades ativas incompatíveis. Inative ou ajuste as modalidades antes de alterar o segmento.");
+      } else if (err?.code === "42501" || msg.includes("row-level security") || msg.includes("permission")) {
+        toast.error("Acesso negado para salvar o cliente.");
+      } else {
+        toast.error(msg || "Erro ao salvar cliente");
+      }
+    },
   });
 
   const saveExercicio = useMutation({
@@ -210,12 +229,18 @@ export default function ClientesPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-lg flex items-center gap-2"><Building2 size={18} />{selectedCliente.razao_social}</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => openEditCliente(selectedCliente)}><Pencil size={14} className="mr-1" /> Editar</Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setModalidadesDialog(true)}>
+                      <Network size={14} className="mr-1" /> Modalidades de Atuação
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => openEditCliente(selectedCliente)}><Pencil size={14} className="mr-1" /> Editar</Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground space-y-3">
                   <div className="grid grid-cols-2 gap-2">
                     <div>CNPJ: <span className="font-mono text-foreground">{selectedCliente.cnpj}</span></div>
                     <div>Nome Fantasia: <span className="text-foreground">{selectedCliente.nome_fantasia || "—"}</span></div>
+                    <div>Segmento: <span className="text-foreground">{selectedSegmento?.nome || "—"}</span></div>
                   </div>
                   {(selectedCliente.logradouro || selectedCliente.cidade) && (
                     <div className="border-t pt-2">
@@ -387,6 +412,14 @@ export default function ClientesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ClienteModalidadesDialog
+        open={modalidadesDialog}
+        onOpenChange={setModalidadesDialog}
+        cliente={selectedCliente}
+        segmento={selectedSegmento}
+        isAdmin={isAdmin}
+      />
 
       {/* Exercicio Dialog */}
       <Dialog open={exercicioDialog} onOpenChange={setExercicioDialog}>
