@@ -177,7 +177,7 @@ CREATE OR REPLACE FUNCTION public.proteger_alteracao_segmento_cliente()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   v_qtde_ativas        integer;
