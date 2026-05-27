@@ -47,6 +47,52 @@ export default function SegmentosModalidadesPage() {
   const [editing, setEditing] = useState<ModalidadeAtuacao | null>(null);
   const [form, setForm] = useState(emptyForm);
 
+  // --- Novo Segmento (admin) ---
+  const [segOpen, setSegOpen] = useState(false);
+  const [segForm, setSegForm] = useState({ codigo: "", nome: "", descricao: "", ordem: 0 });
+
+  const createSegmento = useMutation({
+    mutationFn: async () => {
+      const codigo = segForm.codigo.trim();
+      const nome = segForm.nome.trim();
+      const descricao = segForm.descricao.trim();
+      if (!codigo) throw new Error("Informe o código");
+      if (!nome) throw new Error("Informe o nome");
+      if (segForm.ordem < 0) throw new Error("Ordem não pode ser negativa");
+
+      const payload: any = {
+        codigo,
+        nome,
+        descricao: descricao || null,
+        ordem: Number(segForm.ordem) || 0,
+        ativo: true,
+      };
+      const { data, error } = await (supabase.from as any)("segmentos")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data?.id as string | undefined;
+    },
+    onSuccess: async (newId) => {
+      await qc.invalidateQueries({ queryKey: ["segmentos"] });
+      toast.success("Segmento criado");
+      setSegOpen(false);
+      setSegForm({ codigo: "", nome: "", descricao: "", ordem: 0 });
+      if (newId) setSegmentoId(newId);
+    },
+    onError: (err: any) => {
+      const msg = String(err?.message || "");
+      if (err?.code === "42501" || msg.includes("row-level security") || msg.includes("permission")) {
+        toast.error("Acesso negado: apenas administradores podem criar segmentos.");
+      } else if (err?.code === "23505" || msg.includes("duplicate") || msg.includes("unique")) {
+        toast.error("Já existe um segmento com este código ou nome.");
+      } else {
+        toast.error(msg || "Erro ao criar segmento");
+      }
+    },
+  });
+
   const upsert = useMutation({
     mutationFn: async () => {
       if (!segmentoId) throw new Error("Selecione um segmento");
@@ -135,18 +181,24 @@ export default function SegmentosModalidadesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
         {/* Painel de Segmentos */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base flex items-center gap-2">
               <Layers size={16} /> Segmentos
             </CardTitle>
+            {isAdmin && (
+              <Button size="sm" onClick={() => setSegOpen(true)}>
+                <Plus size={14} className="mr-1" /> Novo segmento
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground flex gap-2">
               <Info size={14} className="shrink-0 mt-0.5" />
               <span>
-                A manutenção de segmentos será tratada em etapa posterior, considerando vínculos existentes com clientes, estruturas e produtos.
+                Novos segmentos podem ser cadastrados por administrador. Alterações ou inativação de segmentos já utilizados serão tratadas em etapa posterior, considerando vínculos com clientes, estruturas e produtos.
               </span>
             </div>
+
 
             {loadingSeg ? (
               <p className="text-sm text-muted-foreground">Carregando segmentos...</p>
@@ -362,6 +414,71 @@ export default function SegmentosModalidadesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Novo Segmento */}
+      <Dialog
+        open={segOpen}
+        onOpenChange={(v) => {
+          setSegOpen(v);
+          if (!v) setSegForm({ codigo: "", nome: "", descricao: "", ordem: 0 });
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Novo segmento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground flex gap-2">
+              <Info size={14} className="shrink-0 mt-0.5" />
+              <span>
+                O código identifica tecnicamente o segmento e não deverá ser alterado após sua utilização em clientes, estruturas ou produtos.
+              </span>
+            </div>
+            <div className="grid grid-cols-[1fr_120px] gap-3">
+              <div>
+                <Label>Código *</Label>
+                <Input
+                  value={segForm.codigo}
+                  onChange={(e) => setSegForm({ ...segForm, codigo: e.target.value })}
+                  placeholder="Ex.: telecomunicacoes"
+                />
+              </div>
+              <div>
+                <Label>Ordem</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={segForm.ordem}
+                  onChange={(e) => setSegForm({ ...segForm, ordem: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Nome *</Label>
+              <Input
+                value={segForm.nome}
+                onChange={(e) => setSegForm({ ...segForm, nome: e.target.value })}
+                placeholder="Nome do segmento"
+              />
+            </div>
+            <div>
+              <Label>Descrição</Label>
+              <Textarea
+                rows={3}
+                value={segForm.descricao}
+                onChange={(e) => setSegForm({ ...segForm, descricao: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSegOpen(false)}>Cancelar</Button>
+            <Button onClick={() => createSegmento.mutate()} disabled={createSegmento.isPending}>
+              Criar segmento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
