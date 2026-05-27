@@ -114,15 +114,19 @@ CREATE TRIGGER update_cliente_modalidades_atuacao_updated_at
 -- -----------------------------------------------------------------------------
 -- PASSO 5 — VALIDAÇÃO DE COERÊNCIA cliente.segmento_id × modalidade.segmento_id
 -- -----------------------------------------------------------------------------
+-- Observação de segurança: SECURITY DEFINER com SET search_path = ''.
+-- Toda referência a objetos é qualificada com o schema public para evitar
+-- captura de search_path por schemas hostis.
 CREATE OR REPLACE FUNCTION public.validar_coerencia_cliente_modalidade()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
-  v_cliente_segmento_id   uuid;
+  v_cliente_segmento_id    uuid;
   v_modalidade_segmento_id uuid;
+  v_modalidade_ativa       boolean;
 BEGIN
   -- Permite inativação mesmo em caso de inconsistência preexistente
   IF NEW.ativo = false THEN
@@ -137,7 +141,8 @@ BEGIN
     RAISE EXCEPTION 'O cliente não possui segmento definido. Defina o segmento antes de vincular modalidades.';
   END IF;
 
-  SELECT m.segmento_id INTO v_modalidade_segmento_id
+  SELECT m.segmento_id, m.ativo
+    INTO v_modalidade_segmento_id, v_modalidade_ativa
   FROM public.modalidades_atuacao m
   WHERE m.id = NEW.modalidade_atuacao_id;
 
@@ -147,6 +152,11 @@ BEGIN
 
   IF v_cliente_segmento_id <> v_modalidade_segmento_id THEN
     RAISE EXCEPTION 'A modalidade selecionada não pertence ao segmento atual do cliente.';
+  END IF;
+
+  -- Bloqueia INSERT ou reativação quando a modalidade está inativa
+  IF v_modalidade_ativa IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'A modalidade selecionada está inativa e não pode ser vinculada ao cliente.';
   END IF;
 
   RETURN NEW;
