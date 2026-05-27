@@ -181,18 +181,24 @@ export default function SegmentosModalidadesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
         {/* Painel de Segmentos */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base flex items-center gap-2">
               <Layers size={16} /> Segmentos
             </CardTitle>
+            {isAdmin && (
+              <Button size="sm" onClick={() => setSegOpen(true)}>
+                <Plus size={14} className="mr-1" /> Novo segmento
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground flex gap-2">
               <Info size={14} className="shrink-0 mt-0.5" />
               <span>
-                A manutenção de segmentos será tratada em etapa posterior, considerando vínculos existentes com clientes, estruturas e produtos.
+                Novos segmentos podem ser cadastrados por administrador. Alterações ou inativação de segmentos já utilizados serão tratadas em etapa posterior, considerando vínculos com clientes, estruturas e produtos.
               </span>
             </div>
+
 
             {loadingSeg ? (
               <p className="text-sm text-muted-foreground">Carregando segmentos...</p>
