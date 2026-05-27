@@ -230,7 +230,7 @@ CREATE OR REPLACE FUNCTION public.set_cliente_modalidade_principal(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   v_cliente_id uuid;
