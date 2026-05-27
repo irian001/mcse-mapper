@@ -15,8 +15,8 @@
 --
 --  NÃO DESTRUTIVO: cria apenas a nova tabela, função RPC e triggers
 --  associadas. Nenhuma tabela existente é alterada estruturalmente;
---  apenas um trigger de proteção é adicionado em public.clientes para
---  bloquear mudanças incoerentes de segmento_id.
+--  apenas triggers de proteção são adicionados em public.clientes e
+--  public.modalidades_atuacao para bloquear mudanças incoerentes.
 --
 --  EXECUTAR MANUALMENTE NO SQL EDITOR DO SUPABASE EXTERNO.
 -- =============================================================================
@@ -128,8 +128,21 @@ DECLARE
   v_modalidade_segmento_id uuid;
   v_modalidade_ativa       boolean;
 BEGIN
-  -- Permite inativação mesmo em caso de inconsistência preexistente
-  IF NEW.ativo = false THEN
+  IF TG_OP = 'UPDATE'
+     AND (
+       NEW.cliente_id IS DISTINCT FROM OLD.cliente_id
+       OR NEW.modalidade_atuacao_id IS DISTINCT FROM OLD.modalidade_atuacao_id
+     ) THEN
+    RAISE EXCEPTION 'Não é permitido alterar o cliente ou a modalidade de um vínculo existente. Inative o vínculo anterior e crie ou reative o vínculo correto.';
+  END IF;
+
+  -- Permite inativação legítima sem exigir que a modalidade ainda esteja ativa.
+  -- As chaves do vínculo já foram protegidas acima.
+  IF TG_OP = 'UPDATE'
+     AND OLD.ativo = true
+     AND NEW.ativo = false
+     AND NEW.cliente_id = OLD.cliente_id
+     AND NEW.modalidade_atuacao_id = OLD.modalidade_atuacao_id THEN
     RETURN NEW;
   END IF;
 
@@ -154,8 +167,8 @@ BEGIN
     RAISE EXCEPTION 'A modalidade selecionada não pertence ao segmento atual do cliente.';
   END IF;
 
-  -- Bloqueia INSERT ou reativação quando a modalidade está inativa
-  IF v_modalidade_ativa IS DISTINCT FROM true THEN
+  -- Bloqueia INSERT/UPDATE cujo resultado ativo=true quando a modalidade está inativa
+  IF NEW.ativo = true AND v_modalidade_ativa IS DISTINCT FROM true THEN
     RAISE EXCEPTION 'A modalidade selecionada está inativa e não pode ser vinculada ao cliente.';
   END IF;
 
@@ -222,7 +235,40 @@ CREATE TRIGGER trg_proteger_alteracao_segmento_cliente
   FOR EACH ROW EXECUTE FUNCTION public.proteger_alteracao_segmento_cliente();
 
 -- -----------------------------------------------------------------------------
--- PASSO 7 — FUNÇÃO RPC: definir modalidade principal de forma atômica
+-- PASSO 7 — PROTEÇÃO NA ALTERAÇÃO DE modalidades_atuacao.ativo/segmento_id
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.proteger_modalidade_com_clientes_ativos()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF (OLD.ativo = true AND NEW.ativo = false)
+     OR NEW.segmento_id IS DISTINCT FROM OLD.segmento_id THEN
+    IF EXISTS (
+      SELECT 1
+      FROM public.cliente_modalidades_atuacao cma
+      WHERE cma.modalidade_atuacao_id = OLD.id
+        AND cma.ativo = true
+    ) THEN
+      RAISE EXCEPTION 'A modalidade não pode ser inativada ou transferida de segmento enquanto houver clientes ativos vinculados. Inative os vínculos dos clientes primeiro.';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_proteger_modalidade_com_clientes_ativos
+  ON public.modalidades_atuacao;
+
+CREATE TRIGGER trg_proteger_modalidade_com_clientes_ativos
+  BEFORE UPDATE OF ativo, segmento_id ON public.modalidades_atuacao
+  FOR EACH ROW EXECUTE FUNCTION public.proteger_modalidade_com_clientes_ativos();
+
+-- -----------------------------------------------------------------------------
+-- PASSO 8 — FUNÇÃO RPC: definir modalidade principal de forma atômica
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.set_cliente_modalidade_principal(
   p_cliente_modalidade_id uuid
@@ -266,7 +312,7 @@ END;
 $$;
 
 -- -----------------------------------------------------------------------------
--- PASSO 8 — PERMISSÕES (GRANT)
+-- PASSO 9 — PERMISSÕES (GRANT)
 -- -----------------------------------------------------------------------------
 REVOKE ALL ON public.cliente_modalidades_atuacao FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.cliente_modalidades_atuacao TO authenticated;
@@ -277,6 +323,8 @@ REVOKE ALL ON FUNCTION public.validar_coerencia_cliente_modalidade()
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.proteger_alteracao_segmento_cliente()
   FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.proteger_modalidade_com_clientes_ativos()
+  FROM PUBLIC, anon, authenticated;
 
 -- RPC chamada pelo frontend (autorização interna por public.is_admin())
 REVOKE ALL ON FUNCTION public.set_cliente_modalidade_principal(uuid) FROM PUBLIC, anon;
@@ -284,7 +332,7 @@ GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO authe
 GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO service_role;
 
 -- -----------------------------------------------------------------------------
--- PASSO 9 — RLS
+-- PASSO 10 — RLS
 -- -----------------------------------------------------------------------------
 ALTER TABLE public.cliente_modalidades_atuacao ENABLE ROW LEVEL SECURITY;
 
@@ -293,6 +341,8 @@ ALTER TABLE public.cliente_modalidades_atuacao ENABLE ROW LEVEL SECURITY;
 -- existente no projeto que identifica o auditor interno autorizado. É mais
 -- restritiva do que "NOT is_cliente_usuario()", pois também exclui usuários
 -- autenticados sem vínculo de auditor.
+-- Limitação futura: atualmente qualquer auditor interno reconhecido poderá
+-- consultar; em evolução posterior, avaliar filtro por carteira ou clientes acessíveis.
 DROP POLICY IF EXISTS select_cliente_modalidades ON public.cliente_modalidades_atuacao;
 CREATE POLICY select_cliente_modalidades ON public.cliente_modalidades_atuacao
   FOR SELECT TO authenticated
@@ -322,17 +372,18 @@ CREATE POLICY delete_cliente_modalidades ON public.cliente_modalidades_atuacao
   USING (public.is_admin());
 
 -- -----------------------------------------------------------------------------
--- PASSO 10 — RECARREGAR CACHE DO POSTGREST
+-- PASSO 11 — RECARREGAR CACHE DO POSTGREST
 -- -----------------------------------------------------------------------------
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
 
 -- =============================================================================
---  FIM DO SCRIPT — VALIDAÇÕES PÓS-EXECUÇÃO (descomente conforme necessário)
+--  FIM DO SCRIPT — VALIDAÇÕES PÓS-EXECUÇÃO
+--  Apenas consultas de leitura. Descomente conforme necessário.
 -- =============================================================================
 
--- 1. Existência da tabela
+-- 1. Existência da tabela public.cliente_modalidades_atuacao
 -- SELECT to_regclass('public.cliente_modalidades_atuacao') AS tabela_existe;
 
 -- 2. Colunas
@@ -342,12 +393,14 @@ COMMIT;
 -- ORDER BY ordinal_position;
 
 -- 3. Foreign keys
--- SELECT conname, pg_get_constraintdef(oid)
+-- SELECT conname, pg_get_constraintdef(oid) AS definition
 -- FROM pg_constraint
--- WHERE conrelid = 'public.cliente_modalidades_atuacao'::regclass AND contype = 'f';
+-- WHERE conrelid = 'public.cliente_modalidades_atuacao'::regclass
+--   AND contype = 'f'
+-- ORDER BY conname;
 
--- 4. Constraints (todas)
--- SELECT conname, contype, pg_get_constraintdef(oid)
+-- 4. Constraints
+-- SELECT conname, contype, pg_get_constraintdef(oid) AS definition
 -- FROM pg_constraint
 -- WHERE conrelid = 'public.cliente_modalidades_atuacao'::regclass
 -- ORDER BY contype, conname;
@@ -355,82 +408,105 @@ COMMIT;
 -- 5. Índices
 -- SELECT indexname, indexdef
 -- FROM pg_indexes
--- WHERE schemaname = 'public' AND tablename = 'cliente_modalidades_atuacao'
+-- WHERE schemaname = 'public'
+--   AND tablename = 'cliente_modalidades_atuacao'
 -- ORDER BY indexname;
 
--- 6/7. Triggers da tabela (updated_at e coerência)
+-- 6. Trigger de updated_at
 -- SELECT trigger_name, action_timing, event_manipulation, action_statement
 -- FROM information_schema.triggers
 -- WHERE trigger_schema = 'public'
 --   AND event_object_table = 'cliente_modalidades_atuacao'
--- ORDER BY trigger_name;
+--   AND trigger_name = 'update_cliente_modalidades_atuacao_updated_at';
 
--- 8. Trigger de proteção em clientes.segmento_id
+-- 7. Trigger trg_validar_coerencia_cliente_modalidade
+-- SELECT trigger_name, action_timing, event_manipulation, action_statement
+-- FROM information_schema.triggers
+-- WHERE trigger_schema = 'public'
+--   AND event_object_table = 'cliente_modalidades_atuacao'
+--   AND trigger_name = 'trg_validar_coerencia_cliente_modalidade';
+
+-- 8. Trigger trg_proteger_alteracao_segmento_cliente
 -- SELECT trigger_name, action_timing, event_manipulation, action_statement
 -- FROM information_schema.triggers
 -- WHERE trigger_schema = 'public'
 --   AND event_object_table = 'clientes'
 --   AND trigger_name = 'trg_proteger_alteracao_segmento_cliente';
 
--- 9. RLS habilitada
--- SELECT relname, relrowsecurity, relforcerowsecurity
--- FROM pg_class WHERE oid = 'public.cliente_modalidades_atuacao'::regclass;
+-- 9. Trigger trg_proteger_modalidade_com_clientes_ativos
+-- SELECT trigger_name, action_timing, event_manipulation, action_statement
+-- FROM information_schema.triggers
+-- WHERE trigger_schema = 'public'
+--   AND event_object_table = 'modalidades_atuacao'
+--   AND trigger_name = 'trg_proteger_modalidade_com_clientes_ativos';
 
--- 10. Policies
--- SELECT policyname, cmd, roles, qual, with_check
--- FROM pg_policies
--- WHERE schemaname = 'public' AND tablename = 'cliente_modalidades_atuacao'
--- ORDER BY policyname;
-
--- 11. Função set_cliente_modalidade_principal
+-- 10. Funções criadas
 -- SELECT n.nspname, p.proname, pg_get_function_identity_arguments(p.oid) AS args,
 --        pg_get_function_result(p.oid) AS result
--- FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
--- WHERE n.nspname = 'public' AND p.proname = 'set_cliente_modalidade_principal';
-
--- 12. Grants da tabela e da função
--- SELECT grantee, privilege_type
--- FROM information_schema.role_table_grants
--- WHERE table_schema = 'public' AND table_name = 'cliente_modalidades_atuacao'
--- ORDER BY grantee, privilege_type;
---
--- SELECT grantee, privilege_type
--- FROM information_schema.role_routine_grants
--- WHERE routine_schema = 'public'
---   AND routine_name = 'set_cliente_modalidade_principal';
-
--- 13. Definição das três funções (security definer + search_path)
--- SELECT n.nspname, p.proname,
---        pg_get_function_identity_arguments(p.oid) AS args,
---        p.prosecdef AS security_definer,
---        p.proconfig AS config_search_path
--- FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+-- FROM pg_proc p
+-- JOIN pg_namespace n ON n.oid = p.pronamespace
 -- WHERE n.nspname = 'public'
 --   AND p.proname IN (
 --     'validar_coerencia_cliente_modalidade',
 --     'proteger_alteracao_segmento_cliente',
+--     'proteger_modalidade_com_clientes_ativos',
 --     'set_cliente_modalidade_principal'
 --   )
 -- ORDER BY p.proname;
 
--- 14. Grants/revokes das funções auxiliares (devem aparecer apenas service_role / postgres)
+-- 11. SECURITY DEFINER e search_path das funções
+-- SELECT n.nspname, p.proname,
+--        pg_get_function_identity_arguments(p.oid) AS args,
+--        p.prosecdef AS security_definer,
+--        p.proconfig AS config_search_path
+-- FROM pg_proc p
+-- JOIN pg_namespace n ON n.oid = p.pronamespace
+-- WHERE n.nspname = 'public'
+--   AND p.proname IN (
+--     'validar_coerencia_cliente_modalidade',
+--     'proteger_alteracao_segmento_cliente',
+--     'proteger_modalidade_com_clientes_ativos',
+--     'set_cliente_modalidade_principal'
+--   )
+-- ORDER BY p.proname;
+
+-- 12. Grants e revokes das funções
 -- SELECT routine_name, grantee, privilege_type
 -- FROM information_schema.role_routine_grants
 -- WHERE routine_schema = 'public'
 --   AND routine_name IN (
 --     'validar_coerencia_cliente_modalidade',
---     'proteger_alteracao_segmento_cliente'
+--     'proteger_alteracao_segmento_cliente',
+--     'proteger_modalidade_com_clientes_ativos',
+--     'set_cliente_modalidade_principal'
 --   )
--- ORDER BY routine_name, grantee;
+-- ORDER BY routine_name, grantee, privilege_type;
 
--- 15. Teste conceitual: tentativa de vínculo com modalidade inativa deve falhar
--- WITH alvo AS (
---   SELECT c.id AS cliente_id, m.id AS modalidade_id
---   FROM public.clientes c
---   JOIN public.modalidades_atuacao m ON m.segmento_id = c.segmento_id
---   WHERE m.ativo = false
---   LIMIT 1
--- )
--- INSERT INTO public.cliente_modalidades_atuacao (cliente_id, modalidade_atuacao_id)
--- SELECT cliente_id, modalidade_id FROM alvo;
--- -- Esperado: ERROR "A modalidade selecionada está inativa e não pode ser vinculada ao cliente."
+-- 13. RLS habilitada
+-- SELECT relname, relrowsecurity, relforcerowsecurity
+-- FROM pg_class
+-- WHERE oid = 'public.cliente_modalidades_atuacao'::regclass;
+
+-- 14. Policies
+-- SELECT policyname, cmd, roles, qual, with_check
+-- FROM pg_policies
+-- WHERE schemaname = 'public'
+--   AND tablename = 'cliente_modalidades_atuacao'
+-- ORDER BY policyname;
+
+-- 15. Existência da função public.get_my_auditor_id(), usada na policy SELECT
+-- SELECT n.nspname, p.proname, pg_get_function_identity_arguments(p.oid) AS args,
+--        pg_get_function_result(p.oid) AS result
+-- FROM pg_proc p
+-- JOIN pg_namespace n ON n.oid = p.pronamespace
+-- WHERE n.nspname = 'public'
+--   AND p.proname = 'get_my_auditor_id';
+
+-- 16. Existência e assinatura da RPC public.set_cliente_modalidade_principal(uuid)
+-- SELECT n.nspname, p.proname, pg_get_function_identity_arguments(p.oid) AS args,
+--        pg_get_function_result(p.oid) AS result
+-- FROM pg_proc p
+-- JOIN pg_namespace n ON n.oid = p.pronamespace
+-- WHERE n.nspname = 'public'
+--   AND p.proname = 'set_cliente_modalidade_principal'
+--   AND pg_get_function_identity_arguments(p.oid) = 'p_cliente_modalidade_id uuid';
