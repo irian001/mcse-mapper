@@ -114,15 +114,19 @@ CREATE TRIGGER update_cliente_modalidades_atuacao_updated_at
 -- -----------------------------------------------------------------------------
 -- PASSO 5 — VALIDAÇÃO DE COERÊNCIA cliente.segmento_id × modalidade.segmento_id
 -- -----------------------------------------------------------------------------
+-- Observação de segurança: SECURITY DEFINER com SET search_path = ''.
+-- Toda referência a objetos é qualificada com o schema public para evitar
+-- captura de search_path por schemas hostis.
 CREATE OR REPLACE FUNCTION public.validar_coerencia_cliente_modalidade()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
-  v_cliente_segmento_id   uuid;
+  v_cliente_segmento_id    uuid;
   v_modalidade_segmento_id uuid;
+  v_modalidade_ativa       boolean;
 BEGIN
   -- Permite inativação mesmo em caso de inconsistência preexistente
   IF NEW.ativo = false THEN
@@ -137,7 +141,8 @@ BEGIN
     RAISE EXCEPTION 'O cliente não possui segmento definido. Defina o segmento antes de vincular modalidades.';
   END IF;
 
-  SELECT m.segmento_id INTO v_modalidade_segmento_id
+  SELECT m.segmento_id, m.ativo
+    INTO v_modalidade_segmento_id, v_modalidade_ativa
   FROM public.modalidades_atuacao m
   WHERE m.id = NEW.modalidade_atuacao_id;
 
@@ -147,6 +152,11 @@ BEGIN
 
   IF v_cliente_segmento_id <> v_modalidade_segmento_id THEN
     RAISE EXCEPTION 'A modalidade selecionada não pertence ao segmento atual do cliente.';
+  END IF;
+
+  -- Bloqueia INSERT ou reativação quando a modalidade está inativa
+  IF v_modalidade_ativa IS DISTINCT FROM true THEN
+    RAISE EXCEPTION 'A modalidade selecionada está inativa e não pode ser vinculada ao cliente.';
   END IF;
 
   RETURN NEW;
@@ -167,7 +177,7 @@ CREATE OR REPLACE FUNCTION public.proteger_alteracao_segmento_cliente()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   v_qtde_ativas        integer;
@@ -220,7 +230,7 @@ CREATE OR REPLACE FUNCTION public.set_cliente_modalidade_principal(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
   v_cliente_id uuid;
@@ -262,6 +272,13 @@ REVOKE ALL ON public.cliente_modalidades_atuacao FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.cliente_modalidades_atuacao TO authenticated;
 GRANT ALL ON public.cliente_modalidades_atuacao TO service_role;
 
+-- Funções auxiliares usadas APENAS por triggers: bloquear execução direta
+REVOKE ALL ON FUNCTION public.validar_coerencia_cliente_modalidade()
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.proteger_alteracao_segmento_cliente()
+  FROM PUBLIC, anon, authenticated;
+
+-- RPC chamada pelo frontend (autorização interna por public.is_admin())
 REVOKE ALL ON FUNCTION public.set_cliente_modalidade_principal(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO service_role;
@@ -271,11 +288,21 @@ GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO servi
 -- -----------------------------------------------------------------------------
 ALTER TABLE public.cliente_modalidades_atuacao ENABLE ROW LEVEL SECURITY;
 
--- SELECT: admin OU usuário interno (NÃO cliente externo)
+-- SELECT: admin OU auditor interno vinculado (NÃO cliente externo, NÃO usuário sem vínculo).
+-- Adota public.get_my_auditor_id() IS NOT NULL — função SECURITY DEFINER já
+-- existente no projeto que identifica o auditor interno autorizado. É mais
+-- restritiva do que "NOT is_cliente_usuario()", pois também exclui usuários
+-- autenticados sem vínculo de auditor.
 DROP POLICY IF EXISTS select_cliente_modalidades ON public.cliente_modalidades_atuacao;
 CREATE POLICY select_cliente_modalidades ON public.cliente_modalidades_atuacao
   FOR SELECT TO authenticated
-  USING (public.is_admin() OR NOT public.is_cliente_usuario());
+  USING (
+    public.is_admin()
+    OR (
+      public.get_my_auditor_id() IS NOT NULL
+      AND NOT public.is_cliente_usuario()
+    )
+  );
 
 -- INSERT/UPDATE/DELETE: apenas admin
 DROP POLICY IF EXISTS insert_cliente_modalidades ON public.cliente_modalidades_atuacao;
@@ -371,3 +398,39 @@ COMMIT;
 -- FROM information_schema.role_routine_grants
 -- WHERE routine_schema = 'public'
 --   AND routine_name = 'set_cliente_modalidade_principal';
+
+-- 13. Definição das três funções (security definer + search_path)
+-- SELECT n.nspname, p.proname,
+--        pg_get_function_identity_arguments(p.oid) AS args,
+--        p.prosecdef AS security_definer,
+--        p.proconfig AS config_search_path
+-- FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+-- WHERE n.nspname = 'public'
+--   AND p.proname IN (
+--     'validar_coerencia_cliente_modalidade',
+--     'proteger_alteracao_segmento_cliente',
+--     'set_cliente_modalidade_principal'
+--   )
+-- ORDER BY p.proname;
+
+-- 14. Grants/revokes das funções auxiliares (devem aparecer apenas service_role / postgres)
+-- SELECT routine_name, grantee, privilege_type
+-- FROM information_schema.role_routine_grants
+-- WHERE routine_schema = 'public'
+--   AND routine_name IN (
+--     'validar_coerencia_cliente_modalidade',
+--     'proteger_alteracao_segmento_cliente'
+--   )
+-- ORDER BY routine_name, grantee;
+
+-- 15. Teste conceitual: tentativa de vínculo com modalidade inativa deve falhar
+-- WITH alvo AS (
+--   SELECT c.id AS cliente_id, m.id AS modalidade_id
+--   FROM public.clientes c
+--   JOIN public.modalidades_atuacao m ON m.segmento_id = c.segmento_id
+--   WHERE m.ativo = false
+--   LIMIT 1
+-- )
+-- INSERT INTO public.cliente_modalidades_atuacao (cliente_id, modalidade_atuacao_id)
+-- SELECT cliente_id, modalidade_id FROM alvo;
+-- -- Esperado: ERROR "A modalidade selecionada está inativa e não pode ser vinculada ao cliente."
