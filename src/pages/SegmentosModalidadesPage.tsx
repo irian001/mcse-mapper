@@ -414,6 +414,71 @@ export default function SegmentosModalidadesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Novo Segmento */}
+      <Dialog
+        open={segOpen}
+        onOpenChange={(v) => {
+          setSegOpen(v);
+          if (!v) setSegForm({ codigo: "", nome: "", descricao: "", ordem: 0 });
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Novo segmento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground flex gap-2">
+              <Info size={14} className="shrink-0 mt-0.5" />
+              <span>
+                O código identifica tecnicamente o segmento e não deverá ser alterado após sua utilização em clientes, estruturas ou produtos.
+              </span>
+            </div>
+            <div className="grid grid-cols-[1fr_120px] gap-3">
+              <div>
+                <Label>Código *</Label>
+                <Input
+                  value={segForm.codigo}
+                  onChange={(e) => setSegForm({ ...segForm, codigo: e.target.value })}
+                  placeholder="Ex.: telecomunicacoes"
+                />
+              </div>
+              <div>
+                <Label>Ordem</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={segForm.ordem}
+                  onChange={(e) => setSegForm({ ...segForm, ordem: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Nome *</Label>
+              <Input
+                value={segForm.nome}
+                onChange={(e) => setSegForm({ ...segForm, nome: e.target.value })}
+                placeholder="Nome do segmento"
+              />
+            </div>
+            <div>
+              <Label>Descrição</Label>
+              <Textarea
+                rows={3}
+                value={segForm.descricao}
+                onChange={(e) => setSegForm({ ...segForm, descricao: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSegOpen(false)}>Cancelar</Button>
+            <Button onClick={() => createSegmento.mutate()} disabled={createSegmento.isPending}>
+              Criar segmento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
