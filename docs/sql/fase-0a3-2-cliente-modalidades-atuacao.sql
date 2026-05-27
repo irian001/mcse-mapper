@@ -272,6 +272,13 @@ REVOKE ALL ON public.cliente_modalidades_atuacao FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.cliente_modalidades_atuacao TO authenticated;
 GRANT ALL ON public.cliente_modalidades_atuacao TO service_role;
 
+-- Funções auxiliares usadas APENAS por triggers: bloquear execução direta
+REVOKE ALL ON FUNCTION public.validar_coerencia_cliente_modalidade()
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.proteger_alteracao_segmento_cliente()
+  FROM PUBLIC, anon, authenticated;
+
+-- RPC chamada pelo frontend (autorização interna por public.is_admin())
 REVOKE ALL ON FUNCTION public.set_cliente_modalidade_principal(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO service_role;
@@ -281,11 +288,21 @@ GRANT EXECUTE ON FUNCTION public.set_cliente_modalidade_principal(uuid) TO servi
 -- -----------------------------------------------------------------------------
 ALTER TABLE public.cliente_modalidades_atuacao ENABLE ROW LEVEL SECURITY;
 
--- SELECT: admin OU usuário interno (NÃO cliente externo)
+-- SELECT: admin OU auditor interno vinculado (NÃO cliente externo, NÃO usuário sem vínculo).
+-- Adota public.get_my_auditor_id() IS NOT NULL — função SECURITY DEFINER já
+-- existente no projeto que identifica o auditor interno autorizado. É mais
+-- restritiva do que "NOT is_cliente_usuario()", pois também exclui usuários
+-- autenticados sem vínculo de auditor.
 DROP POLICY IF EXISTS select_cliente_modalidades ON public.cliente_modalidades_atuacao;
 CREATE POLICY select_cliente_modalidades ON public.cliente_modalidades_atuacao
   FOR SELECT TO authenticated
-  USING (public.is_admin() OR NOT public.is_cliente_usuario());
+  USING (
+    public.is_admin()
+    OR (
+      public.get_my_auditor_id() IS NOT NULL
+      AND NOT public.is_cliente_usuario()
+    )
+  );
 
 -- INSERT/UPDATE/DELETE: apenas admin
 DROP POLICY IF EXISTS insert_cliente_modalidades ON public.cliente_modalidades_atuacao;
