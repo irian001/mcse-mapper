@@ -21,6 +21,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { cn } from "@/lib/utils";
 import MaterialidadeBasesPanel from "./MaterialidadeBasesPanel";
 import TrabalhoRiscosPanel from "./TrabalhoRiscosPanel";
+import TrabalhoPlanejamentoModalidadesPanel from "./TrabalhoPlanejamentoModalidadesPanel";
 
 interface Props {
   open: boolean;
