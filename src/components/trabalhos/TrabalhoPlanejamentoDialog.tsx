@@ -687,6 +687,12 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 <Field label="Premissas Relevantes"><div className="whitespace-pre-wrap">{orDash(planData.premissas_relevantes)}</div></Field>
                 <Field label="Limitações de Escopo"><div className="whitespace-pre-wrap">{orDash(planData.limitacoes_escopo)}</div></Field>
                 <Field label="Observações"><div className="whitespace-pre-wrap">{orDash(planData.observacoes)}</div></Field>
+                <TrabalhoPlanejamentoModalidadesPanel
+                  trabalho={trabalho}
+                  planData={planData}
+                  canEdit={isInterno && !isAprovado && podeAprovarPlanejamento}
+                  canEditReason={motivoSemAlcadaPlan}
+                />
               </div>
             )}
           </TabsContent>
