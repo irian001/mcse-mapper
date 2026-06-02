@@ -463,7 +463,14 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
       setConfirmAprovarPlan(false);
       qc.invalidateQueries({ queryKey: ["trabalho-planejamento", trabalhoId] });
     },
-    onError: (e: any) => toast.error(e.message || "Erro ao aprovar planejamento"),
+    onError: (e: any) => {
+      const msg = String(e?.message || "");
+      if (/modalidade/i.test(msg) && /(inv[aá]lid|inativ)/i.test(msg)) {
+        toast.error("O planejamento possui modalidades de atuação inválidas ou inativas. Ajuste as modalidades antes de aprovar.");
+      } else {
+        toast.error(msg || "Erro ao aprovar planejamento");
+      }
+    },
   });
 
   // ===== Aprovação de Materialidade (Fase 0A.1.5) =====
