@@ -21,6 +21,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { cn } from "@/lib/utils";
 import MaterialidadeBasesPanel from "./MaterialidadeBasesPanel";
 import TrabalhoRiscosPanel from "./TrabalhoRiscosPanel";
+import TrabalhoPlanejamentoModalidadesPanel from "./TrabalhoPlanejamentoModalidadesPanel";
 
 interface Props {
   open: boolean;
@@ -462,7 +463,14 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
       setConfirmAprovarPlan(false);
       qc.invalidateQueries({ queryKey: ["trabalho-planejamento", trabalhoId] });
     },
-    onError: (e: any) => toast.error(e.message || "Erro ao aprovar planejamento"),
+    onError: (e: any) => {
+      const msg = String(e?.message || "");
+      if (/modalidade/i.test(msg) && /(inv[aá]lid|inativ)/i.test(msg)) {
+        toast.error("O planejamento possui modalidades de atuação inválidas ou inativas. Ajuste as modalidades antes de aprovar.");
+      } else {
+        toast.error(msg || "Erro ao aprovar planejamento");
+      }
+    },
   });
 
   // ===== Aprovação de Materialidade (Fase 0A.1.5) =====
@@ -679,6 +687,12 @@ export default function TrabalhoPlanejamentoDialog({ open, onOpenChange, trabalh
                 <Field label="Premissas Relevantes"><div className="whitespace-pre-wrap">{orDash(planData.premissas_relevantes)}</div></Field>
                 <Field label="Limitações de Escopo"><div className="whitespace-pre-wrap">{orDash(planData.limitacoes_escopo)}</div></Field>
                 <Field label="Observações"><div className="whitespace-pre-wrap">{orDash(planData.observacoes)}</div></Field>
+                <TrabalhoPlanejamentoModalidadesPanel
+                  trabalho={trabalho}
+                  planData={planData}
+                  canEdit={isInterno && !isAprovado && podeAprovarPlanejamento}
+                  canEditReason={motivoSemAlcadaPlan}
+                />
               </div>
             )}
           </TabsContent>
