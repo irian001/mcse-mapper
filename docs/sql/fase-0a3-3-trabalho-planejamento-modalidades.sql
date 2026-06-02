@@ -497,19 +497,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-DECLARE
-  v_status_planejamento text;
 BEGIN
-  SELECT tp.status_planejamento
-    INTO v_status_planejamento
-  FROM public.trabalho_planejamento tp
-  WHERE tp.id = OLD.trabalho_planejamento_id;
-
-  IF v_status_planejamento = 'aprovado' THEN
-    RAISE EXCEPTION 'Modalidades do planejamento aprovado nao podem ser excluidas. Use inativacao logica quando aplicavel em planejamento em rascunho.';
-  END IF;
-
-  RETURN OLD;
+  RAISE EXCEPTION 'Modalidades do planejamento nao podem ser excluidas fisicamente. Use inativacao logica com ativo=false.';
 END;
 $$;
 
