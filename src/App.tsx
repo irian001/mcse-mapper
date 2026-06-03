@@ -36,6 +36,7 @@ import AdministracaoHubPage from "@/pages/hubs/AdministracaoHubPage";
 import EmpresaAuditoriaPage from "@/pages/EmpresaAuditoriaPage";
 import EstruturasAuditoriaPage from "@/pages/EstruturasAuditoriaPage";
 import SegmentosModalidadesPage from "@/pages/SegmentosModalidadesPage";
+import ModelosMatrizRiscosPage from "@/pages/ModelosMatrizRiscosPage";
 import NotFound from "@/pages/NotFound";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { ThemeProvider } from "@/hooks/useTheme";
