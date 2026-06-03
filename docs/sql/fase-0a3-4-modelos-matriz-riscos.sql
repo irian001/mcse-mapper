@@ -6,6 +6,13 @@
 --
 --  Esta fase NAO cria itens/riscos do modelo, vinculos com regras ou
 --  procedimentos, nem importa riscos para trabalhos.
+--  Modelos publicados nao devem ser editados livremente; alteracoes
+--  metodologicas devem ocorrer por novo modelo/versao.
+--  Operacoes de saneamento, como arquivar, substituir, remover vigencia e
+--  inativar, devem permanecer possiveis mesmo quando referencias forem
+--  inativadas posteriormente.
+--  Exclusao fisica e bloqueada; arquivamento e o caminho recomendado para
+--  descontinuidade.
 --
 --  Pre-condicoes ja existentes no banco:
 --    - public.segmentos
@@ -241,8 +248,13 @@ BEGIN
   END IF;
 END $$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_mmr_codigo_versao
-  ON public.modelos_matriz_riscos (codigo_modelo, versao);
+DROP INDEX IF EXISTS public.uq_mmr_codigo_versao;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_mmr_codigo_versao_norm
+  ON public.modelos_matriz_riscos (
+    lower(btrim(codigo_modelo)),
+    lower(btrim(versao))
+  );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_mmr_vigente_por_combinacao
   ON public.modelos_matriz_riscos (
@@ -401,7 +413,8 @@ DECLARE
   v_produto_tem_segmento boolean;
   v_campos_metodologicos_alterados boolean := false;
   v_status_alterado boolean := false;
-  v_controle_publicacao_alterado boolean := false;
+  v_campos_publicacao_alterados boolean := false;
+  v_exige_referencias_ativas boolean := false;
 BEGIN
   v_auditor_id := public.get_my_auditor_id();
 
@@ -418,10 +431,6 @@ BEGIN
     RAISE EXCEPTION 'A modalidade de atuacao nao pertence ao segmento informado para o modelo.';
   END IF;
 
-  IF v_modalidade_ativa IS DISTINCT FROM true THEN
-    RAISE EXCEPTION 'A modalidade de atuacao esta inativa e nao pode ser usada no modelo.';
-  END IF;
-
   SELECT p.ativo
     INTO v_produto_ativo
   FROM public.produtos_auditoria p
@@ -429,10 +438,6 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Produto de auditoria nao localizado.';
-  END IF;
-
-  IF v_produto_ativo IS DISTINCT FROM true THEN
-    RAISE EXCEPTION 'O produto de auditoria esta inativo e nao pode ser usado no modelo.';
   END IF;
 
   SELECT EXISTS (
@@ -468,9 +473,6 @@ BEGIN
       RAISE EXCEPTION 'A estrutura de auditoria nao pertence ao segmento informado para o modelo.';
     END IF;
 
-    IF v_estrutura_ativa IS DISTINCT FROM true THEN
-      RAISE EXCEPTION 'A estrutura de auditoria esta inativa e nao pode ser usada no modelo.';
-    END IF;
   END IF;
 
   IF TG_OP = 'INSERT' THEN
@@ -504,11 +506,8 @@ BEGIN
 
     v_status_alterado := NEW.status_modelo IS DISTINCT FROM OLD.status_modelo;
 
-    v_controle_publicacao_alterado :=
-      v_status_alterado
-      OR NEW.vigente IS DISTINCT FROM OLD.vigente
-      OR NEW.ativo IS DISTINCT FROM OLD.ativo
-      OR NEW.publicado_por IS DISTINCT FROM OLD.publicado_por
+    v_campos_publicacao_alterados :=
+      NEW.publicado_por IS DISTINCT FROM OLD.publicado_por
       OR NEW.data_publicacao IS DISTINCT FROM OLD.data_publicacao
       OR NEW.substituido_por_modelo_id IS DISTINCT FROM OLD.substituido_por_modelo_id;
 
@@ -518,14 +517,47 @@ BEGIN
     END IF;
 
     IF OLD.status_modelo = 'rascunho'
-       AND NEW.status_modelo = 'rascunho'
-       AND NOT public.can_manage_modelos_matriz_riscos() THEN
-      RAISE EXCEPTION 'Usuario sem permissao para editar modelos de matriz de riscos em rascunho.';
+       AND NEW.status_modelo = 'rascunho' THEN
+      IF v_campos_publicacao_alterados
+         AND NOT public.can_publish_modelos_matriz_riscos() THEN
+        RAISE EXCEPTION 'Usuario sem permissao para alterar campos de publicacao de modelos de matriz de riscos.';
+      END IF;
+
+      IF NOT public.can_manage_modelos_matriz_riscos() THEN
+        RAISE EXCEPTION 'Usuario sem permissao para editar modelos de matriz de riscos em rascunho.';
+      END IF;
+    ELSE
+      IF (
+        v_status_alterado
+        OR NEW.vigente IS DISTINCT FROM OLD.vigente
+        OR NEW.ativo IS DISTINCT FROM OLD.ativo
+        OR v_campos_publicacao_alterados
+      )
+      AND NOT public.can_publish_modelos_matriz_riscos() THEN
+        RAISE EXCEPTION 'Usuario sem permissao para publicar, arquivar, substituir ou alterar vigencia de modelos de matriz de riscos.';
+      END IF;
+    END IF;
+  END IF;
+
+  v_exige_referencias_ativas :=
+    TG_OP = 'INSERT'
+    OR v_campos_metodologicos_alterados
+    OR (TG_OP = 'UPDATE' AND OLD.status_modelo IS DISTINCT FROM 'publicado' AND NEW.status_modelo = 'publicado')
+    OR NEW.vigente = true
+    OR (TG_OP = 'UPDATE' AND OLD.ativo = false AND NEW.ativo = true);
+
+  IF v_exige_referencias_ativas THEN
+    IF v_modalidade_ativa IS DISTINCT FROM true THEN
+      RAISE EXCEPTION 'A modalidade de atuacao esta inativa e nao pode ser usada para criar, editar, publicar, reativar ou manter vigente o modelo.';
     END IF;
 
-    IF v_controle_publicacao_alterado
-       AND NOT public.can_publish_modelos_matriz_riscos() THEN
-      RAISE EXCEPTION 'Usuario sem permissao para publicar, arquivar ou substituir modelos de matriz de riscos.';
+    IF v_produto_ativo IS DISTINCT FROM true THEN
+      RAISE EXCEPTION 'O produto de auditoria esta inativo e nao pode ser usado para criar, editar, publicar, reativar ou manter vigente o modelo.';
+    END IF;
+
+    IF NEW.estrutura_auditoria_id IS NOT NULL
+       AND v_estrutura_ativa IS DISTINCT FROM true THEN
+      RAISE EXCEPTION 'A estrutura de auditoria esta inativa e nao pode ser usada para criar, editar, publicar, reativar ou manter vigente o modelo.';
     END IF;
   END IF;
 
@@ -796,28 +828,35 @@ COMMIT;
 --   AND tablename = 'modelos_matriz_riscos'
 -- ORDER BY indexname;
 
--- 5) Trigger updated_at
+-- 5) Indice unico normalizado de codigo_modelo + versao
+-- SELECT indexname, indexdef
+-- FROM pg_indexes
+-- WHERE schemaname = 'public'
+--   AND tablename = 'modelos_matriz_riscos'
+--   AND indexname = 'uq_mmr_codigo_versao_norm';
+
+-- 6) Trigger updated_at
 -- SELECT trigger_name, event_manipulation, action_timing, action_statement
 -- FROM information_schema.triggers
 -- WHERE event_object_schema = 'public'
 --   AND event_object_table = 'modelos_matriz_riscos'
 --   AND trigger_name = 'trg_upd_modelos_matriz_riscos';
 
--- 6) Trigger de validacao
+-- 7) Trigger de validacao
 -- SELECT trigger_name, event_manipulation, action_timing, action_statement
 -- FROM information_schema.triggers
 -- WHERE event_object_schema = 'public'
 --   AND event_object_table = 'modelos_matriz_riscos'
 --   AND trigger_name = 'trg_validar_modelo_matriz_riscos';
 
--- 7) Trigger de bloqueio de delete
+-- 8) Trigger de bloqueio de delete
 -- SELECT trigger_name, event_manipulation, action_timing, action_statement
 -- FROM information_schema.triggers
 -- WHERE event_object_schema = 'public'
 --   AND event_object_table = 'modelos_matriz_riscos'
 --   AND trigger_name = 'trg_bloquear_delete_modelos_matriz_riscos';
 
--- 8) Funcoes criadas
+-- 9) Funcoes criadas
 -- SELECT n.nspname AS schema_name, p.proname, pg_get_function_arguments(p.oid) AS arguments
 -- FROM pg_proc p
 -- JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -832,7 +871,7 @@ COMMIT;
 --   )
 -- ORDER BY p.proname;
 
--- 9) SECURITY DEFINER e search_path das funcoes
+-- 10) SECURITY DEFINER e search_path das funcoes
 -- SELECT n.nspname AS schema_name, p.proname, p.prosecdef AS security_definer, p.proconfig
 -- FROM pg_proc p
 -- JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -847,7 +886,7 @@ COMMIT;
 --   )
 -- ORDER BY p.proname;
 
--- 10) Grants/revokes das funcoes
+-- 11) Grants/revokes das funcoes
 -- SELECT routine_schema, routine_name, grantee, privilege_type
 -- FROM information_schema.role_routine_grants
 -- WHERE routine_schema = 'public'
@@ -861,27 +900,27 @@ COMMIT;
 --   )
 -- ORDER BY routine_name, grantee, privilege_type;
 
--- 11) RLS habilitada
+-- 12) RLS habilitada
 -- SELECT schemaname, tablename, rowsecurity
 -- FROM pg_tables
 -- WHERE schemaname = 'public'
 --   AND tablename = 'modelos_matriz_riscos';
 
--- 12) Policies
+-- 13) Policies
 -- SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
 -- FROM pg_policies
 -- WHERE schemaname = 'public'
 --   AND tablename = 'modelos_matriz_riscos'
 -- ORDER BY policyname;
 
--- 13) Grants da tabela
+-- 14) Grants da tabela
 -- SELECT table_schema, table_name, grantee, privilege_type
 -- FROM information_schema.table_privileges
 -- WHERE table_schema = 'public'
 --   AND table_name = 'modelos_matriz_riscos'
 -- ORDER BY grantee, privilege_type;
 
--- 14) Funcoes dependentes
+-- 15) Funcoes dependentes
 -- SELECT n.nspname AS schema_name, p.proname, pg_get_function_arguments(p.oid) AS arguments
 -- FROM pg_proc p
 -- JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -894,7 +933,7 @@ COMMIT;
 --   )
 -- ORDER BY p.proname;
 
--- 15) Modelos por segmento/modalidade/produto
+-- 16) Modelos por segmento/modalidade/produto
 -- SELECT
 --   mmr.id,
 --   s.codigo AS segmento_codigo,
