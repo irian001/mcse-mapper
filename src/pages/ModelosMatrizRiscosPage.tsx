@@ -293,7 +293,8 @@ export default function ModelosMatrizRiscosPage() {
   const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
+
       <PageHeader
         title="Modelos de Matriz de Riscos"
         description="Cadastre, publique e arquive os modelos padrão de matriz de riscos por segmento, modalidade e produto."
