@@ -127,6 +127,7 @@ function ProfileRouter() {
         <Route path="/empresa-auditoria" element={<EmpresaAuditoriaPage />} />
         <Route path="/estruturas-auditoria" element={<EstruturasAuditoriaPage />} />
         <Route path="/segmentos-modalidades" element={<SegmentosModalidadesPage />} />
+        <Route path="/modelos-matriz-riscos" element={<ModelosMatrizRiscosPage />} />
         <Route path="/mcse" element={<McsePage />} />
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/cliente-usuarios" element={<ClienteUsuariosPage />} />
