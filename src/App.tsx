@@ -36,6 +36,7 @@ import AdministracaoHubPage from "@/pages/hubs/AdministracaoHubPage";
 import EmpresaAuditoriaPage from "@/pages/EmpresaAuditoriaPage";
 import EstruturasAuditoriaPage from "@/pages/EstruturasAuditoriaPage";
 import SegmentosModalidadesPage from "@/pages/SegmentosModalidadesPage";
+import ModelosMatrizRiscosPage from "@/pages/ModelosMatrizRiscosPage";
 import NotFound from "@/pages/NotFound";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { ThemeProvider } from "@/hooks/useTheme";
@@ -126,6 +127,7 @@ function ProfileRouter() {
         <Route path="/empresa-auditoria" element={<EmpresaAuditoriaPage />} />
         <Route path="/estruturas-auditoria" element={<EstruturasAuditoriaPage />} />
         <Route path="/segmentos-modalidades" element={<SegmentosModalidadesPage />} />
+        <Route path="/modelos-matriz-riscos" element={<ModelosMatrizRiscosPage />} />
         <Route path="/mcse" element={<McsePage />} />
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/cliente-usuarios" element={<ClienteUsuariosPage />} />
