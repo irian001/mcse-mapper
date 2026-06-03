@@ -293,7 +293,8 @@ export default function ModelosMatrizRiscosPage() {
   const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
+
       <PageHeader
         title="Modelos de Matriz de Riscos"
         description="Cadastre, publique e arquive os modelos padrão de matriz de riscos por segmento, modalidade e produto."
@@ -311,7 +312,7 @@ export default function ModelosMatrizRiscosPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filtros</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
           <div className="lg:col-span-2">
             <Label>Busca</Label>
             <Input
@@ -534,17 +535,22 @@ export default function ModelosMatrizRiscosPage() {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="flex flex-col overflow-hidden w-[95vw] max-w-[95vw] h-[90vh] max-h-[90vh] p-0">
+          <DialogHeader className="shrink-0 px-6 pt-6 pr-16">
             <DialogTitle>
               {editing ? (readOnly ? "Visualizar modelo" : "Editar modelo") : "Novo modelo"}
             </DialogTitle>
             {editing && (
-              <DialogDescription>
-                <StatusBadge status={editing.status_modelo} vigente={editing.vigente} ativo={editing.ativo} />
+              <DialogDescription asChild>
+                <div>
+                  <StatusBadge status={editing.status_modelo} vigente={editing.vigente} ativo={editing.ativo} />
+                </div>
               </DialogDescription>
             )}
           </DialogHeader>
+
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+
 
           {readOnly && (
             <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400 flex gap-2">
@@ -555,7 +561,7 @@ export default function ModelosMatrizRiscosPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Label>Segmento *</Label>
               <Select
@@ -645,7 +651,7 @@ export default function ModelosMatrizRiscosPage() {
                 placeholder="1.0"
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Nome *</Label>
               <Input
                 value={form.nome_modelo}
@@ -653,45 +659,46 @@ export default function ModelosMatrizRiscosPage() {
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Descrição</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.descricao}
                 onChange={(e) => setForm({ ...form, descricao: e.target.value })}
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Objetivo</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.objetivo_modelo}
                 onChange={(e) => setForm({ ...form, objetivo_modelo: e.target.value })}
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Escopo padrão</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.escopo_padrao}
                 onChange={(e) => setForm({ ...form, escopo_padrao: e.target.value })}
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Observações</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.observacoes}
                 onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
                 disabled={readOnly}
               />
             </div>
           </div>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 px-6 py-4 border-t">
             <Button variant="outline" onClick={() => setOpen(false)}>
               {readOnly ? "Fechar" : "Cancelar"}
             </Button>
@@ -702,6 +709,7 @@ export default function ModelosMatrizRiscosPage() {
             )}
           </DialogFooter>
         </DialogContent>
+
       </Dialog>
 
       {/* Confirm Publish */}
