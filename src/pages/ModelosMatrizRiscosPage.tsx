@@ -561,7 +561,7 @@ export default function ModelosMatrizRiscosPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Label>Segmento *</Label>
               <Select
@@ -651,7 +651,7 @@ export default function ModelosMatrizRiscosPage() {
                 placeholder="1.0"
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Nome *</Label>
               <Input
                 value={form.nome_modelo}
@@ -659,45 +659,46 @@ export default function ModelosMatrizRiscosPage() {
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Descrição</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.descricao}
                 onChange={(e) => setForm({ ...form, descricao: e.target.value })}
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Objetivo</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.objetivo_modelo}
                 onChange={(e) => setForm({ ...form, objetivo_modelo: e.target.value })}
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Escopo padrão</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.escopo_padrao}
                 onChange={(e) => setForm({ ...form, escopo_padrao: e.target.value })}
                 disabled={readOnly}
               />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <Label>Observações</Label>
               <Textarea
-                rows={2}
+                rows={3}
                 value={form.observacoes}
                 onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
                 disabled={readOnly}
               />
             </div>
           </div>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 px-6 py-4 border-t">
             <Button variant="outline" onClick={() => setOpen(false)}>
               {readOnly ? "Fechar" : "Cancelar"}
             </Button>
@@ -708,6 +709,7 @@ export default function ModelosMatrizRiscosPage() {
             )}
           </DialogFooter>
         </DialogContent>
+
       </Dialog>
 
       {/* Confirm Publish */}
