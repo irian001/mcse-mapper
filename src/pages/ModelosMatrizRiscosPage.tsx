@@ -535,17 +535,22 @@ export default function ModelosMatrizRiscosPage() {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="flex flex-col overflow-hidden w-[95vw] max-w-[95vw] h-[90vh] max-h-[90vh] p-0">
+          <DialogHeader className="shrink-0 px-6 pt-6 pr-16">
             <DialogTitle>
               {editing ? (readOnly ? "Visualizar modelo" : "Editar modelo") : "Novo modelo"}
             </DialogTitle>
             {editing && (
-              <DialogDescription>
-                <StatusBadge status={editing.status_modelo} vigente={editing.vigente} ativo={editing.ativo} />
+              <DialogDescription asChild>
+                <div>
+                  <StatusBadge status={editing.status_modelo} vigente={editing.vigente} ativo={editing.ativo} />
+                </div>
               </DialogDescription>
             )}
           </DialogHeader>
+
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+
 
           {readOnly && (
             <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400 flex gap-2">
