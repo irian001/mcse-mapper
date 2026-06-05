@@ -31,6 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ModeloMatrizRiscoItensPanel from "@/components/modelos-riscos/ModeloMatrizRiscoItensPanel";
 import { Plus, Pencil, Eye, AlertTriangle, CheckCircle2, Archive, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useSegmentos, useEstruturasAuditoria } from "@/hooks/useSegmentos";
@@ -96,6 +98,133 @@ function StatusBadge({ status, vigente, ativo }: { status: string; vigente: bool
       {!ativo && (
         <Badge variant="outline" className="bg-muted text-muted-foreground border-border">Inativo</Badge>
       )}
+    </div>
+  );
+}
+
+const ALL_FIELD = "__all__";
+
+function ModeloFormFields({
+  form,
+  setForm,
+  readOnly,
+  segmentos,
+  formModalidades,
+  formEstruturas,
+  produtos,
+}: {
+  form: FormState;
+  setForm: (f: FormState) => void;
+  readOnly: boolean;
+  segmentos: any[];
+  formModalidades: any[];
+  formEstruturas: any[];
+  produtos: any[];
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <Label>Segmento *</Label>
+        <Select
+          value={form.segmento_id}
+          onValueChange={(v) =>
+            setForm({ ...form, segmento_id: v, modalidade_atuacao_id: "", estrutura_auditoria_id: "" })
+          }
+          disabled={readOnly}
+        >
+          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+          <SelectContent>
+            {segmentos.map((s) => (
+              <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Modalidade *</Label>
+        <Select
+          value={form.modalidade_atuacao_id}
+          onValueChange={(v) => setForm({ ...form, modalidade_atuacao_id: v })}
+          disabled={readOnly || !form.segmento_id}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={form.segmento_id ? "Selecione..." : "Selecione um segmento"} />
+          </SelectTrigger>
+          <SelectContent>
+            {formModalidades.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.nome} {!m.ativo && "(inativa)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Produto de Auditoria *</Label>
+        <Select
+          value={form.produto_auditoria_id}
+          onValueChange={(v) => setForm({ ...form, produto_auditoria_id: v })}
+          disabled={readOnly}
+        >
+          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+          <SelectContent>
+            {produtos.map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.nome_produto}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Estrutura (opcional)</Label>
+        <Select
+          value={form.estrutura_auditoria_id || ALL_FIELD}
+          onValueChange={(v) => setForm({ ...form, estrutura_auditoria_id: v === ALL_FIELD ? "" : v })}
+          disabled={readOnly || !form.segmento_id}
+        >
+          <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_FIELD}>Nenhuma</SelectItem>
+            {formEstruturas.map((e) => (
+              <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Código *</Label>
+        <Input value={form.codigo_modelo}
+          onChange={(e) => setForm({ ...form, codigo_modelo: e.target.value })} disabled={readOnly} />
+      </div>
+      <div>
+        <Label>Versão *</Label>
+        <Input value={form.versao}
+          onChange={(e) => setForm({ ...form, versao: e.target.value })} disabled={readOnly} placeholder="1.0" />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Nome *</Label>
+        <Input value={form.nome_modelo}
+          onChange={(e) => setForm({ ...form, nome_modelo: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Descrição</Label>
+        <Textarea rows={3} value={form.descricao}
+          onChange={(e) => setForm({ ...form, descricao: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Objetivo</Label>
+        <Textarea rows={3} value={form.objetivo_modelo}
+          onChange={(e) => setForm({ ...form, objetivo_modelo: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Escopo padrão</Label>
+        <Textarea rows={3} value={form.escopo_padrao}
+          onChange={(e) => setForm({ ...form, escopo_padrao: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Observações</Label>
+        <Textarea rows={3} value={form.observacoes}
+          onChange={(e) => setForm({ ...form, observacoes: e.target.value })} disabled={readOnly} />
+      </div>
     </div>
   );
 }
@@ -549,154 +678,54 @@ export default function ModelosMatrizRiscosPage() {
             )}
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
-
-
-          {readOnly && (
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400 flex gap-2">
-              <Info size={14} className="shrink-0 mt-0.5" />
-              <span>
-                Modelos publicados, substituídos ou arquivados não devem ser editados diretamente. Crie nova versão quando necessário.
-              </span>
+          {editing ? (
+            <Tabs defaultValue="cabecalho" className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="px-6 pt-3 shrink-0">
+                <TabsList>
+                  <TabsTrigger value="cabecalho">Cabeçalho</TabsTrigger>
+                  <TabsTrigger value="riscos">Riscos do Modelo</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="cabecalho" className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4 mt-0">
+                {readOnly && (
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400 flex gap-2">
+                    <Info size={14} className="shrink-0 mt-0.5" />
+                    <span>
+                      Modelos publicados, substituídos ou arquivados não devem ser editados diretamente. Crie nova versão quando necessário.
+                    </span>
+                  </div>
+                )}
+                <ModeloFormFields
+                  form={form}
+                  setForm={setForm}
+                  readOnly={readOnly}
+                  segmentos={segmentos}
+                  formModalidades={formModalidades}
+                  formEstruturas={formEstruturas}
+                  produtos={produtos as any[]}
+                />
+              </TabsContent>
+              <TabsContent value="riscos" className="flex-1 min-h-0 overflow-y-auto px-6 py-4 mt-0">
+                <ModeloMatrizRiscoItensPanel
+                  modeloId={editing.id}
+                  statusModelo={editing.status_modelo}
+                  canEdit={canCreate}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+              <ModeloFormFields
+                form={form}
+                setForm={setForm}
+                readOnly={readOnly}
+                segmentos={segmentos}
+                formModalidades={formModalidades}
+                formEstruturas={formEstruturas}
+                produtos={produtos as any[]}
+              />
             </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <Label>Segmento *</Label>
-              <Select
-                value={form.segmento_id}
-                onValueChange={(v) =>
-                  setForm({
-                    ...form,
-                    segmento_id: v,
-                    modalidade_atuacao_id: "",
-                    estrutura_auditoria_id: "",
-                  })
-                }
-                disabled={readOnly}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {segmentos.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Modalidade *</Label>
-              <Select
-                value={form.modalidade_atuacao_id}
-                onValueChange={(v) => setForm({ ...form, modalidade_atuacao_id: v })}
-                disabled={readOnly || !form.segmento_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={form.segmento_id ? "Selecione..." : "Selecione um segmento"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {formModalidades.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.nome} {!m.ativo && "(inativa)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Produto de Auditoria *</Label>
-              <Select
-                value={form.produto_auditoria_id}
-                onValueChange={(v) => setForm({ ...form, produto_auditoria_id: v })}
-                disabled={readOnly}
-              >
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {(produtos as any[]).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.nome_produto}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Estrutura (opcional)</Label>
-              <Select
-                value={form.estrutura_auditoria_id || ALL}
-                onValueChange={(v) => setForm({ ...form, estrutura_auditoria_id: v === ALL ? "" : v })}
-                disabled={readOnly || !form.segmento_id}
-              >
-                <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Nenhuma</SelectItem>
-                  {formEstruturas.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Código *</Label>
-              <Input
-                value={form.codigo_modelo}
-                onChange={(e) => setForm({ ...form, codigo_modelo: e.target.value })}
-                disabled={readOnly}
-              />
-            </div>
-            <div>
-              <Label>Versão *</Label>
-              <Input
-                value={form.versao}
-                onChange={(e) => setForm({ ...form, versao: e.target.value })}
-                disabled={readOnly}
-                placeholder="1.0"
-              />
-            </div>
-            <div className="md:col-span-2 lg:col-span-3">
-              <Label>Nome *</Label>
-              <Input
-                value={form.nome_modelo}
-                onChange={(e) => setForm({ ...form, nome_modelo: e.target.value })}
-                disabled={readOnly}
-              />
-            </div>
-            <div className="md:col-span-2 lg:col-span-3">
-              <Label>Descrição</Label>
-              <Textarea
-                rows={3}
-                value={form.descricao}
-                onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-                disabled={readOnly}
-              />
-            </div>
-            <div className="md:col-span-2 lg:col-span-3">
-              <Label>Objetivo</Label>
-              <Textarea
-                rows={3}
-                value={form.objetivo_modelo}
-                onChange={(e) => setForm({ ...form, objetivo_modelo: e.target.value })}
-                disabled={readOnly}
-              />
-            </div>
-            <div className="md:col-span-2 lg:col-span-3">
-              <Label>Escopo padrão</Label>
-              <Textarea
-                rows={3}
-                value={form.escopo_padrao}
-                onChange={(e) => setForm({ ...form, escopo_padrao: e.target.value })}
-                disabled={readOnly}
-              />
-            </div>
-            <div className="md:col-span-2 lg:col-span-3">
-              <Label>Observações</Label>
-              <Textarea
-                rows={3}
-                value={form.observacoes}
-                onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-                disabled={readOnly}
-              />
-            </div>
-          </div>
-          </div>
 
           <DialogFooter className="shrink-0 px-6 py-4 border-t">
             <Button variant="outline" onClick={() => setOpen(false)}>
