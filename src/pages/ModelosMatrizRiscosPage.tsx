@@ -102,6 +102,133 @@ function StatusBadge({ status, vigente, ativo }: { status: string; vigente: bool
   );
 }
 
+const ALL_FIELD = "__all__";
+
+function ModeloFormFields({
+  form,
+  setForm,
+  readOnly,
+  segmentos,
+  formModalidades,
+  formEstruturas,
+  produtos,
+}: {
+  form: FormState;
+  setForm: (f: FormState) => void;
+  readOnly: boolean;
+  segmentos: any[];
+  formModalidades: any[];
+  formEstruturas: any[];
+  produtos: any[];
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <Label>Segmento *</Label>
+        <Select
+          value={form.segmento_id}
+          onValueChange={(v) =>
+            setForm({ ...form, segmento_id: v, modalidade_atuacao_id: "", estrutura_auditoria_id: "" })
+          }
+          disabled={readOnly}
+        >
+          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+          <SelectContent>
+            {segmentos.map((s) => (
+              <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Modalidade *</Label>
+        <Select
+          value={form.modalidade_atuacao_id}
+          onValueChange={(v) => setForm({ ...form, modalidade_atuacao_id: v })}
+          disabled={readOnly || !form.segmento_id}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={form.segmento_id ? "Selecione..." : "Selecione um segmento"} />
+          </SelectTrigger>
+          <SelectContent>
+            {formModalidades.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.nome} {!m.ativo && "(inativa)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Produto de Auditoria *</Label>
+        <Select
+          value={form.produto_auditoria_id}
+          onValueChange={(v) => setForm({ ...form, produto_auditoria_id: v })}
+          disabled={readOnly}
+        >
+          <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+          <SelectContent>
+            {produtos.map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.nome_produto}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Estrutura (opcional)</Label>
+        <Select
+          value={form.estrutura_auditoria_id || ALL_FIELD}
+          onValueChange={(v) => setForm({ ...form, estrutura_auditoria_id: v === ALL_FIELD ? "" : v })}
+          disabled={readOnly || !form.segmento_id}
+        >
+          <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_FIELD}>Nenhuma</SelectItem>
+            {formEstruturas.map((e) => (
+              <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Código *</Label>
+        <Input value={form.codigo_modelo}
+          onChange={(e) => setForm({ ...form, codigo_modelo: e.target.value })} disabled={readOnly} />
+      </div>
+      <div>
+        <Label>Versão *</Label>
+        <Input value={form.versao}
+          onChange={(e) => setForm({ ...form, versao: e.target.value })} disabled={readOnly} placeholder="1.0" />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Nome *</Label>
+        <Input value={form.nome_modelo}
+          onChange={(e) => setForm({ ...form, nome_modelo: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Descrição</Label>
+        <Textarea rows={3} value={form.descricao}
+          onChange={(e) => setForm({ ...form, descricao: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Objetivo</Label>
+        <Textarea rows={3} value={form.objetivo_modelo}
+          onChange={(e) => setForm({ ...form, objetivo_modelo: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Escopo padrão</Label>
+        <Textarea rows={3} value={form.escopo_padrao}
+          onChange={(e) => setForm({ ...form, escopo_padrao: e.target.value })} disabled={readOnly} />
+      </div>
+      <div className="md:col-span-2 lg:col-span-3">
+        <Label>Observações</Label>
+        <Textarea rows={3} value={form.observacoes}
+          onChange={(e) => setForm({ ...form, observacoes: e.target.value })} disabled={readOnly} />
+      </div>
+    </div>
+  );
+}
+
 export default function ModelosMatrizRiscosPage() {
   const qc = useQueryClient();
   const { data: profile } = useUserProfile();
