@@ -31,6 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ModeloMatrizRiscoItensPanel from "@/components/modelos-riscos/ModeloMatrizRiscoItensPanel";
 import { Plus, Pencil, Eye, AlertTriangle, CheckCircle2, Archive, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useSegmentos, useEstruturasAuditoria } from "@/hooks/useSegmentos";
