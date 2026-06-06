@@ -17,7 +17,7 @@
  * Dívida técnica: types do Supabase ainda não reconhecem
  * `modelo_matriz_risco_item_vinculos`; usamos interface local + `(supabase as any)`.
  */
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase-client";
 import { Button } from "@/components/ui/button";
