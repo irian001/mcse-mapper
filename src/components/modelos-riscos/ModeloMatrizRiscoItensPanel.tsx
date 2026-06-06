@@ -30,8 +30,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Info, Pencil, Plus, Power, RotateCcw, Search, Eye } from "lucide-react";
+import { AlertTriangle, Info, Pencil, Plus, Power, RotateCcw, Search, Eye, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import ModeloRiscoItemVinculosDialog from "./ModeloRiscoItemVinculosDialog";
 
 // ============ Tipagem local ============
 export interface ModeloMatrizRiscoItem {
@@ -229,6 +230,7 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
   const [viewOnly, setViewOnly] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [contaSearch, setContaSearch] = useState("");
+  const [vincItem, setVincItem] = useState<ModeloMatrizRiscoItem | null>(null);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -433,7 +435,7 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
                 <TableHead>Assertiva</TableHead>
                 <TableHead className="w-[110px]">Nível</TableHead>
                 <TableHead>Flags</TableHead>
-                <TableHead className="w-[140px] text-right">Ações</TableHead>
+                <TableHead className="w-[170px] text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -476,6 +478,9 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" onClick={() => openEdit(r)} title={canMutate ? "Editar" : "Visualizar"}>
                         {canMutate ? <Pencil size={14} /> : <Eye size={14} />}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setVincItem(r)} title="Vínculos">
+                        <Link2 size={14} />
                       </Button>
                       {canMutate && (
                         <Button
@@ -783,6 +788,18 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {vincItem && (
+        <ModeloRiscoItemVinculosDialog
+          open={!!vincItem}
+          onOpenChange={(v) => { if (!v) setVincItem(null); }}
+          modeloId={modeloId}
+          itemId={vincItem.id}
+          itemLabel={`${vincItem.codigo_item_modelo ? vincItem.codigo_item_modelo + " — " : ""}${vincItem.risco_identificado}`}
+          statusModelo={statusModelo}
+          canEdit={canEdit}
+        />
+      )}
     </div>
   );
 }
