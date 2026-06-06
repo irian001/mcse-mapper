@@ -30,9 +30,10 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Info, Pencil, Plus, Power, RotateCcw, Search, Eye, Link2 } from "lucide-react";
+import { AlertTriangle, Info, Pencil, Plus, Power, RotateCcw, Search, Eye, Link2, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import ModeloRiscoItemVinculosDialog from "./ModeloRiscoItemVinculosDialog";
+import ModeloRiscoItensImportDialog, { downloadRiscosTemplate } from "./ModeloRiscoItensImportDialog";
 
 // ============ Tipagem local ============
 export interface ModeloMatrizRiscoItem {
@@ -231,6 +232,7 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
   const [form, setForm] = useState<FormState>(emptyForm);
   const [contaSearch, setContaSearch] = useState("");
   const [vincItem, setVincItem] = useState<ModeloMatrizRiscoItem | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -404,9 +406,17 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
           {itens.length} item{itens.length !== 1 ? "s" : ""} cadastrado{itens.length !== 1 ? "s" : ""}
         </div>
         {canMutate && (
-          <Button size="sm" onClick={openCreate}>
-            <Plus size={14} className="mr-1" /> Novo risco
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => downloadRiscosTemplate()}>
+              <Download size={14} className="mr-1" /> Template CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload size={14} className="mr-1" /> Importar CSV
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus size={14} className="mr-1" /> Novo risco
+            </Button>
+          </div>
         )}
       </div>
 
@@ -800,6 +810,13 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
           canEdit={canEdit}
         />
       )}
+
+      <ModeloRiscoItensImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        modeloId={modeloId}
+        canImport={canMutate}
+      />
     </div>
   );
 }
