@@ -30,8 +30,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Info, Pencil, Plus, Power, RotateCcw, Search, Eye } from "lucide-react";
+import { AlertTriangle, Info, Pencil, Plus, Power, RotateCcw, Search, Eye, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import ModeloRiscoItemVinculosDialog from "./ModeloRiscoItemVinculosDialog";
 
 // ============ Tipagem local ============
 export interface ModeloMatrizRiscoItem {
