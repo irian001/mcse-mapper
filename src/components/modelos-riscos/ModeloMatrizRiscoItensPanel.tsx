@@ -435,7 +435,7 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
                 <TableHead>Assertiva</TableHead>
                 <TableHead className="w-[110px]">Nível</TableHead>
                 <TableHead>Flags</TableHead>
-                <TableHead className="w-[140px] text-right">Ações</TableHead>
+                <TableHead className="w-[170px] text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
