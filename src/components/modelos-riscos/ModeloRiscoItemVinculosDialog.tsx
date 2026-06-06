@@ -511,6 +511,3 @@ export default function ModeloRiscoItemVinculosDialog({
     </Dialog>
   );
 }
-
-// Helper memo (não usado externamente, mantido para evitar warnings de unused imports)
-export const __unused = useMemo;
