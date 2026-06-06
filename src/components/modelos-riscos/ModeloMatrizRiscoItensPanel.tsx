@@ -788,6 +788,18 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {vincItem && (
+        <ModeloRiscoItemVinculosDialog
+          open={!!vincItem}
+          onOpenChange={(v) => { if (!v) setVincItem(null); }}
+          modeloId={modeloId}
+          itemId={vincItem.id}
+          itemLabel={`${vincItem.codigo_item_modelo ? vincItem.codigo_item_modelo + " — " : ""}${vincItem.risco_identificado}`}
+          statusModelo={statusModelo}
+          canEdit={canEdit}
+        />
+      )}
     </div>
   );
 }
