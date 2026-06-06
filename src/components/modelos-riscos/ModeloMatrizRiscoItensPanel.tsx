@@ -406,9 +406,17 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
           {itens.length} item{itens.length !== 1 ? "s" : ""} cadastrado{itens.length !== 1 ? "s" : ""}
         </div>
         {canMutate && (
-          <Button size="sm" onClick={openCreate}>
-            <Plus size={14} className="mr-1" /> Novo risco
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => downloadRiscosTemplate()}>
+              <Download size={14} className="mr-1" /> Template CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload size={14} className="mr-1" /> Importar CSV
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus size={14} className="mr-1" /> Novo risco
+            </Button>
+          </div>
         )}
       </div>
 
