@@ -479,6 +479,9 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
                       <Button size="sm" variant="ghost" onClick={() => openEdit(r)} title={canMutate ? "Editar" : "Visualizar"}>
                         {canMutate ? <Pencil size={14} /> : <Eye size={14} />}
                       </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setVincItem(r)} title="Vínculos">
+                        <Link2 size={14} />
+                      </Button>
                       {canMutate && (
                         <Button
                           size="sm"
