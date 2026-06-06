@@ -810,6 +810,13 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
           canEdit={canEdit}
         />
       )}
+
+      <ModeloRiscoItensImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        modeloId={modeloId}
+        canImport={canMutate}
+      />
     </div>
   );
 }
