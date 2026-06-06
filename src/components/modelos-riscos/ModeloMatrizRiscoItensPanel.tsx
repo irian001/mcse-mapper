@@ -230,6 +230,7 @@ export default function ModeloMatrizRiscoItensPanel({ modeloId, statusModelo, ca
   const [viewOnly, setViewOnly] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [contaSearch, setContaSearch] = useState("");
+  const [vincItem, setVincItem] = useState<ModeloMatrizRiscoItem | null>(null);
 
   const openCreate = () => {
     setForm(emptyForm);
