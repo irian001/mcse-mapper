@@ -5,6 +5,7 @@
 --   Permitir importar riscos padrao de public.modelo_matriz_risco_itens para
 --   public.trabalho_riscos_auditoria, preservando origem do modelo e evitando
 --   duplicidade por trabalho + item de modelo.
+--   A importacao so e permitida para trabalhos operacionalmente abertos.
 --
 -- Escopo desta fase:
 --   - Adiciona colunas opcionais de origem em public.trabalho_riscos_auditoria.
@@ -37,6 +38,23 @@
 --   public.trabalho_riscos_auditoria.risco_controle sao text. Ja os campos
 --   equivalentes em public.modelo_matriz_risco_itens sao boolean. Esta RPC
 --   converte true -> 'sim' e false -> 'nao'.
+--
+--   Status de trabalho considerados abertos no fluxo atual:
+--     - planejado
+--     - iniciado
+--     - em_execucao
+--     - revisao_1
+--     - revisao_2
+--
+--   Status bloqueantes atuais/defensivos:
+--     - finalizado_para_parecer
+--     - encerrado
+--     - concluido
+--     - finalizado
+--     - cancelado
+--     - fechado
+--     - aprovado
+--     - bloqueado
 -- ============================================================================
 
 BEGIN;
@@ -331,6 +349,32 @@ BEGIN
       'itens_importados', 0,
       'avisos', '[]'::jsonb,
       'erros', jsonb_build_array('Trabalho de auditoria nao encontrado.')
+    );
+  END IF;
+
+  IF coalesce(v_trabalho.status_trabalho::text, '') IN (
+    'finalizado_para_parecer',
+    'encerrado',
+    'concluido',
+    'finalizado',
+    'cancelado',
+    'fechado',
+    'aprovado',
+    'bloqueado'
+  ) THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'preview', p_preview,
+      'trabalho_auditoria_id', p_trabalho_auditoria_id,
+      'produto_auditoria_id', null,
+      'modalidades_consideradas', 0,
+      'modelos_encontrados', 0,
+      'modalidades_sem_modelo', '[]'::jsonb,
+      'itens_elegiveis', 0,
+      'itens_ja_importados', 0,
+      'itens_importados', 0,
+      'avisos', '[]'::jsonb,
+      'erros', jsonb_build_array('Nao e possivel importar riscos do modelo para um trabalho encerrado, finalizado ou bloqueado.')
     );
   END IF;
 
@@ -913,7 +957,13 @@ COMMIT;
 --   )
 -- ORDER BY p.proname, args;
 
--- 7) Exemplo de SELECT para identificar modelos aplicaveis por trabalho
+-- 7) Valores existentes de status_trabalho
+-- SELECT status_trabalho, count(*) AS quantidade
+-- FROM public.trabalhos_auditoria
+-- GROUP BY status_trabalho
+-- ORDER BY status_trabalho;
+
+-- 8) Exemplo de SELECT para identificar modelos aplicaveis por trabalho
 -- Substituir '<trabalho_id>' por um UUID real.
 -- WITH trabalho AS (
 --   SELECT t.id,
@@ -964,7 +1014,7 @@ COMMIT;
 --    )
 --  );
 
--- 8) Exemplo de SELECT para identificar itens ja importados por trabalho
+-- 9) Exemplo de SELECT para identificar itens ja importados por trabalho
 -- Substituir '<trabalho_id>' por um UUID real.
 -- SELECT tra.id,
 --        tra.trabalho_auditoria_id,
