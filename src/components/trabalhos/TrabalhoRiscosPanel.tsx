@@ -648,6 +648,22 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
                 <TableCell className="text-xs">{niceLabel(r.assertiva)}</TableCell>
                 <TableCell className="text-xs max-w-[280px]">
                   <div className="line-clamp-2" title={r.risco_identificado || "—"}>{r.risco_identificado || "—"}</div>
+                  {r.importado_de_modelo && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="mt-1 text-[10px] cursor-help">Importado do modelo</Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs">
+                            <div><b>Modelo:</b> {r.origem_modelo_nome_snapshot || "—"}</div>
+                            {r.origem_modelo_versao_snapshot && <div><b>Versão:</b> {r.origem_modelo_versao_snapshot}</div>}
+                            {r.origem_modelo_item_codigo_snapshot && <div><b>Item:</b> {r.origem_modelo_item_codigo_snapshot}</div>}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs">{niceLabel(r.tipo_risco)}</TableCell>
                 <TableCell className="text-xs">{niceLabel(r.probabilidade)}</TableCell>
