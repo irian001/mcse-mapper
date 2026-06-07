@@ -585,7 +585,21 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
         >
           Limpar filtros
         </Button>
-        <Button onClick={openCreate} size="sm" className="ml-auto">
+        {podeImportarModelo && (
+          <Button
+            onClick={() => setImportDialogOpen(true)}
+            size="sm"
+            variant="outline"
+            className="ml-auto"
+            disabled={statusBloqueado}
+            title={statusBloqueado
+              ? "Não é possível importar riscos para um trabalho encerrado, finalizado ou bloqueado."
+              : "Importar riscos do modelo"}
+          >
+            <Download className="h-4 w-4 mr-1" /> Importar riscos do modelo
+          </Button>
+        )}
+        <Button onClick={openCreate} size="sm" className={podeImportarModelo ? "" : "ml-auto"}>
           <Plus className="h-4 w-4 mr-1" /> Novo risco
         </Button>
       </div>
