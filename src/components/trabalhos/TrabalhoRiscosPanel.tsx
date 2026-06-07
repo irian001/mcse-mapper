@@ -34,9 +34,11 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertCircle, Pencil, Plus, Power, RotateCcw, Search } from "lucide-react";
+import { AlertCircle, Download, Pencil, Plus, Power, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import TrabalhoRiscosImportDialog from "./TrabalhoRiscosImportDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ============ Tipagem local (dívida técnica até regenerar types) ============
 interface TrabalhoRiscoAuditoria {
@@ -74,6 +76,10 @@ interface TrabalhoRiscoAuditoria {
   observacoes: string | null;
   created_at: string;
   updated_at: string;
+  importado_de_modelo?: boolean | null;
+  origem_modelo_nome_snapshot?: string | null;
+  origem_modelo_versao_snapshot?: string | null;
+  origem_modelo_item_codigo_snapshot?: string | null;
 }
 
 // ============ Domínios (alinhados aos CHECKs do banco) ============
@@ -208,6 +214,15 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
   const { data: userProfile } = useUserProfile();
   const isInterno = userProfile?.role === "auditor";
   const trabalhoId = trabalho?.id as string | undefined;
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+
+  const perfil = (userProfile?.auditor?.perfil_acesso || "") as string;
+  const statusTrabalho = (trabalho?.status_trabalho || "") as string;
+  const statusBloqueado = [
+    "finalizado_para_parecer", "encerrado", "concluido", "finalizado",
+    "cancelado", "fechado", "aprovado", "bloqueado",
+  ].includes(statusTrabalho);
+  const podeImportarModelo = isInterno && ["admin", "socio", "gerente", "senior"].includes(perfil);
 
   // ---------- Queries ----------
   const riscosQ = useQuery({
@@ -570,7 +585,21 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
         >
           Limpar filtros
         </Button>
-        <Button onClick={openCreate} size="sm" className="ml-auto">
+        {podeImportarModelo && (
+          <Button
+            onClick={() => setImportDialogOpen(true)}
+            size="sm"
+            variant="outline"
+            className="ml-auto"
+            disabled={statusBloqueado}
+            title={statusBloqueado
+              ? "Não é possível importar riscos para um trabalho encerrado, finalizado ou bloqueado."
+              : "Importar riscos do modelo"}
+          >
+            <Download className="h-4 w-4 mr-1" /> Importar riscos do modelo
+          </Button>
+        )}
+        <Button onClick={openCreate} size="sm" className={podeImportarModelo ? "" : "ml-auto"}>
           <Plus className="h-4 w-4 mr-1" /> Novo risco
         </Button>
       </div>
@@ -619,6 +648,22 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
                 <TableCell className="text-xs">{niceLabel(r.assertiva)}</TableCell>
                 <TableCell className="text-xs max-w-[280px]">
                   <div className="line-clamp-2" title={r.risco_identificado || "—"}>{r.risco_identificado || "—"}</div>
+                  {r.importado_de_modelo && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="mt-1 text-[10px] cursor-help">Importado do modelo</Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs">
+                            <div><b>Modelo:</b> {r.origem_modelo_nome_snapshot || "—"}</div>
+                            {r.origem_modelo_versao_snapshot && <div><b>Versão:</b> {r.origem_modelo_versao_snapshot}</div>}
+                            {r.origem_modelo_item_codigo_snapshot && <div><b>Item:</b> {r.origem_modelo_item_codigo_snapshot}</div>}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs">{niceLabel(r.tipo_risco)}</TableCell>
                 <TableCell className="text-xs">{niceLabel(r.probabilidade)}</TableCell>
@@ -841,6 +886,14 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {trabalhoId && (
+        <TrabalhoRiscosImportDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          trabalhoId={trabalhoId}
+        />
+      )}
     </div>
   );
 }
