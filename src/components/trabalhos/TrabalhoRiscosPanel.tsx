@@ -214,6 +214,15 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
   const { data: userProfile } = useUserProfile();
   const isInterno = userProfile?.role === "auditor";
   const trabalhoId = trabalho?.id as string | undefined;
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+
+  const perfil = (userProfile?.auditor?.perfil_acesso || "") as string;
+  const statusTrabalho = (trabalho?.status_trabalho || "") as string;
+  const statusBloqueado = [
+    "finalizado_para_parecer", "encerrado", "concluido", "finalizado",
+    "cancelado", "fechado", "aprovado", "bloqueado",
+  ].includes(statusTrabalho);
+  const podeImportarModelo = isInterno && ["admin", "socio", "gerente", "senior"].includes(perfil);
 
   // ---------- Queries ----------
   const riscosQ = useQuery({
