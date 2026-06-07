@@ -34,9 +34,11 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertCircle, Pencil, Plus, Power, RotateCcw, Search } from "lucide-react";
+import { AlertCircle, Download, Pencil, Plus, Power, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import TrabalhoRiscosImportDialog from "./TrabalhoRiscosImportDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ============ Tipagem local (dívida técnica até regenerar types) ============
 interface TrabalhoRiscoAuditoria {
