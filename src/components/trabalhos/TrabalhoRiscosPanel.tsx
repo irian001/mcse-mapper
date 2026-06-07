@@ -76,6 +76,10 @@ interface TrabalhoRiscoAuditoria {
   observacoes: string | null;
   created_at: string;
   updated_at: string;
+  importado_de_modelo?: boolean | null;
+  origem_modelo_nome_snapshot?: string | null;
+  origem_modelo_versao_snapshot?: string | null;
+  origem_modelo_item_codigo_snapshot?: string | null;
 }
 
 // ============ Domínios (alinhados aos CHECKs do banco) ============
