@@ -886,6 +886,14 @@ export default function TrabalhoRiscosPanel({ trabalho }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {trabalhoId && (
+        <TrabalhoRiscosImportDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          trabalhoId={trabalhoId}
+        />
+      )}
     </div>
   );
 }
