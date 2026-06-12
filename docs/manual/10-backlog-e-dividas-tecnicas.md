@@ -105,6 +105,22 @@ A consolidação deve ser feita com cautela, pois pode afetar autenticação, po
 
 ## 6. Backlog priorizado
 
+### Evidencia local P0 - 2026-06-12
+
+Foi criado um inventario local de schema/RLS/frontend em [`11-inventario-p0-supabase.md`](11-inventario-p0-supabase.md).
+
+Entregas geradas:
+
+- Inventario de 51 tabelas referenciadas estaticamente pelo frontend.
+- Comparacao dessas tabelas contra `supabase/migrations/` e `docs/sql/`.
+- Lista de 6 tabelas usadas pelo frontend sem `CREATE TABLE` local encontrado: `contratos`, `contrato_produtos`, `procedimentos_auxiliares`, `procedimento_auxiliar_documentos`, `procedimento_contagem_caixa_itens`, `procedimento_contagem_caixa_detalhes`.
+- Mapa local de alvos de policies, funcoes SQL/RPCs e buckets declarados.
+- Identificacao de regras criticas que parecem depender da UI e precisam de validacao server-side, principalmente aprovacao de planejamento/materialidade e limite de 3 bases ativas de materialidade.
+- Checklist P0 por perfil: admin, auditor vinculado, auditor sem vinculo e cliente usuario.
+- Script SQL somente-leitura para diagnostico no Supabase real em [`../sql/p0-diagnostico-supabase.sql`](../sql/p0-diagnostico-supabase.sql).
+
+Status: evidencia local criada. Ainda falta executar o script e os testes comportamentais no Supabase real.
+
 ### P0 — Crítico
 
 1. Validar schema real do Supabase.
