@@ -68,16 +68,15 @@ export default function AuthPage() {
               <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-foreground">
-              MCSE Mapper
+              Audiconsult Auditores S.S.
             </span>
           </div>
 
           <h1 className="text-5xl font-semibold text-foreground leading-tight max-w-xl">
-            A precisão regulatória do setor elétrico em um só lugar.
+            Sistema Integrado de Gestão de Auditoria Contábil
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-md leading-relaxed">
-            Auditoria contábil inteligente baseada integralmente no Manual de
-            Contabilidade do Setor Elétrico.
+            Auditoria contábil inteligente baseada planejamento, precisão e qualidade.
           </p>
         </div>
 
@@ -193,7 +192,7 @@ export default function AuthPage() {
             <FileText className="w-3 h-3 text-primary-foreground" />
           </div>
           <span className="text-sm font-semibold tracking-tight text-foreground">
-            MCSE Mapper
+            Audiconsult Auditores S.S.
           </span>
         </div>
       </main>
