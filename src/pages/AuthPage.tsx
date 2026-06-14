@@ -76,7 +76,7 @@ export default function AuthPage() {
             Sistema Integrado de Gestão de Auditoria Contábil
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-md leading-relaxed">
-            Auditoria contábil inteligente baseada planejamento, precisão e qualidade.
+            Auditoria contábil inteligente baseada em planejamento, precisão e qualidade.
           </p>
         </div>
 
