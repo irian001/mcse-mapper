@@ -104,6 +104,9 @@ export default function AuthPage() {
               <div className="h-1.5 w-16 bg-muted rounded-full" />
               <div className="h-1.5 w-6 bg-primary/50 rounded-full" />
             </div>
+            <p className="text-[10px] text-muted-foreground/60 mt-2" style={monoLabel}>
+              Vínculo entre plano de contas e estruturas de referencia.
+            </p>
           </div>
         </div>
       </aside>
