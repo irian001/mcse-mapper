@@ -42,3 +42,7 @@ Thumbs.db
 # Security incident evidence — local/private
 artifacts/security/**
 !artifacts/security/**/.gitkeep
+
+# Security incident evidence — local/private
+artifacts/security/**
+!artifacts/security/**/.gitkeep
