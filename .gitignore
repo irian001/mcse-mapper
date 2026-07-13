@@ -27,6 +27,7 @@ coverage/
 .supabase/
 
 # Editor directories and files
+.worktrees/
 .vscode/
 !.vscode/extensions.json
 .idea/
