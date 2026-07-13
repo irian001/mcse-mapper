@@ -38,3 +38,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# Security incident evidence — local/private
+artifacts/security/**
+!artifacts/security/**/.gitkeep
