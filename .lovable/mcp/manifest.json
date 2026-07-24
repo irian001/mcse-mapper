@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://zqoywwtdsbtqtytvyzwl.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "audiconsult-mcp",
+      "version": "0.1.0",
+      "title": "Audiconsult Auditoria — MCP"
+    },
+    "tools": [
+      {
+        "name": "list_trabalhos_auditoria",
+        "title": "Listar trabalhos de auditoria",
+        "description": "Lista trabalhos de auditoria acessíveis ao usuário autenticado (respeita RLS). Retorna id, cliente_id, exercicio_id e status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Número máximo de trabalhos a retornar (padrão 50)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_clientes",
+        "title": "Listar clientes",
+        "description": "Lista clientes acessíveis ao usuário autenticado (respeita RLS). Retorna id, razão social e nome fantasia.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_mcse_conta",
+        "title": "Buscar conta MCSE",
+        "description": "Busca uma conta canônica do MCSE pelo código. Retorna descrição, grupo e subgrupo.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "codigo": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Código da conta MCSE."
+            }
+          },
+          "required": [
+            "codigo"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
