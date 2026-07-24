@@ -1,149 +1,68 @@
-# Bloco A — Navegação e Permissões / Procedimentos Específicos — ODI
 
-Detalhamento dos casos de teste do Bloco A do plano PE-ODI.0. Execução manual sobre o estado atual (placeholder de execução). Nenhum código será alterado.
+# Plano — Servidor MCP (Agent Integrations) com OAuth do Supabase externo
 
-## Pré-requisitos de ambiente
+## Contexto
 
-- Usuários de teste já provisionados, um por perfil:
-  - `admin@teste` — auditor com `perfil_acesso = admin`
-  - `socio@teste` — `socio`
-  - `gerente@teste` — `gerente`
-  - `senior@teste` — `senior`
-  - `assistente@teste` — `assistente`
-  - `cliente@teste` — `cliente_usuario` ativo vinculado a um cliente
-  - `sem_vinculo@teste` — usuário Auth sem registro em `auditores` nem em `cliente_usuarios`
-- Pelo menos 2 clientes com 1 trabalho cada (T1 do Cliente A, T2 do Cliente B).
-- T1 com equipe definida (`trabalho_auditores`) incluindo `senior@teste` e `assistente@teste`. T2 sem nenhum dos dois.
-- Sócio (`socio@teste`) vinculado em pelo menos 1 trabalho do Cliente A, para validar regra do `get_accessible_trabalho_ids` (sócio vê todos os trabalhos do cliente onde participa).
-- Pelo menos 3 procedimentos `tipo_procedimento = ordens_imobilizacao` criados: um em T1, um em T2 e um em um trabalho T3 ao qual nenhum dos perfis de teste tem acesso direto.
+O app roda em Supabase externo (`zqoywwtdsbtqtytvyzwl.supabase.co`) — é lá que estão auth e dados reais. Assumindo que o OAuth 2.1 do Supabase externo foi habilitado, o servidor MCP será um resource server que valida tokens emitidos por esse issuer, e a rota de consentimento vai chamar `supabase.auth.oauth.*` do client já existente.
 
-## Convenções
+O projeto Lovable Cloud (`zabgpojqeoevttuxpobw`) NÃO será tocado — nenhuma migração nele, nem `configure_oauth_server` (que só afeta o managed Cloud, não o externo).
 
-- "Resultado esperado" descreve o comportamento aceito pelo teste.
-- "Critério de aceite" é a condição objetiva binária (passa/falha).
-- Evidência: print da tela + rota + identificação do usuário no rodapé.
+## Pré-condição a validar antes de codar
 
----
+1. Confirmar que o Supabase externo publica o OAuth 2.1: buscar `https://zqoywwtdsbtqtytvyzwl.supabase.co/auth/v1/.well-known/oauth-authorization-server` e verificar `issuer`, `authorization_endpoint`, `token_endpoint`, `registration_endpoint` (para DCR).
+2. Se a resposta vier vazia/404, parar e reportar — o OAuth ainda não está ativo no externo e não há como o Lovable ativar remotamente. Se OK, prosseguir.
 
-## A1 — Acesso ao hub Procedimentos por perfil
+## O que será criado / editado
 
-Objetivo: confirmar que cada perfil interno consegue abrir o hub e que externos/sem vínculo são bloqueados.
+### Novos arquivos
 
-| # | Usuário | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|---|
-| A1.1 | admin | Navegar para `/procedimentos` (hub) | Hub renderiza 7 cards, inclusive "Ordens de Imobilização" | Card "Ordens de Imobilização" visível e clicável |
-| A1.2 | socio | Mesmo passo | Igual A1.1 | Igual A1.1 |
-| A1.3 | gerente | Mesmo passo | Igual A1.1 | Igual A1.1 |
-| A1.4 | senior | Mesmo passo | Igual A1.1 | Igual A1.1 |
-| A1.5 | assistente | Mesmo passo | Igual A1.1 | Igual A1.1 |
-| A1.6 | cliente_usuario | Mesmo passo | Roteamento redireciona para área do cliente ou exibe "sem acesso"; rota interna não é exposta | Usuário não consegue ver o hub interno |
-| A1.7 | sem_vinculo | Mesmo passo | Mensagem/estado de "sem vínculo"; nada do menu interno carregado | Hub não renderiza |
+- `src/lib/mcse/tools/list-trabalhos.ts` — tool que lista trabalhos acessíveis ao usuário logado (usa `ctx.getToken()` para instanciar um client Supabase externo com `Authorization: Bearer <token>`, RLS aplica).
+- `src/lib/mcse/tools/list-clientes.ts` — tool que lista clientes acessíveis (mesmo padrão).
+- `src/lib/mcse/tools/get-mcse-conta.ts` — tool que busca uma conta MCSE por código (leitura de tabela referência).
+- `src/lib/mcp/index.ts` — `defineMcp` com `name`, `title`, `version`, `instructions`, `auth: auth.oauth.issuer({ issuer: "https://zqoywwtdsbtqtytvyzwl.supabase.co/auth/v1", acceptedAudiences: "authenticated" })`, e as três tools.
+- `src/pages/OAuthConsentPage.tsx` — rota de consentimento em `/.lovable/oauth/consent`, seguindo o shape canônico: lê `authorization_id`, checa sessão (redireciona para `/login?next=...` preservando URL), chama `supabase.auth.oauth.getAuthorizationDetails/approve/deny`, renderiza tela de aprovação com nome do cliente + escopos.
+- Wrapper local tipado para `supabase.auth.oauth.*` se o TS não enxergar o namespace beta.
 
-## A2 — Bloqueio do cliente_usuario na rota interna
+### Arquivos editados
 
-Objetivo: garantir isolamento entre área interna (auditor) e portal externo (cliente).
+- `package.json` — adicionar `@lovable.dev/mcp-js` e `zod`.
+- `vite.config.ts` — importar `mcpPlugin` de `@lovable.dev/mcp-js/stacks/supabase/vite` e adicionar ao array `plugins`.
+- `src/App.tsx` — registrar rota pública `/.lovable/oauth/consent` FORA do `AuthGate` (a rota precisa ser acessível sem sessão para redirecionar ao login preservando o `next`), e ajustar `AuthPage` para consumir `?next=` após login bem-sucedido, redirecionando de volta à URL de consentimento.
+- `public/favicon.ico` — verificar se já existe um favicon do app; se estiver com o padrão Lovable, gerar um simples com a identidade Audiconsult (o conector MCP usa `/favicon.ico` como ícone).
 
-| # | Cenário | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|---|
-| A2.1 | Acesso direto via URL | cliente_usuario abre `/procedimentos-auxiliares?tipo=ordens_imobilizacao` colando no navegador | ProfileRouter/ClienteLayout intercepta e impede renderização da página interna | Não exibe lista de procedimentos; redireciona para `/cliente/...` ou bloqueia |
-| A2.2 | Acesso direto ao detalhe | cliente_usuario abre `/procedimentos-auxiliares?detalhe=<id>` (se aplicável) | Mesmo bloqueio | Sem render da página interna |
-| A2.3 | Tentativa via API | cliente_usuario, com token, executa `select` em `procedimentos_auxiliares` no console do navegador | RLS retorna lista vazia (não erro) | `data` vazio para procedimentos do trabalho ao qual o cliente não pertence |
-| A2.4 | Sidebar | cliente_usuario logado | Sidebar não exibe item "Procedimentos" | Item ausente do menu |
+### Gerado automaticamente (não editar à mão)
 
-## A3 — Listagem traz apenas procedimentos de trabalhos acessíveis (RLS)
+- `supabase/functions/mcp/index.ts` — emitido pelo `mcpPlugin` a cada build. Depois de gerado, será deployado no Supabase externo via CLI **pelo usuário** (o `supabase--deploy_edge_functions` do Lovable só publica no projeto Cloud managed, não no externo). O plano documenta o comando: `supabase functions deploy mcp --project-ref zqoywwtdsbtqtytvyzwl --no-verify-jwt`.
 
-Objetivo: validar `get_accessible_trabalho_ids` aplicado a `procedimentos_auxiliares`.
+## Escolha das tools iniciais (mínimas e seguras)
 
-Preparação: existem ODIs em T1 (acessível ao senior e assistente), T2 (não acessível) e T3 (não acessível a nenhum perfil de teste salvo admin).
+Tools somente-leitura para a primeira versão, todas com `readOnlyHint: true`:
 
-| # | Usuário | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|---|
-| A3.1 | admin | Abrir `/procedimentos-auxiliares?tipo=ordens_imobilizacao` | Lista mostra ODIs de T1, T2 e T3 | Os 3 procedimentos visíveis |
-| A3.2 | socio (vinculado ao Cliente A) | Mesmo passo | Mostra ODIs de T1 e de quaisquer outros trabalhos do Cliente A; **não** mostra T2 nem T3 | T2 e T3 ausentes; T1 presente |
-| A3.3 | gerente sem vínculo em T1/T2/T3 | Mesmo passo | Lista vazia ou apenas trabalhos onde estiver alocado | T1, T2 e T3 ausentes se não alocado |
-| A3.4 | senior alocado em T1 | Mesmo passo | Mostra ODI de T1; oculta T2 e T3 | T1 presente; T2 e T3 ausentes |
-| A3.5 | assistente alocado em T1 | Mesmo passo | Igual A3.4 | Igual A3.4 |
-| A3.6 | senior removido de T1 (ativo=false em `trabalho_auditores`) | Recarregar página | ODI de T1 desaparece imediatamente | T1 ausente após remoção |
-| A3.7 | Conferência de contagem | Comparar contagem na UI com `count` em `procedimentos_auxiliares` filtrado por `get_accessible_trabalho_ids()` para o usuário | Números iguais | Diferença = 0 |
+1. `list_trabalhos_auditoria` — usa RLS existente (`get_accessible_trabalho_ids`), retorna id/cliente/exercício/status.
+2. `list_clientes` — respeita RLS, retorna id/razão social/nome fantasia.
+3. `get_mcse_conta` — parâmetro `codigo`, retorna a conta canônica MCSE.
 
-## A4 — Sincronização do filtro `?tipo=ordens_imobilizacao`
+Sem tools de escrita nesta primeira leva — evita risco enquanto validamos o fluxo OAuth ponta a ponta.
 
-Objetivo: validar `useEffect`/`handleTipoChange` em `ProcedimentosAuxiliaresPage.tsx`.
+## Rota de consentimento — pontos críticos
 
-| # | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|
-| A4.1 | Entrar via card "Ordens de Imobilização" do hub | URL fica `?tipo=ordens_imobilizacao` e seletor "Tipo" exibe "Ordens de Imobilização" | URL + seletor consistentes |
-| A4.2 | Trocar manualmente o seletor para "Todos" | URL perde o parâmetro `tipo`; lista expande para todos os tipos | URL = `/procedimentos-auxiliares`; lista contém tipos diversos |
-| A4.3 | Trocar para "Contagem de Caixa" | URL passa a `?tipo=contagem_caixa`; lista filtra | URL + lista coerentes |
-| A4.4 | Voltar para "Ordens de Imobilização" | URL retorna a `?tipo=ordens_imobilizacao` | URL + lista coerentes |
-| A4.5 | Editar URL manualmente para `?tipo=ordens_imobilizacao` | Seletor reflete o valor sem reload completo | Seletor sincronizado |
-| A4.6 | Botão de limpar filtro (`clearTipoFilter`) | Remove `tipo` da URL e mostra todos | URL sem `tipo`; lista expande |
-| A4.7 | Botão Voltar do navegador após troca | Estado anterior do filtro é restaurado | Histórico do navegador respeitado |
+- Preservar `next=` em **todos** os caminhos de auth: login por senha, signup (`emailRedirectTo`), e qualquer OAuth social. `AuthPage` hoje não lê `next`; será atualizado para ler `useSearchParams` e redirecionar após `signInWithPassword`.
+- Validar `next` como caminho relativo same-origin antes de usar (proteção contra open redirect).
+- Adicionar URL de retorno na allow-list de redirect do Supabase externo — passo manual documentado.
 
-## A5 — Acesso ao detalhe do ODI por perfil
+## Verificação (pós-build)
 
-Objetivo: validar que abrir um ODI específico respeita RLS e perfil.
+1. `curl` do `.well-known/oauth-authorization-server` do issuer.
+2. Abrir `/.lovable/oauth/consent?authorization_id=debug` deslogado — deve redirecionar para `/login?next=...` preservando a URL.
+3. Após deploy da função MCP no externo, `curl` de `https://zqoywwtdsbtqtytvyzwl.supabase.co/functions/v1/mcp/.well-known/oauth-protected-resource` deve retornar o issuer.
+4. Rodar `app_mcp_server--extract_mcp_manifest` para gerar `.lovable/mcp/manifest.json` — necessário para o painel "Agent integrations" listar as tools.
 
-| # | Usuário | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|---|
-| A5.1 | admin | Abrir detalhe de ODI de T3 | Dialog abre com 4 abas; edição permitida | Abas Dados/Execução/Evidências/Conclusão renderizam |
-| A5.2 | senior alocado em T1 | Abrir detalhe de ODI de T1 | Dialog abre | Idem A5.1 |
-| A5.3 | senior alocado em T1 | Tentar abrir detalhe de ODI de T2 colando ID | RLS retorna null/empty; UI mostra "não encontrado" ou volta à lista | Dialog não renderiza dados |
-| A5.4 | assistente em T1 | Abrir detalhe em T1 | Abre; campos sensíveis (ex.: exclusão) ocultos | Botão "Excluir" não visível |
-| A5.5 | gerente sem vínculo | Tentar acessar ODI de T1 | RLS bloqueia | Sem dados |
+## Fora do escopo desta iteração
 
-## A6 — Visibilidade de ações por perfil dentro do módulo ODI
+- Tools de escrita (criar solicitação, atualizar balancete, etc.) — próxima fase depois de validar OAuth.
+- Migrar app do Supabase externo para o Cloud managed — decisão separada.
+- Configurar DCR/allow-list no Supabase externo — passos manuais que só o dono do projeto externo executa.
 
-Objetivo: validar `canDelete = isInternal && isAdmin` e botões de criar/editar.
+## Confirmação necessária antes de eu implementar
 
-| # | Usuário | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|---|
-| A6.1 | admin | Listagem ODI | Botões "Novo", "Editar", "Excluir" visíveis | Todos presentes |
-| A6.2 | socio | Listagem ODI | "Novo" e "Editar" visíveis; "Excluir" oculto | "Excluir" ausente |
-| A6.3 | gerente | Igual A6.2 | Igual A6.2 | Igual A6.2 |
-| A6.4 | senior | Igual A6.2 | Igual A6.2 | Igual A6.2 |
-| A6.5 | assistente | Igual A6.2 | Igual A6.2 | Igual A6.2 |
-| A6.6 | cliente_usuario | Não aplicável (bloqueado em A2) | Sem acesso | N/A |
-| A6.7 | Tentativa direta de DELETE via API por não-admin | RLS rejeita | Erro de permissão / 0 linhas afetadas | Linha permanece no banco |
-
-## A7 — Identificação do usuário e rodapé
-
-Objetivo: confirmar regra de "rodapé exibe nome e perfil logado".
-
-| # | Usuário | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|---|
-| A7.1 | admin | Abrir hub Procedimentos | Rodapé exibe nome + "admin" | Texto correto |
-| A7.2 | senior | Idem | Rodapé exibe nome + "senior" | Texto correto |
-| A7.3 | cliente_usuario | Portal cliente | Rodapé exibe nome + identificação de cliente | Texto correto |
-
-## A8 — Regressão de navegação
-
-| # | Ação | Resultado esperado | Critério de aceite |
-|---|---|---|---|
-| A8.1 | Navegar Hub → ODI → Detalhe → Voltar → outro Hub | Sem erros no console; sem `flash` de dados de outro usuário | Console limpo; estado coerente |
-| A8.2 | Refresh em `/procedimentos-auxiliares?tipo=ordens_imobilizacao` | Sessão preservada; lista recarrega com mesmo filtro | Filtro e dados consistentes |
-| A8.3 | Logout no meio do fluxo | Redireciona para `/auth`; ao logar com outro perfil, lista respeita o novo escopo | Sem leak de dados do perfil anterior |
-
-## Checklist de evidências por caso
-
-Para cada caso registrar:
-1. Usuário logado (nome + perfil).
-2. URL completa.
-3. Screenshot da tela.
-4. Resultado observado.
-5. Aprovado / Reprovado / Bloqueado.
-6. Observações (latência, console, erros 401/403).
-
-## Saídas esperadas do Bloco A
-
-- Matriz preenchida (A1.1 … A8.3) com status e evidências.
-- Lista de divergências entre comportamento observado e esperado.
-- Lista de eventuais ajustes mínimos para o Bloco PE-ODI.1 (apenas registro — nada implementado nesta fase).
-
-## Próximo passo após Bloco A
-
-Seguir para Bloco B — Seleção do trabalho, somente após fechar todas as divergências críticas de A2, A3, A5 e A6 (impacto direto em segurança/RLS).
-
-## Confirmação
-
-Plano somente de execução de testes manuais. Nenhum código, banco, SQL, migration, `types.ts` ou tela será alterado.
+Só uma checagem rápida: você habilitou no Supabase externo (`zqoywwtdsbtqtytvyzwl`) o **OAuth 2.1 authorization server** com **dynamic client registration**? Se sim, sigo direto com o plano acima. Se você não tem certeza, eu começo pelo passo 1 da pré-condição (probe do `.well-known/`) para confirmar antes de mexer no código.
