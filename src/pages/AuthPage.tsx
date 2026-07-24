@@ -11,6 +11,10 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const nextParam = new URLSearchParams(window.location.search).get("next");
+  const safeNext =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -19,11 +23,18 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Login realizado com sucesso!");
+        if (safeNext) {
+          window.location.href = safeNext;
+          return;
+        }
       } else {
+        const redirectTo = safeNext
+          ? `${window.location.origin}${safeNext}`
+          : window.location.origin;
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: redirectTo },
         });
         if (error) throw error;
         toast.success("Conta criada! Verifique seu e-mail para confirmar.");
