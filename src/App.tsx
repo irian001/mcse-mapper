@@ -37,6 +37,7 @@ import EmpresaAuditoriaPage from "@/pages/EmpresaAuditoriaPage";
 import EstruturasAuditoriaPage from "@/pages/EstruturasAuditoriaPage";
 import SegmentosModalidadesPage from "@/pages/SegmentosModalidadesPage";
 import ModelosMatrizRiscosPage from "@/pages/ModelosMatrizRiscosPage";
+import OAuthConsentPage from "@/pages/OAuthConsentPage";
 import NotFound from "@/pages/NotFound";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { ThemeProvider } from "@/hooks/useTheme";
@@ -156,9 +157,17 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AuthGate>
-            <ProfileRouter />
-          </AuthGate>
+          <Routes>
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsentPage />} />
+            <Route
+              path="*"
+              element={
+                <AuthGate>
+                  <ProfileRouter />
+                </AuthGate>
+              }
+            />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
